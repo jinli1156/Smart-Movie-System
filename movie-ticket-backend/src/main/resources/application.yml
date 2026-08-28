@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: movie-ticket-backend
+
+  # 本地直接启动时启用内嵌 Redis；部署环境可通过 spring.profiles.active 覆盖。
+  profiles:
+    default: dev
+
+  # 数据源配置
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/movie_ticket?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: ${DB_PASSWORD:}
+
+  # Redis配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 10MB
+
+# MyBatis Plus配置
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.movie.ticket.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+
+# JWT配置
+jwt:
+  secret: ${JWT_SECRET:change-this-secret-before-running}
+  expiration: 604800000
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+# 文件上传存储配置
+file:
+  upload:
+    path: uploads/
+    access-prefix: /api/uploads/
+    max-size: 5242880
+    allowed-types: jpg,jpeg,png,gif,webp,bmp
+
+# 日志配置
+logging:
+  level:
+    com.movie.ticket: debug
+    org.springframework.security: debug

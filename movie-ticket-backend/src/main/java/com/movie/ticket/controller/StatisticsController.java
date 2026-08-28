@@ -1,0 +1,51 @@
+package com.movie.ticket.controller;
+
+import com.movie.ticket.common.Result;
+import com.movie.ticket.service.StatisticsService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/statistics")
+@RequiredArgsConstructor
+public class StatisticsController {
+
+    private final StatisticsService statisticsService;
+
+    @GetMapping("/dashboard")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CINEMA_ADMIN')")
+    public Result<Map<String, Object>> getDashboardStats() {
+        Map<String, Object> stats = statisticsService.getDashboardStats();
+        return Result.success(stats);
+    }
+
+    @GetMapping("/box-office")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CINEMA_ADMIN')")
+    public Result<List<Map<String, Object>>> getBoxOfficeRanking(
+            @RequestParam(defaultValue = "10") Integer limit) {
+        List<Map<String, Object>> ranking = statisticsService.getBoxOfficeRanking(limit);
+        return Result.success(ranking);
+    }
+
+    @GetMapping("/showtime/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CINEMA_ADMIN')")
+    public Result<Map<String, Object>> getShowtimeStats(@PathVariable Long id) {
+        Map<String, Object> stats = statisticsService.getShowtimeStats(id);
+        return Result.success(stats);
+    }
+
+    @GetMapping("/revenue")
+    @PreAuthorize("hasAnyRole('ADMIN', 'CINEMA_ADMIN')")
+    public Result<List<Map<String, Object>>> getRevenueByDate(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        List<Map<String, Object>> data = statisticsService.getRevenueByDate(startDate, endDate);
+        return Result.success(data);
+    }
+}

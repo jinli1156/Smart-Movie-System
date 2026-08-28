@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智能电影购票系统 - 用例图（Use Case Diagram）</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf3 100%);
+      color: #2c3e50;
+      line-height: 1.7;
+    }
+    header {
+      text-align: center;
+      padding: 32px 0;
+      border-bottom: 3px solid #3498db;
+      margin-bottom: 36px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      color: #1a4d7a;
+      letter-spacing: 1px;
+    }
+    .subtitle {
+      color: #7f8c8d;
+      font-size: 14px;
+      margin: 0;
+    }
+    .meta {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-top: 12px;
+      flex-wrap: wrap;
+    }
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #3498db;
+      color: white;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    h2 {
+      color: #1a4d7a;
+      border-left: 4px solid #3498db;
+      padding-left: 12px;
+      margin-top: 40px;
+      font-size: 20px;
+    }
+    h3 { color: #2c3e50; font-size: 16px; margin-top: 24px; }
+    section {
+      background: white;
+      padding: 24px 32px;
+      margin-bottom: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .actors-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .actor-card {
+      padding: 16px;
+      border: 1px solid #e1e8ed;
+      border-radius: 6px;
+      background: #fafbfc;
+    }
+    .actor-card h4 {
+      margin: 0 0 8px;
+      color: #2980b9;
+      font-size: 15px;
+    }
+    .actor-card p { margin: 4px 0; font-size: 13px; color: #555; }
+    .diagram-container {
+      text-align: center;
+      padding: 24px;
+      background: #fff;
+      border: 1px solid #e1e8ed;
+      border-radius: 6px;
+      overflow-x: auto;
+    }
+    .diagram-container img {
+      max-width: 100%;
+      height: auto;
+    }
+    .loading {
+      padding: 60px 20px;
+      color: #7f8c8d;
+      font-size: 14px;
+    }
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-top: 12px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: #f8f9fa;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .legend-sym {
+      display: inline-block;
+      width: 80px;
+      text-align: center;
+      font-family: monospace;
+      color: #c0392b;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 12px;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 12px;
+      text-align: left;
+      border: 1px solid #e1e8ed;
+      vertical-align: top;
+    }
+    th {
+      background: #ecf0f5;
+      color: #1a4d7a;
+      font-weight: 600;
+    }
+    tr:nth-child(even) td { background: #fafbfc; }
+    .case-row td:first-child {
+      font-weight: 600;
+      color: #2980b9;
+      width: 130px;
+    }
+    pre {
+      background: #2c3e50;
+      color: #ecf0f1;
+      padding: 16px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    details {
+      margin-top: 12px;
+      background: #fafbfc;
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: 1px solid #e1e8ed;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #2980b9;
+      padding: 8px 0;
+    }
+    .btn-copy {
+      float: right;
+      background: #3498db;
+      color: white;
+      border: none;
+      padding: 4px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .btn-copy:hover { background: #2980b9; }
+    .note {
+      background: #fff8dc;
+      border-left: 4px solid #f39c12;
+      padding: 12px 16px;
+      margin: 12px 0;
+      font-size: 13px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>智能电影购票系统 — 用例图（Use Case Diagram）</h1>
+  <p class="subtitle">基于 SpringBoot 3.x + Vue 3 + TypeScript 的本科毕业设计项目</p>
+  <div class="meta">
+    <span class="tag">UML 标准</span>
+    <span class="tag">软件工程</span>
+    <span class="tag">需求分析</span>
+    <span class="tag">2026-05-29</span>
+  </div>
+</header>
+
+<section>
+  <h2>一、参与者识别（Actors）</h2>
+  <p>根据系统的三级权限设计（普通用户 / 影院管理员 / 超级管理员）和外部依赖识别，本系统共有 <b>4 个参与者</b>：</p>
+  <div class="actors-grid">
+    <div class="actor-card">
+      <h4>1. 普通用户 (User)</h4>
+      <p>系统的 C 端用户，购票主体。</p>
+      <p><b>职责：</b>浏览电影、选座购票、订单管理、退改签、咨询客服。</p>
+    </div>
+    <div class="actor-card">
+      <h4>2. 影院管理员 (CinemaAdmin)</h4>
+      <p>负责所属影院的日常运营。</p>
+      <p><b>职责：</b>影厅 / 电影 / 排片 / 订单审核 / 数据查看。</p>
+    </div>
+    <div class="actor-card">
+      <h4>3. 超级管理员 (SuperAdmin)</h4>
+      <p>系统最高权限角色，泛化自影院管理员。</p>
+      <p><b>职责：</b>用户管理、系统配置（含影院管理员的所有权限）。</p>
+    </div>
+    <div class="actor-card">
+      <h4>4. 外部系统 (ExternalSystem)</h4>
+      <p>非人类参与者，对接第三方服务。</p>
+      <p><b>职责：</b>支付接口、AI 客服 API、电影数据 API。</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>二、完整用例清单（按子系统分组）</h2>
+  <p>本图采用<b>规划完整版</b>，覆盖项目当前已实现及未来迭代功能，共 <b>10 个子系统、56 个用例</b>。</p>
+
+  <h3>用户端（7 个子系统，36 个用例）</h3>
+  <table>
+    <thead>
+      <tr><th width="160">子系统</th><th>用例列表</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>账号与认证</b></td>
+        <td>用户注册、用户登录、退出登录、找回密码</td>
+      </tr>
+      <tr>
+        <td><b>电影浏览</b></td>
+        <td>浏览电影列表、搜索电影、筛选电影、查看智能推荐 <i>(extend)</i>、查看电影详情、查看场次列表、收藏电影、评分与评论</td>
+      </tr>
+      <tr>
+        <td><b>购票流程</b></td>
+        <td>在线选座、智能选座推荐 <i>(extend)</i>、锁定座位 <i>(include)</i>、创建订单、智能定价 <i>(include)</i>、使用优惠券 <i>(extend)</i>、支付订单、生成电子票 <i>(include)</i></td>
+      </tr>
+      <tr>
+        <td><b>订单中心</b></td>
+        <td>查看订单列表、查看订单详情、查看历史订单、取消订单、申请退票 <i>(extend)</i>、申请改签 <i>(extend)</i>、查看电子票/二维码</td>
+      </tr>
+      <tr>
+        <td><b>个人中心</b></td>
+        <td>查看个人信息、修改个人信息、修改密码、上传头像、管理收藏夹、管理收货地址、查看消息通知、查看我的优惠券</td>
+      </tr>
+      <tr>
+        <td><b>智能服务</b></td>
+        <td>智能客服咨询、FAQ快速问答 <i>(include)</i>、转人工客服 <i>(extend)</i></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>管理端（4 个子系统，20 个用例）</h3>
+  <table>
+    <thead>
+      <tr><th width="160">子系统</th><th>用例列表</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>基础数据管理</b><br><small>影院管理员</small></td>
+        <td>影院管理、影厅管理、座位布局编辑、电影管理、排片管理、同步电影数据</td>
+      </tr>
+      <tr>
+        <td><b>运营管理</b><br><small>影院管理员</small></td>
+        <td>订单审核、退款审核、改签审核、优惠券管理、评论审核</td>
+      </tr>
+      <tr>
+        <td><b>数据分析</b><br><small>影院管理员</small></td>
+        <td>数据统计看板、票房排行、收入趋势分析、用户行为分析、导出报表</td>
+      </tr>
+      <tr>
+        <td><b>系统管理</b><br><small>仅超级管理员</small></td>
+        <td>用户管理、管理员管理、角色权限管理、系统配置、操作日志查询</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="note">
+    <b>关于覆盖范围：</b>本图为<b>完整规划版</b>，包含项目分 6 个阶段全部实现后的功能。当前已实现约 60%（详见 <a href="../README.md">README.md</a>），剩余如收藏、评论、优惠券、消息通知等属于<b>后续迭代功能</b>。
+  </div>
+</section>
+
+<section>
+  <h2>三、用例图</h2>
+  <div class="note">
+    本图采用 <b>PlantUML</b> 在线渲染（标准 UML 表示法），首次加载需要联网。如无法显示，请展开下方"PlantUML 源码"复制到本地工具渲染。
+  </div>
+  <div class="diagram-container" id="diagram">
+    <div class="loading">用例图加载中...</div>
+  </div>
+</section>
+
+<section>
+  <h2>四、关系图例（UML 标准符号）</h2>
+  <div class="legend">
+    <div class="legend-item">
+      <span class="legend-sym">───▶</span>
+      <span><b>关联</b>（Association）：参与者使用某用例</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-sym">┄┄▶ &lt;&lt;include&gt;&gt;</span>
+      <span><b>包含</b>：基用例必须包含子用例</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-sym">┄┄▶ &lt;&lt;extend&gt;&gt;</span>
+      <span><b>扩展</b>：在特定条件下扩展基用例</span>
+    </div>
+    <div class="legend-item">
+      <span class="legend-sym">───▷</span>
+      <span><b>泛化</b>（Generalization）：角色继承</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>五、核心用例描述（Use Case Specification）</h2>
+  <p>选取 3 个最具代表性的核心用例进行详细描述，其余用例可按相同模板补充。</p>
+
+  <h3>用例 1：在线购票（Buy Ticket）</h3>
+  <table>
+    <tbody>
+      <tr class="case-row"><td>用例编号</td><td>UC-01</td></tr>
+      <tr class="case-row"><td>参与者</td><td>普通用户（User）</td></tr>
+      <tr class="case-row"><td>用例描述</td><td>用户选择电影、场次、座位后下单，并完成支付获取电子票。</td></tr>
+      <tr class="case-row"><td>前置条件</td><td>用户已登录；存在状态为"上映中"的电影和未来场次。</td></tr>
+      <tr class="case-row"><td>基本流程</td><td>
+        1. 用户从首页/电影列表选择电影 → 进入详情页<br>
+        2. 选择影院 + 场次 → 进入选座页<br>
+        3. 系统加载座位图，并提供"智能选座推荐"（&lt;&lt;extend&gt;&gt;）<br>
+        4. 用户选择 1~N 个座位 → 系统调用"锁定座位"（&lt;&lt;include&gt;&gt;，Redis 15分钟）<br>
+        5. 系统调用"智能定价"（&lt;&lt;include&gt;&gt;）计算总价<br>
+        6. 用户确认订单 → 进入支付页 → 模拟支付<br>
+        7. 系统更新订单状态为 PAID，释放锁，标记座位为已售<br>
+        8. 系统生成电子票（订单号 + 二维码）
+      </td></tr>
+      <tr class="case-row"><td>后置条件</td><td>订单状态为 PAID；座位标记为已售；用户可查看电子票。</td></tr>
+      <tr class="case-row"><td>异常流程</td><td>
+        A1. 锁座超时：座位释放，订单状态置为 CANCELLED<br>
+        A2. 支付失败：订单状态置为 CANCELLED，座位释放<br>
+        A3. 座位被并发抢占：返回"座位已被占用"提示
+      </td></tr>
+    </tbody>
+  </table>
+
+  <h3>用例 2：智能推荐（Smart Recommend）</h3>
+  <table>
+    <tbody>
+      <tr class="case-row"><td>用例编号</td><td>UC-02</td></tr>
+      <tr class="case-row"><td>参与者</td><td>普通用户（User）</td></tr>
+      <tr class="case-row"><td>用例描述</td><td>系统根据用户画像和观影历史，混合"内容+协同+热度"算法推荐电影。</td></tr>
+      <tr class="case-row"><td>前置条件</td><td>用户已登录；电影库非空。</td></tr>
+      <tr class="case-row"><td>基本流程</td><td>
+        1. 用户进入首页 → 触发推荐请求<br>
+        2. 系统检查 Redis 缓存 <code>recommend:{userId}</code>，命中则直接返回<br>
+        3. 未命中则并行计算三种推荐：内容(40%) + 协同(30%) + 热度(30%)<br>
+        4. 加权融合后过滤已观看电影，取 Top 10<br>
+        5. 写入 Redis 缓存（TTL=30分钟）<br>
+        6. 记录推荐日志（recommendation_log）<br>
+        7. 返回推荐列表给前端
+      </td></tr>
+      <tr class="case-row"><td>后置条件</td><td>用户看到个性化推荐；缓存与日志已写入。</td></tr>
+      <tr class="case-row"><td>异常流程</td><td>
+        A1. 新用户无画像：降级为纯热度推荐<br>
+        A2. Redis 不可用：直接查询 MySQL 计算
+      </td></tr>
+    </tbody>
+  </table>
+
+  <h3>用例 3：排片管理（Schedule Management）</h3>
+  <table>
+    <tbody>
+      <tr class="case-row"><td>用例编号</td><td>UC-03</td></tr>
+      <tr class="case-row"><td>参与者</td><td>影院管理员（CinemaAdmin）</td></tr>
+      <tr class="case-row"><td>用例描述</td><td>管理员为某影厅、某电影创建/修改/删除场次，并设置基础票价。</td></tr>
+      <tr class="case-row"><td>前置条件</td><td>管理员已登录；电影、影厅已存在。</td></tr>
+      <tr class="case-row"><td>基本流程</td><td>
+        1. 管理员进入排片管理页 → 选择影厅<br>
+        2. 点击"新增排片" → 填写电影、开始时间、基础票价<br>
+        3. 系统校验时间冲突（同影厅不可重叠）<br>
+        4. 系统计算结束时间 = 开始时间 + 电影时长<br>
+        5. 保存排片记录到 movie_schedule 表<br>
+        6. 返回成功提示，刷新列表
+      </td></tr>
+      <tr class="case-row"><td>后置条件</td><td>新场次出现在用户端可购票列表中。</td></tr>
+      <tr class="case-row"><td>异常流程</td><td>
+        A1. 时间冲突：提示"该影厅在此时段已有排片"<br>
+        A2. 已售票场次禁止删除：仅可"取消场次"并触发退款流程
+      </td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section>
+  <h2>六、PlantUML 源码</h2>
+  <p>可复制到 <a href="https://www.plantuml.com/plantuml" target="_blank">PlantUML 在线编辑器</a> 或本地工具（VS Code 插件、IDEA 插件）渲染。</p>
+  <details open>
+    <summary>展开/折叠 PlantUML 源码 <button class="btn-copy" onclick="copySource(event)">复制源码</button></summary>
+    <pre id="puml-source">@startuml 智能电影购票系统用例图
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam backgroundColor #FAFBFC
+skinparam usecase {
+  BackgroundColor #E8F4FD
+  BorderColor #2980B9
+  ArrowColor #34495E
+}
+skinparam actor {
+  BackgroundColor #FFF3CD
+  BorderColor #856404
+}
+
+' ========== 参与者 ==========
+actor "普通用户" as User
+actor "影院管理员" as CinemaAdmin
+actor "超级管理员" as SuperAdmin
+actor "外部系统\n(支付/AI/电影API)" as ExtSys
+
+SuperAdmin --|> CinemaAdmin
+
+' ========== 系统边界 ==========
+rectangle "智能电影购票系统" {
+
+  package "用户端 - 账号与认证" {
+    usecase "用户注册" as UC_Register
+    usecase "用户登录" as UC_Login
+    usecase "退出登录" as UC_Logout
+    usecase "找回密码" as UC_ResetPwd
+  }
+
+  package "用户端 - 电影浏览" {
+    usecase "浏览电影列表" as UC_Browse
+    usecase "搜索电影" as UC_Search
+    usecase "筛选电影" as UC_Filter
+    usecase "查看智能推荐" as UC_Recommend
+    usecase "查看电影详情" as UC_MovieDetail
+    usecase "查看场次列表" as UC_ViewSchedule
+    usecase "收藏电影" as UC_Favorite
+    usecase "评分与评论" as UC_Comment
+  }
+
+  package "用户端 - 购票流程" {
+    usecase "在线选座" as UC_SelectSeat
+    usecase "智能选座推荐" as UC_SmartSeat
+    usecase "锁定座位" as UC_LockSeat
+    usecase "创建订单" as UC_CreateOrder
+    usecase "智能定价" as UC_Pricing
+    usecase "使用优惠券" as UC_UseCoupon
+    usecase "支付订单" as UC_Pay
+    usecase "生成电子票" as UC_GenTicket
+  }
+
+  package "用户端 - 订单中心" {
+    usecase "查看订单列表" as UC_OrderList
+    usecase "查看订单详情" as UC_OrderDetail
+    usecase "查看历史订单" as UC_OrderHistory
+    usecase "取消订单" as UC_CancelOrder
+    usecase "申请退票" as UC_Refund
+    usecase "申请改签" as UC_Change
+    usecase "查看电子票/二维码" as UC_ViewTicket
+  }
+
+  package "用户端 - 个人中心" {
+    usecase "查看个人信息" as UC_ViewProfile
+    usecase "修改个人信息" as UC_EditProfile
+    usecase "修改密码" as UC_ChangePwd
+    usecase "上传头像" as UC_UploadAvatar
+    usecase "管理收藏夹" as UC_MyFavorite
+    usecase "管理收货地址" as UC_Address
+    usecase "查看消息通知" as UC_Notification
+    usecase "查看我的优惠券" as UC_MyCoupon
+  }
+
+  package "用户端 - 智能服务" {
+    usecase "智能客服咨询" as UC_Chatbot
+    usecase "FAQ快速问答" as UC_FAQ
+    usecase "转人工客服" as UC_Human
+  }
+
+  package "管理端 - 基础数据" {
+    usecase "影院管理" as UC_Cinema
+    usecase "影厅管理" as UC_Hall
+    usecase "座位布局编辑" as UC_SeatLayout
+    usecase "电影管理" as UC_Movie
+    usecase "排片管理" as UC_ScheduleMgr
+    usecase "同步电影数据" as UC_SyncMovie
+  }
+
+  package "管理端 - 运营管理" {
+    usecase "订单审核" as UC_OrderMgr
+    usecase "退款审核" as UC_RefundAudit
+    usecase "改签审核" as UC_ChangeAudit
+    usecase "优惠券管理" as UC_CouponMgr
+    usecase "评论审核" as UC_CommentAudit
+  }
+
+  package "管理端 - 数据分析" {
+    usecase "数据统计看板" as UC_Dashboard
+    usecase "票房排行" as UC_BoxOffice
+    usecase "收入趋势分析" as UC_RevenueTrend
+    usecase "用户行为分析" as UC_UserBehavior
+    usecase "导出报表" as UC_Export
+  }
+
+  package "管理端 - 系统管理" {
+    usecase "用户管理" as UC_UserMgr
+    usecase "管理员管理" as UC_AdminMgr
+    usecase "角色权限管理" as UC_RoleMgr
+    usecase "系统配置" as UC_SysConfig
+    usecase "操作日志查询" as UC_OpLog
+  }
+}
+
+' ========== 用户端关联 ==========
+User --> UC_Register
+User --> UC_Login
+User --> UC_Logout
+User --> UC_ResetPwd
+
+User --> UC_Browse
+User --> UC_Search
+User --> UC_Filter
+User --> UC_Recommend
+User --> UC_MovieDetail
+User --> UC_ViewSchedule
+User --> UC_Favorite
+User --> UC_Comment
+
+User --> UC_SelectSeat
+User --> UC_CreateOrder
+User --> UC_Pay
+
+User --> UC_OrderList
+User --> UC_OrderDetail
+User --> UC_OrderHistory
+User --> UC_CancelOrder
+User --> UC_Refund
+User --> UC_Change
+User --> UC_ViewTicket
+
+User --> UC_ViewProfile
+User --> UC_EditProfile
+User --> UC_ChangePwd
+User --> UC_UploadAvatar
+User --> UC_MyFavorite
+User --> UC_Address
+User --> UC_Notification
+User --> UC_MyCoupon
+
+User --> UC_Chatbot
+
+' ========== include 关系（必须包含）==========
+UC_CreateOrder ..> UC_LockSeat   : <<include>>
+UC_CreateOrder ..> UC_Pricing    : <<include>>
+UC_Pay         ..> UC_CreateOrder: <<include>>
+UC_Pay         ..> UC_GenTicket  : <<include>>
+UC_OrderDetail ..> UC_ViewTicket : <<include>>
+UC_Chatbot     ..> UC_FAQ        : <<include>>
+
+' ========== extend 关系（可选扩展）==========
+UC_SmartSeat   ..> UC_SelectSeat : <<extend>>
+UC_Recommend   ..> UC_Browse     : <<extend>>
+UC_UseCoupon   ..> UC_Pay        : <<extend>>
+UC_Human       ..> UC_Chatbot    : <<extend>>
+UC_Change      ..> UC_OrderDetail: <<extend>>
+UC_Refund      ..> UC_OrderDetail: <<extend>>
+
+' ========== 管理端关联 ==========
+CinemaAdmin --> UC_Login
+CinemaAdmin --> UC_Cinema
+CinemaAdmin --> UC_Hall
+CinemaAdmin --> UC_SeatLayout
+CinemaAdmin --> UC_Movie
+CinemaAdmin --> UC_ScheduleMgr
+CinemaAdmin --> UC_SyncMovie
+
+CinemaAdmin --> UC_OrderMgr
+CinemaAdmin --> UC_RefundAudit
+CinemaAdmin --> UC_ChangeAudit
+CinemaAdmin --> UC_CouponMgr
+CinemaAdmin --> UC_CommentAudit
+
+CinemaAdmin --> UC_Dashboard
+CinemaAdmin --> UC_BoxOffice
+CinemaAdmin --> UC_RevenueTrend
+CinemaAdmin --> UC_UserBehavior
+CinemaAdmin --> UC_Export
+
+' ========== 超级管理员独有用例 ==========
+SuperAdmin --> UC_UserMgr
+SuperAdmin --> UC_AdminMgr
+SuperAdmin --> UC_RoleMgr
+SuperAdmin --> UC_SysConfig
+SuperAdmin --> UC_OpLog
+
+' ========== 外部系统 ==========
+UC_Pay        --> ExtSys : 调用支付接口
+UC_Chatbot    --> ExtSys : 调用AI API
+UC_SyncMovie  --> ExtSys : 同步电影数据
+UC_Notification --> ExtSys : 推送通知
+
+@enduml</pre>
+  </details>
+</section>
+
+<section>
+  <h2>七、答辩建议</h2>
+  <ul>
+    <li><b>层次化展示：</b>论文中先放总用例图，再分模块拆分（购票子图 / 订单子图 / 管理端子图），避免一张图过于复杂。</li>
+    <li><b>用例描述表：</b>每个核心用例配一份描述表（参考第四节），是答辩老师重点关注的部分。</li>
+    <li><b>关系明确：</b><code>&lt;&lt;include&gt;&gt;</code> 用于必然发生的子流程（如下单必须锁座），<code>&lt;&lt;extend&gt;&gt;</code> 用于可选扩展（如智能选座是选座的可选增强）。</li>
+    <li><b>外部系统：</b>支付接口、AI API 作为外部参与者画出，体现系统边界，符合软件工程规范。</li>
+  </ul>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js"></script>
+<script>
+  const pumlSource = document.getElementById('puml-source').textContent;
+
+  function encode6bit(b) {
+    if (b < 10) return String.fromCharCode(48 + b);
+    b -= 10;
+    if (b < 26) return String.fromCharCode(65 + b);
+    b -= 26;
+    if (b < 26) return String.fromCharCode(97 + b);
+    b -= 26;
+    if (b === 0) return '-';
+    if (b === 1) return '_';
+    return '?';
+  }
+
+  function append3bytes(b1, b2, b3) {
+    const c1 = b1 >> 2;
+    const c2 = ((b1 & 0x3) << 4) | (b2 >> 4);
+    const c3 = ((b2 & 0xF) << 2) | (b3 >> 6);
+    const c4 = b3 & 0x3F;
+    return encode6bit(c1 & 0x3F) + encode6bit(c2 & 0x3F) + encode6bit(c3 & 0x3F) + encode6bit(c4 & 0x3F);
+  }
+
+  function encodePlantUML(data) {
+    let r = '';
+    for (let i = 0; i < data.length; i += 3) {
+      const b1 = data[i];
+      const b2 = i + 1 < data.length ? data[i + 1] : 0;
+      const b3 = i + 2 < data.length ? data[i + 2] : 0;
+      r += append3bytes(b1, b2, b3);
+    }
+    return r;
+  }
+
+  function buildPlantUMLUrl(format) {
+    const utf8 = new TextEncoder().encode(pumlSource);
+    const compressed = pako.deflateRaw(utf8, { level: 9 });
+    const encoded = encodePlantUML(compressed);
+    return `https://www.plantuml.com/plantuml/${format}/${encoded}`;
+  }
+
+  function buildKrokiUrl(format) {
+    const utf8 = new TextEncoder().encode(pumlSource);
+    const compressed = pako.deflate(utf8, { level: 9 });
+    const b64 = btoa(String.fromCharCode.apply(null, compressed))
+      .replace(/\+/g, '-').replace(/\//g, '_');
+    return `https://kroki.io/plantuml/${format}/${b64}`;
+  }
+
+  function tryLoad(urls, idx) {
+    if (idx >= urls.length) {
+      document.getElementById('diagram').innerHTML =
+        '<div class="loading" style="color:#c0392b;">图像加载失败：请检查网络。可复制下方 PlantUML 源码到 <a href="https://www.plantuml.com/plantuml" target="_blank">PlantUML 在线编辑器</a> 渲染。</div>';
+      return;
+    }
+    const img = new Image();
+    img.alt = '智能电影购票系统用例图';
+    img.onload = () => {
+      const container = document.getElementById('diagram');
+      container.innerHTML = '';
+      container.appendChild(img);
+    };
+    img.onerror = () => tryLoad(urls, idx + 1);
+    img.src = urls[idx];
+  }
+
+  function renderDiagram() {
+    try {
+      const urls = [
+        buildPlantUMLUrl('svg'),
+        buildKrokiUrl('svg'),
+        buildPlantUMLUrl('png'),
+        buildKrokiUrl('png'),
+      ];
+      tryLoad(urls, 0);
+    } catch (e) {
+      document.getElementById('diagram').innerHTML =
+        '<div class="loading" style="color:#c0392b;">编码失败：' + e.message + '</div>';
+    }
+  }
+
+  function copySource(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(pumlSource).then(() => {
+      const btn = e.target;
+      const old = btn.textContent;
+      btn.textContent = '已复制 ✓';
+      setTimeout(() => btn.textContent = old, 1500);
+    });
+  }
+
+  renderDiagram();
+</script>
+
+</body>
+</html>
