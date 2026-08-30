@@ -8,12 +8,12 @@
       <!-- Top Bar -->
       <div class="top-bar">
         <div class="tb-pill">
-          <span class="msr tb-pill-ico primary">location_on</span>
+          <MaterialIcon class="msr tb-pill-ico primary" name="location_on" />
           <span class="tb-pill-text">{{ location.label }}</span>
-          <span class="msr tb-pill-caret">keyboard_arrow_down</span>
+          <MaterialIcon class="msr tb-pill-caret" name="keyboard_arrow_down" />
         </div>
         <div class="tb-search">
-          <span class="msr tb-search-ico" @click="onSearch">search</span>
+          <MaterialIcon class="msr tb-search-ico" @click="onSearch" name="search" />
           <input
             type="text"
             placeholder="搜索电影 · 影院 · 演员"
@@ -22,20 +22,20 @@
           />
         </div>
         <div class="tb-pill">
-          <span class="msr">calendar_month</span>
+          <MaterialIcon class="msr" name="calendar_month" />
           <span class="tb-pill-text">{{ todayLabel }}</span>
         </div>
         <div class="tb-icon-group">
           <button class="tb-icon" @click="tip('通知')">
-            <span class="msr">notifications</span>
+            <MaterialIcon class="msr" name="notifications" />
             <span class="tb-dot"></span>
           </button>
           <button class="tb-icon" @click="tip('购物车')">
-            <span class="msr">shopping_cart</span>
+            <MaterialIcon class="msr" name="shopping_cart" />
           </button>
         </div>
         <button class="tb-cta" @click="showScanner = true">
-          <span class="msr">qr_code_scanner</span>
+          <MaterialIcon class="msr" name="qr_code_scanner" />
           <span>扫码取票</span>
         </button>
       </div>
@@ -66,7 +66,7 @@
                   <p class="hero-en">{{ (heroMovie.englishTitle || heroMovie.title).toUpperCase() }}</p>
                   <div class="hero-meta">
                     <div class="rating-block">
-                      <span class="msr star">star</span>
+                      <MaterialIcon class="msr star" name="star" />
                       <span class="rating-num">{{ heroMovie.rating?.toFixed(1) || '9.2' }}</span>
                       <span class="rating-out">/ 10</span>
                     </div>
@@ -80,19 +80,22 @@
                 </div>
                 <div class="hero-actions">
                   <button class="hero-cta" @click="goToDetail(heroMovie.id)">
-                    <span class="msr">play_arrow</span>
+                    <MaterialIcon class="msr" name="play_arrow" />
                     <span>立即购票</span>
                     <span class="kbd-b">B</span>
                   </button>
                   <button class="hero-ghost" @click="tip('观看预告')">
-                    <span class="msr">play_circle</span>
+                    <MaterialIcon class="msr" name="play_circle" />
                     <span>观看预告</span>
                   </button>
-                  <button class="hero-icon" @click="tip('想看')">
-                    <span class="msr">favorite_border</span>
-                  </button>
+                  <WatchlistHeartButton
+                    size="large"
+                    variant="dark"
+                    :active="Boolean(heroMovie && favoriteMovieIds.has(heroMovie.id))"
+                    @click="heroMovie && toggleFavorite(heroMovie)"
+                  />
                   <button class="hero-icon" @click="tip('分享')">
-                    <span class="msr">share</span>
+                    <MaterialIcon class="msr" name="share" />
                   </button>
                 </div>
               </div>
@@ -105,7 +108,7 @@
                     class="poster-img"
                   />
                   <div v-else class="poster-placeholder">
-                    <span class="msr">movie</span>
+                    <MaterialIcon class="msr" name="movie" />
                   </div>
                 </div>
                 <div class="hero-controls">
@@ -116,10 +119,10 @@
                   </div>
                   <div class="arrow-group">
                     <button class="arrow-btn" :disabled="heroCount <= 1" @click="goPrevHero">
-                      <span class="msr">arrow_back</span>
+                      <MaterialIcon class="msr" name="arrow_back" />
                     </button>
                     <button class="arrow-btn solid" :disabled="heroCount <= 1" @click="goNextHero">
-                      <span class="msr">arrow_forward</span>
+                      <MaterialIcon class="msr" name="arrow_forward" />
                     </button>
                   </div>
                   <div class="dots">
@@ -154,7 +157,7 @@
                 <span class="un-title">{{ m.title }}</span>
                 <span class="un-sub">{{ (m.englishTitle || m.title).toUpperCase() }}</span>
               </div>
-              <span class="msr un-play">play_arrow</span>
+              <MaterialIcon class="msr un-play" name="play_arrow" />
             </div>
           </aside>
         </section>
@@ -181,16 +184,16 @@
                   {{ p.label }}
                 </button>
               </div>
-              <button class="ns-sort" @click="tip('排序')">
-                <span class="msr">sort</span>
+              <button class="ns-sort" @click="goToHotRanking">
+                <MaterialIcon class="msr" name="sort" />
                 <span>热度排序</span>
               </button>
               <div class="ns-arrows">
                 <button class="ns-arrow" @click="scrollNs(-1)">
-                  <span class="msr">arrow_back</span>
+                  <MaterialIcon class="msr" name="arrow_back" />
                 </button>
                 <button class="ns-arrow dark" @click="scrollNs(1)">
-                  <span class="msr">arrow_forward</span>
+                  <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
               </div>
             </div>
@@ -211,19 +214,19 @@
                     <span>{{ i === featuredIndex ? 'FEATURED' : 'HOT' }}</span>
                   </span>
                   <span class="card-rating">
-                    <span class="msr">star</span>
+                    <MaterialIcon class="msr" name="star" />
                     <span>{{ m.rating?.toFixed(1) || '8.5' }}</span>
                   </span>
                 </div>
-                <div class="card-bottom">
-                  <span class="card-eng">{{ (m.englishTitle || m.title).toUpperCase() }}</span>
-                  <span class="card-title-on-poster">{{ m.title }}</span>
-                </div>
+              </div>
+              <div class="card-title-panel">
+                <h3 class="card-title-below">{{ m.title }}</h3>
+                <p class="card-eng-below">{{ (m.englishTitle || m.title).toUpperCase() }}</p>
               </div>
               <div class="card-foot">
                 <div class="card-meta">
                   <div class="card-genre-row">
-                    <span class="msr genre-ico">local_fire_department</span>
+                    <MaterialIcon class="msr genre-ico" name="local_fire_department" />
                     <span class="card-genre">{{ m.genre || '剧情' }}</span>
                   </div>
                   <div class="card-price-row">
@@ -234,7 +237,7 @@
                 </div>
                 <button class="card-cta" :class="{ primary: i === featuredIndex }" @click.stop="goToDetail(m.id)">
                   <span>选座</span>
-                  <span class="msr">arrow_forward</span>
+                  <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
               </div>
             </article>
@@ -249,13 +252,13 @@
             <div class="cp-head">
               <div class="cp-head-left">
                 <div class="cp-title-row">
-                  <span class="msr cp-ico">location_on</span>
+                  <MaterialIcon class="msr cp-ico" name="location_on" />
                   <h3 class="cp-title">附近影院</h3>
                 </div>
                 <p class="cp-sub">已为您按距离排序 · {{ nearestArea }}附近</p>
               </div>
               <button class="cp-map" @click="router.push('/cinemas')">
-                <span class="msr">map</span>
+                <MaterialIcon class="msr" name="map" />
                 <span>地图查看</span>
               </button>
             </div>
@@ -273,9 +276,9 @@
                 </div>
                 <p class="cinema-sub">{{ c.area }} · 起价 ¥{{ c.startPrice }}</p>
                 <div class="cinema-meta">
-                  <span class="cm-item"><span class="msr">star</span>{{ c.rating }}</span>
-                  <span class="cm-item"><span class="msr">straighten</span>{{ c.distance }}</span>
-                  <span class="cm-item"><span class="msr">directions_walk</span>{{ c.walkTime }}</span>
+                  <span class="cm-item"><MaterialIcon class="msr" name="star" />{{ c.rating }}</span>
+                  <span class="cm-item"><MaterialIcon class="msr" name="straighten" />{{ c.distance }}</span>
+                  <span class="cm-item"><MaterialIcon class="msr" name="directions_walk" />{{ c.walkTime }}</span>
                 </div>
                 <div class="cinema-features">
                   <span v-for="f in c.features" :key="f" class="cinema-feature">{{ f }}</span>
@@ -290,7 +293,7 @@
             <div class="cs-panel">
               <div class="cs-head">
                 <div class="cs-title-row">
-                  <span class="msr cs-ico">event</span>
+                  <MaterialIcon class="msr cs-ico" name="event" />
                   <h3 class="cs-title">即将上映</h3>
                 </div>
                 <span class="cs-all" @click="loadComingSoon">全部 →</span>
@@ -321,7 +324,7 @@
             <div class="shortcuts">
               <div class="sc-head">
                 <div class="sc-title-row">
-                  <span class="msr sc-ico">bolt</span>
+                  <MaterialIcon class="msr sc-ico" name="bolt" />
                   <h3 class="sc-title">快捷功能</h3>
                 </div>
                 <span class="sc-all" @click="tip('查看全部')">查看全部</span>
@@ -333,7 +336,7 @@
                   class="sc-item"
                   @click="onShortcut(s)"
                 >
-                  <span class="msr" :style="{ color: s.color }">{{ s.icon }}</span>
+                  <MaterialIcon class="msr" :style="{ color: s.color }" :name="s.icon" />
                   <span class="sc-label">{{ s.label }}</span>
                 </button>
               </div>
@@ -349,7 +352,7 @@
               <div class="rec-head-left">
                 <div class="rec-title-row">
                   <span class="rec-icon-wrap">
-                    <span class="msr">stars</span>
+                    <MaterialIcon class="msr" name="stars" />
                   </span>
                   <h3 class="rec-title">AI 智能推荐</h3>
                   <span class="rec-tag">PERSONALIZED</span>
@@ -371,7 +374,7 @@
                   </button>
                 </div>
                 <button class="rec-refresh" @click="loadRecommendations">
-                  <span class="msr">refresh</span>
+                  <MaterialIcon class="msr" name="refresh" />
                   <span>换一批</span>
                 </button>
               </div>
@@ -385,21 +388,24 @@
               >
                 <div class="rec-poster" :style="{ background: cardGradient(m.id) }">
                   <img v-if="m.poster" :src="m.poster" :alt="m.title" />
-                  <span class="rec-match">{{ matchScore(m.id) }}% 匹配</span>
+                  <span class="rec-match">{{ m.matchScore || matchScore(m.id) }}% 匹配</span>
                 </div>
                 <div class="rec-info">
                   <span class="rec-name">{{ m.title }}</span>
                   <span class="rec-meta">
-                    <span class="msr">star</span>
+                    <MaterialIcon class="msr" name="star" />
                     <span>{{ m.rating?.toFixed(1) || '8.5' }}</span>
                     <span class="sep">·</span>
                     <span>{{ m.genre || '剧情' }}</span>
+                  </span>
+                  <span v-if="m.recommendationReason" class="rec-reason">
+                    推荐《{{ m.title }}》：{{ m.recommendationReason }}。
                   </span>
                 </div>
               </article>
             </div>
             <div v-if="recDisplay.length === 0 && !loadingRec" class="rec-empty">
-              <span class="msr">auto_awesome</span>
+              <MaterialIcon class="msr" name="auto_awesome" />
               <p>{{ userStore.isLoggedIn ? '暂无推荐内容' : '登录后查看你的专属推荐' }}</p>
               <button v-if="!userStore.isLoggedIn" class="rec-login-btn" @click="router.push('/login')">
                 立即登录
@@ -411,7 +417,7 @@
           <aside class="ai-card">
             <div class="ai-head">
               <div class="ai-icon-wrap">
-                <span class="msr">stars</span>
+                <MaterialIcon class="msr" name="stars" />
               </div>
               <div class="ai-title-block">
                 <span class="ai-title">AI 个性化分析</span>
@@ -423,24 +429,24 @@
               <span class="ai-section-label">观影画像</span>
               <div class="profile-row">
                 <span class="profile-label">
-                  <span class="msr">movie</span>
+                  <MaterialIcon class="msr" name="movie" />
                   <span>已观看</span>
                 </span>
-                <span class="profile-val">{{ userStore.isLoggedIn ? '24 部' : '— 部' }}</span>
+                <span class="profile-val">{{ userStore.isLoggedIn ? `${recommendationProfile?.purchasedCount || 0} 部` : '— 部' }}</span>
               </div>
               <div class="profile-row">
                 <span class="profile-label">
-                  <span class="msr">category</span>
+                  <MaterialIcon class="msr" name="category" />
                   <span>偏好类型</span>
                 </span>
-                <span class="profile-val">{{ userStore.isLoggedIn ? '科幻 / 动作' : '— / —' }}</span>
+                <span class="profile-val">{{ userStore.isLoggedIn ? (recommendationProfile?.favoriteGenres.join(' / ') || '待探索') : '— / —' }}</span>
               </div>
               <div class="profile-row">
                 <span class="profile-label">
-                  <span class="msr">star</span>
-                  <span>平均评分</span>
+                  <MaterialIcon class="msr" name="star" />
+                  <span>已评价</span>
                 </span>
-                <span class="profile-val">{{ userStore.isLoggedIn ? '8.6' : '—' }}</span>
+                <span class="profile-val">{{ userStore.isLoggedIn ? `${recommendationProfile?.ratedCount || 0} 次` : '—' }}</span>
               </div>
             </div>
             <div class="ai-tags-block">
@@ -454,7 +460,7 @@
             <div class="ai-line"></div>
             <div class="ai-insight">
               <div class="ai-insight-head">
-                <span class="msr insight-ico">stars</span>
+                <MaterialIcon class="msr insight-ico" name="stars" />
                 <span>AI 洞察</span>
               </div>
               <p class="ai-insight-text">
@@ -464,8 +470,8 @@
               </p>
             </div>
             <button class="ai-cta" @click="onAiChat">
-              <span class="msr">chat</span>
-              <span>{{ userStore.isLoggedIn ? '与 AI 观影助手对话' : '登录使用 AI 助手' }}</span>
+              <MaterialIcon class="msr" name="chat" />
+              <span>与 AI 观影助手对话</span>
             </button>
           </aside>
         </section>
@@ -483,6 +489,7 @@
 
     <!-- 扫码取票对话框 -->
     <QRScanner v-model="showScanner" @success="handleScanSuccess" />
+    <ColdStartDialog v-model="showColdStart" :movies="nowShowing" @complete="handleColdStartComplete" />
   </div>
 </template>
 
@@ -493,10 +500,13 @@ import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { movieApi } from '@/api/movie'
 import { cinemaApi } from '@/api/cinema'
+import { recommendApi } from '@/api/recommend'
 import request from '@/utils/request'
-import type { Movie, Cinema } from '@/types'
+import type { Movie, Cinema, RecommendationProfile } from '@/types'
 import QRScanner from '@/components/QRScanner.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
+import ColdStartDialog from '@/components/ColdStartDialog.vue'
+import WatchlistHeartButton from '@/components/WatchlistHeartButton.vue'
 import { useLocation } from '@/composables/useLocation'
 
 const router = useRouter()
@@ -508,6 +518,9 @@ const loadingNow = ref(false)
 const loadingComing = ref(false)
 const loadingRec = ref(false)
 const showScanner = ref(false)
+const showColdStart = ref(false)
+const recommendationProfile = ref<RecommendationProfile | null>(null)
+const favoriteMovieIds = ref(new Set<number>())
 
 const demoNowShowing: Movie[] = [
   {
@@ -630,7 +643,9 @@ const recTabs = [
   { key: 'drama', label: '剧情' }
 ] as const
 
-const userTags = ['硬核科幻', '高分剧情', '诺兰导演', 'IMAX 体验', '深夜场', '英语原声']
+const userTags = computed(() => recommendationProfile.value?.favoriteGenres.length
+  ? recommendationProfile.value.favoriteGenres
+  : ['画像学习中'])
 const guestTags = ['立即注册', '探索更多', '解锁专属']
 
 const shortcuts = [
@@ -890,9 +905,12 @@ const loadRecommendations = async () => {
   try {
     if (userStore.isLoggedIn) {
       try {
-        const r = await request.get<any, Movie[]>('/recommend/personal', {
-          params: { limit: 6 },
-          silent: true
+        recommendationProfile.value = await recommendApi.profile()
+        showColdStart.value = recommendationProfile.value.needsColdStart
+        const r = await recommendApi.personal({
+          limit: 6,
+          latitude: location.value.lat ?? undefined,
+          longitude: location.value.lng ?? undefined
         })
         if (r && r.length > 0) {
           recommendations.value = r
@@ -917,8 +935,17 @@ const loadRecommendations = async () => {
   }
 }
 
+const handleColdStartComplete = async () => {
+  recommendationProfile.value = await recommendApi.profile()
+  await loadRecommendations()
+}
+
 const goToDetail = (id: number) => {
   router.push(`/movie/${id}`)
+}
+
+const goToHotRanking = () => {
+  router.push({ path: '/movies', query: { ranking: 'hot' } })
 }
 
 const onSearch = () => {
@@ -932,11 +959,26 @@ const onShortcut = (s: { label: string }) => {
 }
 
 const onAiChat = () => {
+  window.dispatchEvent(new Event('open-movie-assistant'))
+}
+
+const loadFavorites = async () => {
+  if (!userStore.isLoggedIn) return
+  const list = await recommendApi.favorites().catch(() => [] as Movie[])
+  favoriteMovieIds.value = new Set(list.map(movie => movie.id))
+}
+
+const toggleFavorite = async (movie: Movie) => {
   if (!userStore.isLoggedIn) {
+    ElMessage.warning('登录后才能加入想看')
     router.push('/login')
     return
   }
-  ElMessage.info('AI 观影助手即将上线')
+  const active = await recommendApi.toggleFavorite(movie.id)
+  const next = new Set(favoriteMovieIds.value)
+  active ? next.add(movie.id) : next.delete(movie.id)
+  favoriteMovieIds.value = next
+  ElMessage.success(active ? `已将《${movie.title}》加入想看` : `已将《${movie.title}》移出想看`)
 }
 
 const tip = (label: string) => {
@@ -948,11 +990,12 @@ const handleScanSuccess = (ticketInfo: any) => {
   ElMessage.success(`取票成功！${ticketInfo.movieTitle}`)
 }
 
-onMounted(() => {
-  loadNowShowing()
+onMounted(async () => {
+  await loadNowShowing()
   loadCinemas()
   loadComingSoon()
   loadRecommendations()
+  loadFavorites()
   startAutoRotate()
   ensureLocation()
 })
@@ -1302,6 +1345,7 @@ onBeforeUnmount(() => {
   transition: background 0.15s;
 }
 .hero-icon:hover { background: rgba(255, 255, 255, 0.15); }
+.hero-icon.active { border-color: #ec4899; color: #fff; background: #ec4899; }
 
 .hero-right {
   width: 460px;
@@ -1621,7 +1665,7 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  opacity: 0.55;
+  opacity: 1;
 }
 .card-top {
   display: flex;
@@ -1664,33 +1708,40 @@ onBeforeUnmount(() => {
   color: #fff;
 }
 .card-rating .msr { font-size: 14px; color: var(--primary); }
-.card-bottom {
+.card-title-panel {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  position: relative;
-  z-index: 1;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  min-height: 54px;
+  padding: 0 8px;
+  text-align: center;
 }
-.card-eng {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: rgba(255, 255, 255, 0.7);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.card-title-on-poster {
-  font-size: 26px;
+.card-title-below {
+  width: 100%;
+  margin: 0;
+  color: var(--fg);
+  font-size: 18px;
   font-weight: 800;
-  line-height: 1.1;
-  color: #fff;
+  line-height: 1.3;
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+}
+.card-eng-below {
+  width: 100%;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .card-foot {
@@ -2078,6 +2129,15 @@ onBeforeUnmount(() => {
 }
 .rec-meta .msr { font-size: 13px; color: var(--primary); }
 .rec-meta .sep { color: var(--border); }
+.rec-reason {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
 
 .rec-empty {
   grid-column: 1 / -1;

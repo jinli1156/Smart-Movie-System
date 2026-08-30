@@ -21,7 +21,7 @@
         </div>
 
         <button class="edit-profile-btn" @click="showEditDialog = true">
-          <span class="msr">edit</span>
+          <MaterialIcon class="msr" name="edit" />
           <span>编辑资料</span>
         </button>
       </div>
@@ -29,7 +29,7 @@
       <!-- 钱包信息 -->
       <div class="wallet-card">
         <div class="wallet-header">
-          <span class="msr">account_balance_wallet</span>
+          <MaterialIcon class="msr" name="account_balance_wallet" />
           <span>钱包余额</span>
         </div>
         <div class="wallet-amount">
@@ -60,7 +60,7 @@
             class="quick-action-card"
             @click="onQuickAction(action)"
           >
-            <span class="msr action-icon" :style="{ color: action.color }">{{ action.icon }}</span>
+            <MaterialIcon class="msr action-icon" :style="{ color: action.color }" :name="action.icon" />
             <span class="action-label">{{ action.label }}</span>
             <span v-if="action.badge" class="action-badge">{{ action.badge }}</span>
           </button>
@@ -110,7 +110,7 @@
               <span class="coupon-validity">有效期至 {{ formatCouponDate(coupon.expireTime) }}</span>
             </div>
             <button v-if="coupon.available" class="coupon-use" @click="router.push('/movies')">
-              去使用 <span class="msr">arrow_forward</span>
+              去使用 <MaterialIcon class="msr" name="arrow_forward" />
             </button>
             <span v-else class="coupon-watermark">{{ coupon.status === 1 ? 'USED' : 'EXPIRED' }}</span>
           </article>
@@ -143,20 +143,20 @@
           <article v-for="record in viewingHistory" :key="record.id" class="history-card">
             <div class="history-poster">
               <img v-if="record.moviePoster" :src="record.moviePoster" :alt="record.movieTitle" />
-              <span v-else class="msr">movie</span>
-              <span class="history-watched"><span class="msr">check</span> 已观影</span>
+              <MaterialIcon v-else class="msr" name="movie" />
+              <span class="history-watched"><MaterialIcon class="msr" name="check" /> 已观影</span>
             </div>
             <div class="history-info">
               <div class="history-date">{{ formatHistoryDate(record.showtime) }}</div>
               <h4>{{ record.movieTitle || '未知影片' }}</h4>
               <div class="history-meta">
-                <span><span class="msr">theaters</span>{{ record.cinemaName }}</span>
-                <span><span class="msr">event_seat</span>{{ record.hallName }} · {{ record.seats }}</span>
+                <span><MaterialIcon class="msr" name="theaters" />{{ record.cinemaName }}</span>
+                <span><MaterialIcon class="msr" name="event_seat" />{{ record.hallName }} · {{ record.seats }}</span>
               </div>
               <div class="history-footer">
                 <span class="history-price">实付 ¥{{ Number(record.totalPrice).toFixed(2) }}</span>
                 <button v-if="record.movieId" @click="router.push(`/movie/${record.movieId}`)">
-                  去评价 <span class="msr">arrow_forward</span>
+                  去评价 <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
               </div>
             </div>
@@ -186,11 +186,11 @@
           </div>
           <div class="section-actions">
             <button class="action-btn" @click="tip('筛选')">
-              <span class="msr">filter_list</span>
+              <MaterialIcon class="msr" name="filter_list" />
               <span>筛选</span>
             </button>
             <button class="action-btn" @click="tip('时间顺序')">
-              <span class="msr">schedule</span>
+              <MaterialIcon class="msr" name="schedule" />
               <span>时间顺序</span>
             </button>
           </div>
@@ -201,7 +201,7 @@
             <div class="ticket-poster">
               <img v-if="order.moviePoster" :src="order.moviePoster" :alt="order.movieTitle" />
               <div v-else class="poster-placeholder">
-                <span class="msr">movie</span>
+                <MaterialIcon class="msr" name="movie" />
               </div>
               <span class="ticket-status" :class="getStatusClass(order.status)">
                 {{ getStatusText(order.status) }}
@@ -212,19 +212,19 @@
               <h4 class="ticket-title">{{ order.movieTitle }}</h4>
               <div class="ticket-meta">
                 <div class="meta-row">
-                  <span class="msr">theaters</span>
+                  <MaterialIcon class="msr" name="theaters" />
                   <span>{{ order.cinemaName }}</span>
                 </div>
                 <div class="meta-row">
-                  <span class="msr">event_seat</span>
+                  <MaterialIcon class="msr" name="event_seat" />
                   <span>{{ order.hallName }}</span>
                 </div>
                 <div class="meta-row">
-                  <span class="msr">schedule</span>
+                  <MaterialIcon class="msr" name="schedule" />
                   <span>{{ formatShowtime(order.showtime) }}</span>
                 </div>
                 <div class="meta-row">
-                  <span class="msr">confirmation_number</span>
+                  <MaterialIcon class="msr" name="confirmation_number" />
                   <span>{{ order.orderNo }}</span>
                 </div>
               </div>
@@ -239,7 +239,7 @@
                   class="ticket-action-btn watched"
                   disabled
                 >
-                  <span class="msr">movie</span>
+                  <MaterialIcon class="msr" name="movie" />
                   <span>已观影</span>
                 </button>
                 <button
@@ -247,7 +247,7 @@
                   class="ticket-action-btn picked"
                   disabled
                 >
-                  <span class="msr">check_circle</span>
+                  <MaterialIcon class="msr" name="check_circle" />
                   <span>已取票</span>
                 </button>
                 <button
@@ -255,7 +255,7 @@
                   class="ticket-action-btn primary"
                   @click="viewTicket(order)"
                 >
-                  <span class="msr">qr_code</span>
+                  <MaterialIcon class="msr" name="qr_code" />
                   <span>查看取票码</span>
                 </button>
                 <button
@@ -264,7 +264,7 @@
                   @click="goToPay(order)"
                 >
                   <span>去支付</span>
-                  <span class="msr">arrow_forward</span>
+                  <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
                 <button
                   v-else
@@ -294,7 +294,7 @@
       <div class="edit-form">
         <div class="form-section">
           <div class="form-section-title">
-            <span class="msr">person</span>
+            <MaterialIcon class="msr" name="person" />
             <span>基本信息</span>
           </div>
 
@@ -334,15 +334,15 @@
             </label>
             <el-radio-group v-model="editForm.gender" class="gender-group">
               <el-radio :label="1">
-                <span class="msr">male</span>
+                <MaterialIcon class="msr" name="male" />
                 <span>男</span>
               </el-radio>
               <el-radio :label="2">
-                <span class="msr">female</span>
+                <MaterialIcon class="msr" name="female" />
                 <span>女</span>
               </el-radio>
               <el-radio :label="0">
-                <span class="msr">help</span>
+                <MaterialIcon class="msr" name="help" />
                 <span>保密</span>
               </el-radio>
             </el-radio-group>
@@ -366,7 +366,7 @@
 
         <div class="form-section">
           <div class="form-section-title">
-            <span class="msr">location_on</span>
+            <MaterialIcon class="msr" name="location_on" />
             <span>地区信息</span>
           </div>
 
@@ -406,7 +406,7 @@
 
         <div class="form-section">
           <div class="form-section-title">
-            <span class="msr">movie</span>
+            <MaterialIcon class="msr" name="movie" />
             <span>观影偏好</span>
           </div>
 
@@ -449,7 +449,7 @@
             <span>取消</span>
           </button>
           <button class="dialog-btn primary" @click="handleSaveProfile" :disabled="saving">
-            <span class="msr" v-if="saving">progress_activity</span>
+            <MaterialIcon class="msr" v-if="saving" name="progress_activity" />
             <span>{{ saving ? '保存中...' : '保存' }}</span>
           </button>
         </div>
@@ -467,7 +467,7 @@
       <div class="edit-form">
         <div class="form-section">
           <div class="form-section-title">
-            <span class="msr">lock</span>
+            <MaterialIcon class="msr" name="lock" />
             <span>账号安全</span>
           </div>
 
@@ -521,7 +521,7 @@
             <span>取消</span>
           </button>
           <button class="dialog-btn primary" @click="handleChangePassword" :disabled="changing">
-            <span class="msr" v-if="changing">progress_activity</span>
+            <MaterialIcon class="msr" v-if="changing" name="progress_activity" />
             <span>{{ changing ? '提交中...' : '确认修改' }}</span>
           </button>
         </div>
@@ -805,6 +805,8 @@ const viewOrder = (order: Order) => {
 const onQuickAction = (action: { key: string; label: string }) => {
   if (action.key === 'orders') {
     router.push('/orders')
+  } else if (action.key === 'favorites') {
+    router.push('/favorites')
   } else if (action.key === 'coupons') {
     couponSectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } else if (action.key === 'history') {

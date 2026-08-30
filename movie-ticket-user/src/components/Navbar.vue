@@ -3,21 +3,21 @@
     <div class="navbar-container">
       <div class="navbar-left">
         <router-link to="/home" class="logo">
-          <span class="logo-icon">🎬</span>
+          <img class="logo-icon" src="/cinema-logo.png" alt="电影票务系统" />
           <span class="logo-text">电影票务系统</span>
         </router-link>
 
         <div class="nav-links">
           <router-link to="/home" class="nav-link">
-            <span class="msr">home</span>
+            <MaterialIcon class="msr" name="home" />
             <span>首页</span>
           </router-link>
           <router-link to="/movies" class="nav-link">
-            <span class="msr">movie</span>
+            <MaterialIcon class="msr" name="movie" />
             <span>影片</span>
           </router-link>
           <router-link to="/cinemas" class="nav-link">
-            <span class="msr">theaters</span>
+            <MaterialIcon class="msr" name="theaters" />
             <span>影院</span>
           </router-link>
         </div>
@@ -26,7 +26,7 @@
       <div class="navbar-right">
         <template v-if="userStore.isLoggedIn">
           <router-link to="/orders" class="nav-icon-btn">
-            <span class="msr">receipt_long</span>
+            <MaterialIcon class="msr" name="receipt_long" />
             <span class="tooltip">我的订单</span>
           </router-link>
 
@@ -36,20 +36,20 @@
                 {{ avatarChar }}
               </div>
               <span class="user-name">{{ userStore.userInfo?.nickname || '用户' }}</span>
-              <span class="msr">expand_more</span>
+              <MaterialIcon class="msr" name="expand_more" />
             </div>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">
-                  <span class="msr">person</span>
+                  <MaterialIcon class="msr" name="person" />
                   <span>个人中心</span>
                 </el-dropdown-item>
                 <el-dropdown-item command="orders">
-                  <span class="msr">receipt_long</span>
+                  <MaterialIcon class="msr" name="receipt_long" />
                   <span>我的订单</span>
                 </el-dropdown-item>
                 <el-dropdown-item divided command="logout">
-                  <span class="msr">logout</span>
+                  <MaterialIcon class="msr" name="logout" />
                   <span>退出登录</span>
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -140,7 +140,10 @@ const handleCommand = (command: string) => {
 }
 
 .logo-icon {
-  font-size: 28px;
+  width: 36px;
+  height: 36px;
+  display: block;
+  object-fit: contain;
 }
 
 .logo-text {

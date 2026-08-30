@@ -3,7 +3,11 @@ package com.movie.ticket.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.movie.ticket.common.Result;
 import com.movie.ticket.dto.ShowtimeDTO;
+import com.movie.ticket.dto.SeatRecommendationRequest;
 import com.movie.ticket.service.ShowtimeService;
+import com.movie.ticket.service.SeatRecommendationService;
+import com.movie.ticket.vo.SeatRecommendationVO;
+import com.movie.ticket.vo.SeatRecommendationResultVO;
 import com.movie.ticket.vo.ShowtimeVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +25,7 @@ import java.util.Map;
 public class ShowtimeController {
 
     private final ShowtimeService showtimeService;
+    private final SeatRecommendationService seatRecommendationService;
 
     @GetMapping("/page")
     public Result<IPage<ShowtimeVO>> getPage(
@@ -81,5 +86,21 @@ public class ShowtimeController {
     public Result<Map<String, Object>> getSeatStatus(@PathVariable Long id) {
         Map<String, Object> seatStatus = showtimeService.getSeatStatus(id);
         return Result.success(seatStatus);
+    }
+
+    @GetMapping("/{id}/seat-recommendation")
+    public Result<List<SeatRecommendationVO>> getSeatRecommendation(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "2") int people,
+            @RequestParam(defaultValue = "CENTER") String preference,
+            @RequestParam(defaultValue = "3") int limit) {
+        return Result.success(seatRecommendationService.recommend(id, people, preference, limit));
+    }
+
+    @PostMapping("/{id}/seat-recommendation")
+    public Result<SeatRecommendationResultVO> getSmartSeatRecommendation(
+            @PathVariable Long id,
+            @Valid @RequestBody SeatRecommendationRequest request) {
+        return Result.success(seatRecommendationService.recommendSmart(id, request));
     }
 }

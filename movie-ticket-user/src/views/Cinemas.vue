@@ -23,12 +23,12 @@
         </div>
         <div class="tb-right">
           <div class="tb-pill">
-            <span class="msr tb-pill-ico primary">location_on</span>
+            <MaterialIcon class="msr tb-pill-ico primary" name="location_on" />
             <span class="tb-pill-text">{{ sharedLocation.city || sharedLocation.label }}</span>
-            <span class="msr tb-pill-caret">keyboard_arrow_down</span>
+            <MaterialIcon class="msr tb-pill-caret" name="keyboard_arrow_down" />
           </div>
           <div class="tb-search">
-            <span class="msr">search</span>
+            <MaterialIcon class="msr" name="search" />
             <input
               v-model="searchKeyword"
               type="text"
@@ -38,7 +38,7 @@
 
           </div>
           <button class="tb-icon" @click="tip('通知')">
-            <span class="msr">notifications</span>
+            <MaterialIcon class="msr" name="notifications" />
           </button>
           <div class="tb-avatar">Z</div>
         </div>
@@ -65,7 +65,7 @@
             </div>
             <div class="mib-meta">
               <span class="meta-item">
-                <span class="msr">star</span>
+                <MaterialIcon class="msr" name="star" />
                 <span class="meta-num">{{ contextMovie.rating?.toFixed(1) || '9.2' }}</span>
                 <span class="meta-out">/ 10</span>
               </span>
@@ -85,7 +85,7 @@
             </div>
             <div class="mib-sep"></div>
             <button class="mib-action" @click="router.push('/movies')">
-              <span class="msr">swap_horiz</span>
+              <MaterialIcon class="msr" name="swap_horiz" />
               <span>重选电影</span>
             </button>
           </div>
@@ -95,14 +95,14 @@
         <section class="cinema-filter-panel" aria-label="影院筛选">
           <div class="cf-head">
             <div class="cf-title-wrap">
-              <span class="msr cf-title-icon">tune</span>
+              <MaterialIcon class="msr cf-title-icon" name="tune" />
               <div>
                 <h2 class="cf-title">筛选影院</h2>
                 <p class="cf-subtitle">按偏好快速找到合适的观影地点</p>
               </div>
             </div>
             <button v-if="hasActiveFilters" class="cf-reset" @click="resetFilters">
-              <span class="msr">restart_alt</span>
+              <MaterialIcon class="msr" name="restart_alt" />
               <span>清除筛选</span>
             </button>
           </div>
@@ -110,7 +110,7 @@
           <div class="cf-groups">
             <div v-for="group in filterGroups" :key="group.key" class="cf-group">
               <div class="cf-label">
-                <span class="msr">{{ group.icon }}</span>
+                <MaterialIcon class="msr" :name="group.icon" />
                 <span>{{ group.label }}</span>
               </div>
               <div class="cf-options">
@@ -129,7 +129,7 @@
           </div>
 
           <div class="cf-summary">
-            <span class="msr">local_movies</span>
+            <MaterialIcon class="msr" name="local_movies" />
             <span>共找到 <strong>{{ filteredCinemas.length }}</strong> 家影院</span>
             <div v-if="activeFilterLabels.length" class="cf-active-list">
               <span v-for="item in activeFilterLabels" :key="item" class="cf-active-tag">{{ item }}</span>
@@ -143,35 +143,35 @@
           <aside class="map-card">
             <div class="map-head">
               <div class="map-head-left">
-                <span class="msr map-ico">map</span>
+                <MaterialIcon class="msr map-ico" name="map" />
                 <h3 class="map-title">附近影院</h3>
                 <span class="map-count">· {{ cinemas.length }} 家</span>
               </div>
               <button class="map-filter" @click="tip('地图筛选')">
-                <span class="msr">filter_list</span>
+                <MaterialIcon class="msr" name="filter_list" />
               </button>
             </div>
 
             <div class="map-canvas">
               <div ref="mapContainerRef" class="amap-container"></div>
               <div class="map-current">
-                <span class="msr">my_location</span>
+                <MaterialIcon class="msr" name="my_location" />
                 <span>{{ sharedLocation.label }}</span>
               </div>
               <div class="map-zoom">
                 <button class="zoom-btn" @click="zoomIn">
-                  <span class="msr">add</span>
+                  <MaterialIcon class="msr" name="add" />
                 </button>
                 <button class="zoom-btn" @click="zoomOut">
-                  <span class="msr">remove</span>
+                  <MaterialIcon class="msr" name="remove" />
                 </button>
                 <button class="zoom-btn" @click="locateMe" title="回到我的位置">
-                  <span class="msr">my_location</span>
+                  <MaterialIcon class="msr" name="my_location" />
                 </button>
               </div>
 
               <div v-if="!mapReady" class="map-loading">
-                <span class="msr spin">progress_activity</span>
+                <MaterialIcon class="msr spin" name="progress_activity" />
                 <span>地图加载中...</span>
               </div>
             </div>
@@ -197,9 +197,9 @@
             <section class="filter-bar">
               <div class="filter-row">
                 <button class="filter-chip" @click="cycleSort">
-                  <span class="msr">swap_vert</span>
+                  <MaterialIcon class="msr" name="swap_vert" />
                   <span>{{ sortLabel }}</span>
-                  <span class="msr">keyboard_arrow_down</span>
+                  <MaterialIcon class="msr" name="keyboard_arrow_down" />
                 </button>
               </div>
             </section>
@@ -225,7 +225,7 @@
                     <div class="cc-title-row">
                       <span class="cc-name">{{ c.name }}</span>
                       <span class="cc-rating">
-                        <span class="msr">star</span>
+                        <MaterialIcon class="msr" name="star" />
                         <span>{{ ratingFor(c.id) }}</span>
                       </span>
                     </div>
@@ -234,12 +234,12 @@
                     </div>
                     <div class="cc-meta">
                       <span class="meta-item">
-                        <span class="msr">location_on</span>
+                        <MaterialIcon class="msr" name="location_on" />
                         <span>{{ c.address }}</span>
                       </span>
                       <span class="meta-sep-dot"></span>
                       <span class="meta-item">
-                        <span class="msr">directions_walk</span>
+                        <MaterialIcon class="msr" name="directions_walk" />
                         <span>{{ distanceFor(c.id) }}</span>
                       </span>
                     </div>
@@ -255,7 +255,7 @@
                     </div>
                     <button class="cc-action primary" @click.stop="goToCinema(c.id)">
                       <span>选择电影</span>
-                      <span class="msr">chevron_right</span>
+                      <MaterialIcon class="msr" name="chevron_right" />
                     </button>
                   </div>
                 </div>

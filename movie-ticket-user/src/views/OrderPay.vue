@@ -4,10 +4,10 @@
     <header class="top-bar">
       <div class="tb-left">
         <button class="tb-back" @click="router.back()">
-          <span class="msr">arrow_back</span>
+          <MaterialIcon class="msr" name="arrow_back" />
         </button>
         <div class="brand-block">
-          <div class="brand-mark"><span class="msr">movie</span></div>
+          <div class="brand-mark"><MaterialIcon class="msr" name="movie" /></div>
           <div class="brand-text">
             <span class="brand">CINEMA+</span>
             <span class="brand-sub">premium booking</span>
@@ -15,18 +15,18 @@
         </div>
         <div class="crumbs">
           <span class="crumb" @click="router.push('/home')">首页</span>
-          <span class="msr crumb-sep">chevron_right</span>
+          <MaterialIcon class="msr crumb-sep" name="chevron_right" />
           <span class="crumb" @click="router.push('/orders')">订单</span>
-          <span class="msr crumb-sep">chevron_right</span>
+          <MaterialIcon class="msr crumb-sep" name="chevron_right" />
           <span class="crumb active">收银台</span>
         </div>
       </div>
       <div class="tb-right">
         <div class="tb-step">
-          <span class="step done"><span class="msr">check</span></span>
+          <span class="step done"><MaterialIcon class="msr" name="check" /></span>
           <span class="step-label done">选座</span>
           <span class="step-line done"></span>
-          <span class="step done"><span class="msr">check</span></span>
+          <span class="step done"><MaterialIcon class="msr" name="check" /></span>
           <span class="step-label done">确认</span>
           <span class="step-line active"></span>
           <span class="step active">3</span>
@@ -36,7 +36,7 @@
           <span class="step-label">取票</span>
         </div>
         <div class="tb-timer" :class="{ urgent: countdown < 60 }">
-          <span class="msr">schedule</span>
+          <MaterialIcon class="msr" name="schedule" />
           <span class="timer-label">支付剩余</span>
           <span class="timer-time">{{ countdownText }}</span>
         </div>
@@ -70,7 +70,7 @@
       <!-- ============ 倒计时提示 ============ -->
       <section class="countdown-banner" :class="{ urgent: countdown < 120 }">
         <div class="countdown-icon">
-          <span class="msr">hourglass_empty</span>
+          <MaterialIcon class="msr" name="hourglass_empty" />
         </div>
         <div class="countdown-content">
           <div class="countdown-main">
@@ -92,7 +92,7 @@
           <article class="order-card" v-if="order">
             <div class="oc-head">
               <div class="oc-title-row">
-                <span class="msr oc-ico">confirmation_number</span>
+                <MaterialIcon class="msr oc-ico" name="confirmation_number" />
                 <h3 class="oc-title">订单信息</h3>
                 <span class="oc-tag">待支付</span>
               </div>
@@ -102,9 +102,9 @@
             <div class="oc-body">
               <div class="movie-poster">
                 <img v-if="order.moviePoster" :src="order.moviePoster" :alt="order.movieTitle" />
-                <span v-else class="msr poster-fallback">movie</span>
+                <MaterialIcon v-else class="msr poster-fallback" name="movie" />
                 <div class="poster-rating">
-                  <span class="msr">star</span>
+                  <MaterialIcon class="msr" name="star" />
                   <span>9.2</span>
                 </div>
               </div>
@@ -120,28 +120,28 @@
 
                 <div class="mi-grid">
                   <div class="mi-item">
-                    <span class="msr mi-ico">store</span>
+                    <MaterialIcon class="msr mi-ico" name="store" />
                     <div>
                       <span class="mi-label">影院</span>
                       <span class="mi-val">{{ order.cinemaName || 'CINEMA+ 浦东陆家嘴店' }}</span>
                     </div>
                   </div>
                   <div class="mi-item">
-                    <span class="msr mi-ico">meeting_room</span>
+                    <MaterialIcon class="msr mi-ico" name="meeting_room" />
                     <div>
                       <span class="mi-label">影厅</span>
                       <span class="mi-val">{{ order.hallName || 'IMAX 厅 · 1 号' }}</span>
                     </div>
                   </div>
                   <div class="mi-item">
-                    <span class="msr mi-ico">schedule</span>
+                    <MaterialIcon class="msr mi-ico" name="schedule" />
                     <div>
                       <span class="mi-label">场次</span>
                       <span class="mi-val">{{ showtimeText }}</span>
                     </div>
                   </div>
                   <div class="mi-item">
-                    <span class="msr mi-ico">chair</span>
+                    <MaterialIcon class="msr mi-ico" name="chair" />
                     <div>
                       <span class="mi-label">座位 · {{ seatCount }} 张</span>
                       <span class="mi-val">{{ seatText }}</span>
@@ -157,18 +157,18 @@
             <div class="aip-head">
               <div class="aip-head-left">
                 <div class="aip-icon-wrap">
-                  <span class="msr">bolt</span>
+                  <MaterialIcon class="msr" name="bolt" />
                 </div>
                 <div class="aip-head-text">
                   <div class="aip-title-row">
                     <h3 class="aip-title">智能定价已为你优化</h3>
-                    <span class="aip-pill"><span class="msr">auto_awesome</span>AI</span>
+                    <span class="aip-pill"><MaterialIcon class="msr" name="auto_awesome" />AI</span>
                   </div>
                   <p class="aip-sub">AI 实时分析全网价格 · 为你匹配最优价格组合方案</p>
                 </div>
               </div>
               <div class="aip-lock">
-                <span class="msr">lock</span>
+                <MaterialIcon class="msr" name="lock" />
                 <span>AI 智能锁价</span>
                 <span class="lock-time">{{ countdownText }}</span>
               </div>
@@ -178,7 +178,7 @@
               <!-- Savings Panel -->
               <div class="saved-panel">
                 <div class="saved-head">
-                  <span class="msr">savings</span>
+                  <MaterialIcon class="msr" name="savings" />
                   <span>AI 为你节省了</span>
                 </div>
                 <div class="saved-amount">
@@ -191,14 +191,14 @@
                 </div>
                 <div class="saved-list">
                   <div class="saved-item">
-                    <span class="si-ico"><span class="msr">auto_awesome_motion</span></span>
+                    <span class="si-ico"><MaterialIcon class="msr" name="auto_awesome_motion" /></span>
                     <div class="si-body">
                       <span class="si-title">跨场次智能比价</span>
                       <span class="si-sub">扫描 12 个同片场次 · 锁定最低价格</span>
                     </div>
                   </div>
                   <div class="saved-item">
-                    <span class="si-ico"><span class="msr">my_location</span></span>
+                    <span class="si-ico"><MaterialIcon class="msr" name="my_location" /></span>
                     <div class="si-body">
                       <span class="si-title">个性化优惠匹配</span>
                       <span class="si-sub">基于你的观影习惯推荐最佳券包</span>
@@ -211,10 +211,10 @@
               <div class="break-panel">
                 <div class="break-head">
                   <span class="break-head-left">
-                    <span class="msr">receipt_long</span>
+                    <MaterialIcon class="msr" name="receipt_long" />
                     <span>AI 优化拆解</span>
                   </span>
-                  <span class="break-badge"><span class="msr">verified</span>已验证</span>
+                  <span class="break-badge"><MaterialIcon class="msr" name="verified" />已验证</span>
                 </div>
                 <div class="break-row">
                   <span>原价</span>
@@ -223,7 +223,7 @@
                 <div class="break-row current">
                   <span class="cur-label">
                     <span>当前优惠后</span>
-                    <span class="msr cur-arrow">trending_down</span>
+                    <MaterialIcon class="msr cur-arrow" name="trending_down" />
                   </span>
                   <span class="break-now">
                     <span class="now-cur">¥</span>
@@ -258,7 +258,7 @@
             <!-- Alt showtimes -->
             <div class="alt-head">
               <div class="alt-head-left">
-                <span class="msr">bolt</span>
+                <MaterialIcon class="msr" name="bolt" />
                 <span class="alt-title">AI 也为你找到这些选择</span>
                 <span class="alt-sub">· 同电影同影院</span>
               </div>
@@ -276,7 +276,7 @@
                     <span class="time-h">{{ alt.time }}</span>
                     <span class="time-tag">{{ alt.tag }}</span>
                   </div>
-                  <span class="alt-pill"><span class="msr">auto_awesome</span>AI 建议</span>
+                  <span class="alt-pill"><MaterialIcon class="msr" name="auto_awesome" />AI 建议</span>
                 </div>
                 <div class="alt-meta">{{ alt.hall }} · {{ alt.seat }}</div>
                 <div class="alt-bar">
@@ -293,7 +293,7 @@
                   </div>
                   <button class="alt-switch" @click.stop="switchShowtime(alt)">
                     <span>切换</span>
-                    <span class="msr">arrow_forward</span>
+                    <MaterialIcon class="msr" name="arrow_forward" />
                   </button>
                 </div>
               </div>
@@ -301,7 +301,7 @@
 
             <div class="aip-foot">
               <div class="aip-foot-item">
-                <span class="ff-ico"><span class="msr">groups</span></span>
+                <span class="ff-ico"><MaterialIcon class="msr" name="groups" /></span>
                 <div>
                   <span class="ff-num">12,348 <span class="ff-mute">节省 ¥45,200</span></span>
                   <span class="ff-label">位用户已节省</span>
@@ -309,7 +309,7 @@
               </div>
               <span class="aip-foot-sep"></span>
               <div class="aip-foot-item">
-                <span class="ff-ico"><span class="msr">smart_toy</span></span>
+                <span class="ff-ico"><MaterialIcon class="msr" name="smart_toy" /></span>
                 <div>
                   <span class="ff-num">智能定价系统</span>
                   <span class="ff-label">v3.2 · 实时算法</span>
@@ -317,7 +317,7 @@
               </div>
               <span class="aip-foot-sep"></span>
               <div class="aip-foot-item">
-                <span class="ff-ico"><span class="msr">verified_user</span></span>
+                <span class="ff-ico"><MaterialIcon class="msr" name="verified_user" /></span>
                 <div>
                   <span class="ff-num">价格透明承诺</span>
                   <span class="ff-label">无隐藏费用 · 全网比价</span>
@@ -330,7 +330,7 @@
           <article class="coupon-card">
             <div class="cc-head">
               <div class="cc-title-row">
-                <span class="msr cc-ico">confirmation_number</span>
+                <MaterialIcon class="msr cc-ico" name="confirmation_number" />
                 <h3 class="cc-title">优惠券与积分</h3>
                 <span class="cc-tag">已自动应用最优</span>
               </div>
@@ -360,16 +360,16 @@
                 </div>
                 <div class="cp-right">
                   <span v-if="c.aiRecommended" class="cp-badge">
-                    <span class="msr">auto_awesome</span>AI 推荐
+                    <MaterialIcon class="msr" name="auto_awesome" />AI 推荐
                   </span>
-                  <span class="cp-tick"><span class="msr">check</span></span>
+                  <span class="cp-tick"><MaterialIcon class="msr" name="check" /></span>
                 </div>
               </label>
             </div>
 
             <div class="points-row">
               <div class="pt-left">
-                <span class="msr pt-ico">stars</span>
+                <MaterialIcon class="msr pt-ico" name="stars" />
                 <div>
                   <span class="pt-title">积分抵扣</span>
                   <span class="pt-sub">可用 1,280 积分 · 100 积分抵 ¥1</span>
@@ -390,7 +390,7 @@
         <aside class="side-col">
           <div class="summary">
             <div class="sum-head">
-              <span class="msr">request_quote</span>
+              <MaterialIcon class="msr" name="request_quote" />
               <h3 class="sum-title">费用明细</h3>
             </div>
             <div class="sum-rows">
@@ -438,12 +438,12 @@
 
             <button class="pay-btn" :disabled="paying" @click="showPaymentDialog">
               <span v-if="!paying" class="pay-btn-inner">
-                <span class="msr">lock</span>
+                <MaterialIcon class="msr" name="lock" />
                 <span>立即支付 ¥{{ payable.toFixed(2) }}</span>
-                <span class="msr">arrow_forward</span>
+                <MaterialIcon class="msr" name="arrow_forward" />
               </span>
               <span v-else class="pay-btn-inner">
-                <span class="msr spin">progress_activity</span>
+                <MaterialIcon class="msr spin" name="progress_activity" />
                 <span>支付处理中</span>
               </span>
             </button>
@@ -456,15 +456,15 @@
 
             <div class="trust-row">
               <div class="tr-item">
-                <span class="msr">shield</span>
+                <MaterialIcon class="msr" name="shield" />
                 <span>SSL 加密</span>
               </div>
               <div class="tr-item">
-                <span class="msr">verified</span>
+                <MaterialIcon class="msr" name="verified" />
                 <span>银联认证</span>
               </div>
               <div class="tr-item">
-                <span class="msr">support_agent</span>
+                <MaterialIcon class="msr" name="support_agent" />
                 <span>7×24 客服</span>
               </div>
             </div>
@@ -472,7 +472,7 @@
 
           <div class="notice">
             <div class="notice-head">
-              <span class="msr">info</span>
+              <MaterialIcon class="msr" name="info" />
               <span>温馨提示</span>
             </div>
             <ul class="notice-list">
@@ -519,7 +519,7 @@
             @click="payMethod = m.key"
           >
             <div class="method-icon" :style="{ '--mc': m.color }">
-              <span class="msr">{{ m.icon }}</span>
+              <MaterialIcon class="msr" :name="m.icon" />
             </div>
             <div class="method-info">
               <span class="method-name">{{ m.name }}</span>
@@ -527,13 +527,13 @@
             </div>
             <span v-if="m.discount" class="method-discount">{{ m.discount }}</span>
             <span class="method-radio">
-              <span class="msr">{{ payMethod === m.key ? 'radio_button_checked' : 'radio_button_unchecked' }}</span>
+              <MaterialIcon class="msr" :name="payMethod === m.key ? 'radio_button_checked' : 'radio_button_unchecked'" />
             </span>
           </div>
         </div>
 
         <div class="payment-security">
-          <span class="msr">shield</span>
+          <MaterialIcon class="msr" name="shield" />
           <span>支付信息经过 SSL 加密保护</span>
         </div>
       </div>

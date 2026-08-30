@@ -8,6 +8,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AppSidebar: typeof import('./src/components/AppSidebar.vue')['default']
+    ColdStartDialog: typeof import('./src/components/ColdStartDialog.vue')['default']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElCard: typeof import('element-plus/es')['ElCard']
     ElDatePicker: typeof import('element-plus/es')['ElDatePicker']
@@ -27,11 +28,14 @@ declare module 'vue' {
     ElRate: typeof import('element-plus/es')['ElRate']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElTag: typeof import('element-plus/es')['ElTag']
+    MaterialIcon: typeof import('./src/components/MaterialIcon.vue')['default']
+    MovieAssistant: typeof import('./src/components/MovieAssistant.vue')['default']
     Navbar: typeof import('./src/components/Navbar.vue')['default']
     QRScanner: typeof import('./src/components/QRScanner.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     TicketQRCode: typeof import('./src/components/TicketQRCode.vue')['default']
+    WatchlistHeartButton: typeof import('./src/components/WatchlistHeartButton.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

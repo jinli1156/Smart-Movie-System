@@ -3,7 +3,7 @@
     <el-aside width="248px" class="sidebar">
       <div class="logo">
         <div class="logo-mark">
-          <el-icon><Film /></el-icon>
+          <img class="brand-logo-image" src="/cinema-logo.png" alt="CINEMA+" />
         </div>
         <div class="logo-copy">
           <strong>CINEMA+</strong>
@@ -37,6 +37,11 @@
         <el-menu-item index="/showtime">
           <el-icon><Calendar /></el-icon>
           <span>排片管理</span>
+        </el-menu-item>
+
+        <el-menu-item index="/smart-scheduling">
+          <el-icon><TrendCharts /></el-icon>
+          <span>智能排片建议</span>
         </el-menu-item>
 
         <el-menu-item index="/order">
@@ -105,6 +110,7 @@ const breadcrumbMap: Record<string, string> = {
   '/hall': '影厅管理',
   '/movie': '电影管理',
   '/showtime': '排片管理',
+  '/smart-scheduling': '智能排片建议',
   '/order': '订单管理',
   '/user': '用户管理'
 }
@@ -134,7 +140,10 @@ const handleLogout = async () => {
   top: 0;
   height: 100vh;
   background: var(--admin-secondary);
-  border-right: 1px solid var(--admin-border);
+  border-right: 0;
+  box-shadow:
+    8px 0 18px rgba(190, 194, 188, 0.72),
+    -4px 0 12px rgba(250, 251, 248, 0.72);
   overflow-x: hidden;
   transition: width 0.2s ease;
 }
@@ -145,7 +154,10 @@ const handleLogout = async () => {
   align-items: center;
   gap: 13px;
   padding: 20px 22px;
-  border-bottom: 1px solid var(--admin-border);
+  border-bottom: 0;
+  box-shadow:
+    inset 0 -4px 8px rgba(194, 197, 191, 0.48),
+    inset 0 4px 8px rgba(250, 251, 248, 0.68);
 }
 
 .logo-mark {
@@ -155,8 +167,11 @@ const handleLogout = async () => {
   place-items: center;
   flex: 0 0 auto;
   border-radius: 12px;
-  color: #111;
-  background: var(--admin-primary);
+  color: #c56600;
+  background: var(--admin-secondary);
+  box-shadow:
+    5px 5px 10px var(--admin-shadow-dark),
+    -5px -5px 10px var(--admin-shadow-light);
 }
 
 .logo-mark .el-icon {
@@ -197,6 +212,7 @@ const handleLogout = async () => {
   border-radius: 12px;
   color: #4f504d;
   font-weight: 600;
+  transition: box-shadow 0.3s ease-in-out, color 0.3s ease-in-out;
 }
 
 :deep(.el-menu-item .el-icon) {
@@ -206,18 +222,23 @@ const handleLogout = async () => {
 }
 
 :deep(.el-menu-item:hover) {
-  color: var(--admin-text);
-  background: rgba(17, 17, 17, 0.05);
+  color: #b65f00;
+  background: var(--admin-secondary);
+  box-shadow:
+    3px 3px 7px var(--admin-shadow-dark),
+    -3px -3px 7px var(--admin-shadow-light);
 }
 
 :deep(.el-menu-item.is-active) {
-  color: #111;
-  background: var(--admin-primary);
-  box-shadow: 0 6px 16px rgba(255, 132, 0, 0.2);
+  color: #a95600;
+  background: var(--admin-secondary);
+  box-shadow:
+    inset 4px 4px 8px var(--admin-shadow-dark),
+    inset -4px -4px 8px var(--admin-shadow-light);
 }
 
 :deep(.el-menu-item.is-active .el-icon) {
-  color: #111;
+  color: var(--admin-primary);
 }
 
 .header {
@@ -226,9 +247,11 @@ const handleLogout = async () => {
   z-index: 20;
   height: 76px;
   padding: 0 30px;
-  background: rgba(242, 243, 240, 0.9);
-  border-bottom: 1px solid var(--admin-border);
-  backdrop-filter: blur(14px);
+  background: var(--admin-bg);
+  border-bottom: 0;
+  box-shadow:
+    0 7px 15px rgba(190, 194, 188, 0.6),
+    0 -5px 12px rgba(250, 251, 248, 0.64);
 }
 
 .header-content {
@@ -264,10 +287,13 @@ const handleLogout = async () => {
 
 .admin-badge {
   padding: 6px 11px;
-  border: 1px solid #ffd39c;
+  border: 0;
   border-radius: 999px;
   color: #a95400;
-  background: var(--admin-primary-soft);
+  background: var(--admin-bg);
+  box-shadow:
+    inset 3px 3px 6px var(--admin-shadow-dark),
+    inset -3px -3px 6px var(--admin-shadow-light);
   font-size: 11px;
   font-weight: 700;
 }
@@ -278,14 +304,25 @@ const handleLogout = async () => {
   align-items: center;
   gap: 8px;
   padding: 6px 10px 6px 6px;
-  border: 1px solid var(--admin-border);
+  border: 0;
   border-radius: 999px;
   background: var(--admin-card);
-  transition: border-color 0.15s ease;
+  box-shadow:
+    5px 5px 10px var(--admin-shadow-dark),
+    -5px -5px 10px var(--admin-shadow-light);
+  transition: box-shadow 0.3s ease-in-out;
 }
 
 .user-menu:hover {
-  border-color: var(--admin-primary);
+  box-shadow:
+    3px 3px 6px var(--admin-shadow-dark),
+    -3px -3px 6px var(--admin-shadow-light);
+}
+
+.user-menu:active {
+  box-shadow:
+    inset 3px 3px 6px var(--admin-shadow-dark),
+    inset -3px -3px 6px var(--admin-shadow-light);
 }
 
 .user-avatar {
@@ -294,8 +331,11 @@ const handleLogout = async () => {
   display: grid;
   place-items: center;
   border-radius: 50%;
-  color: #fff;
-  background: linear-gradient(135deg, #ff8400, #ff3f33);
+  color: #884900;
+  background: #f0d1a8;
+  box-shadow:
+    inset 2px 2px 4px #c3b298,
+    inset -2px -2px 4px #fff0d4;
   font-size: 13px;
   font-weight: 800;
 }
@@ -314,6 +354,14 @@ const handleLogout = async () => {
   min-width: 0;
   padding: 28px 30px 40px;
   background: var(--admin-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar,
+  :deep(.el-menu-item),
+  .user-menu {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 @media (max-width: 1100px) {

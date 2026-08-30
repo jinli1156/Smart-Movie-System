@@ -243,7 +243,7 @@ file:
 
 ## 取票功能（2026-05-31 新增）
 
-详细文档见 [TICKET_PICKUP_FEATURE.md](../TICKET_PICKUP_FEATURE.md)。
+详细文档见 [取票功能说明](../features/TICKET_PICKUP.md)。
 
 ### 数据库迁移
 执行 `movie-ticket-backend/src/main/resources/db/migration_add_ticket_pickup.sql`：
@@ -359,7 +359,7 @@ file:
 
 如有问题，请查看：
 - [快速启动指南](QUICK_START.md)
-- [设计文档](superpowers/specs/2026-05-16-movie-ticket-system-design.md)
+- [设计文档](../design/SYSTEM_DESIGN.md)
 - 各子项目的 README.md
 
 ---

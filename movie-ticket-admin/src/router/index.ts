@@ -41,6 +41,11 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/Showtime.vue')
       },
       {
+        path: 'smart-scheduling',
+        name: 'SmartScheduling',
+        component: () => import('@/views/SmartScheduling.vue')
+      },
+      {
         path: 'order',
         name: 'Order',
         component: () => import('@/views/Order.vue')
@@ -60,7 +65,7 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const userStore = useUserStore()
 
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {

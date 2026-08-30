@@ -17,6 +17,47 @@ export interface Movie {
   statusText?: string
   createTime?: string
   updateTime?: string
+  matchScore?: number
+  recommendationReason?: string
+  recommendationScores?: RecommendationScores
+  favoriteTime?: string
+}
+
+export interface RecommendationScores {
+  content: number
+  userPreference: number
+  behavior: number
+  scene: number
+  trend: number
+}
+
+export interface RecommendationProfile {
+  needsColdStart: boolean
+  favoriteGenres: string[]
+  viewedCount: number
+  favoriteCount: number
+  purchasedCount: number
+  ratedCount: number
+}
+
+export interface RecommendationEvaluation {
+  k: number
+  evaluatedUsers: number
+  precisionAtK: number
+  recallAtK: number
+  catalogCoverage: number
+  diversity: number
+  protocol: string
+}
+
+export interface MovieInsight {
+  movieId: number
+  todayBoxOffice: number
+  todayViewerCount: number
+  occupancyRate: number
+  trendPercent: number
+  trendPoints: number[]
+  generatedAt: string
 }
 
 export interface Cinema {
@@ -99,6 +140,43 @@ export interface SeatStatus {
   occupiedSeats: string[]
   availableSeats: number
   totalSeats: number
+}
+
+export type SeatPreference = 'CENTER' | 'QUIET' | 'EASY_ACCESS' | 'COUPLE' | 'ACCESSIBLE'
+
+export interface SeatRecommendationScores {
+  visionCenter: number
+  goldenDistance: number
+  continuity: number
+  accessConvenience: number
+  preference: number
+  realtimeAvailability: number
+}
+
+export interface SeatRecommendation {
+  title: string
+  icon: string
+  match: number
+  seatLabel: string
+  seats: string[]
+  count: number
+  unitPrice: number
+  reason: string
+  modelReason?: string
+  reasonSource?: 'model' | 'algorithm'
+  tags: string[]
+  scores: SeatRecommendationScores
+  singleSeatPenalty: number
+}
+
+export interface SeatRecommendationResult {
+  recommendations: SeatRecommendation[]
+  interpretedPreference: SeatPreference
+  preferenceSummary: string
+  analysisSource: 'model' | 'algorithm'
+  model?: string
+  availabilityToken: string
+  generatedAt: string
 }
 
 export interface Comment {

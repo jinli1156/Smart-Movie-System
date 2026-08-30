@@ -138,6 +138,16 @@ spring:
 
 ### 4. 启动项目
 
+先在操作系统或 IDE 的运行配置中注入阿里云百炼 API Key。不要把真实密钥写入 `application.yml` 或提交到 Git：
+
+```powershell
+# Windows PowerShell：写入当前用户环境变量，重启终端/IDE 后生效
+[Environment]::SetEnvironmentVariable("DASHSCOPE_API_KEY", "<你的新密钥>", "User")
+```
+
+电影小助手默认通过中国内地 OpenAI 兼容地址调用 `qwen3.8-flash`。如使用国际站，设置
+`AI_ASSISTANT_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1`，并使用同地域的 API Key。
+
 ```bash
 # 使用Maven启动
 mvn spring-boot:run
@@ -284,6 +294,7 @@ public Result<?> getUsers() {
 | GET | /api/showtimes/movie/{movieId} | 按电影查场次 |
 | GET | /api/showtimes/cinema/{cinemaId} | 按影院查场次 |
 | GET | /api/showtimes/{id} | 场次详情 |
+| POST | /api/showtime/{id}/seat-recommendation | 自然语言智能选座、模型解释与实时推荐 |
 
 ### 选座
 | 方法 | 路径 | 说明 |
@@ -316,10 +327,12 @@ public Result<?> getUsers() {
 | GET | /api/statistics/showtime/{id} | 场次统计 |
 | GET | /api/statistics/revenue | 收入趋势 |
 
-## 下一步开发
+## 当前验证与后续工作
 
-- [ ] 退票改签接口
-- [ ] 评价接口
-- [ ] 智能客服接口
-- [ ] 个人中心接口
-- [ ] 单元测试覆盖
+- [x] 退票、评价、个人中心与 AI 电影助手接口
+- [x] 推荐、选座、排片与统计服务单元测试（当前 12 项）
+- [ ] 改签接口
+- [ ] 数据库集成测试与完整 API 回归
+- [ ] 操作审计日志、健康检查与生产部署配置
+
+项目级完成度与验收方法见 [PROJECT_STATUS.md](../docs/PROJECT_STATUS.md) 和 [GETTING_STARTED.md](../docs/GETTING_STARTED.md)。

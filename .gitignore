@@ -40,8 +40,10 @@ Desktop.ini
 logs/
 *.log
 
-# Runtime uploads
-movie-ticket-backend/uploads/
+# Runtime uploads（项目预置海报保留，其他运行时上传继续忽略）
+movie-ticket-backend/uploads/*
+!movie-ticket-backend/uploads/poster-movie-*
+!movie-ticket-backend/uploads/poster-latest-*
 
 # Local database backups
 *.sql.bak

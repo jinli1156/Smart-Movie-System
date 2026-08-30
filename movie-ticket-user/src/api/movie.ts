@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { Movie, PageResult } from '@/types'
+import type { Movie, MovieInsight, PageResult } from '@/types'
 
 export const movieApi = {
   getPage(params: { page: number; size: number; keyword?: string; status?: number }) {
@@ -16,5 +16,9 @@ export const movieApi = {
 
   getById(id: number) {
     return request.get<any, Movie>(`/movie/${id}`)
+  },
+
+  getInsight(id: number) {
+    return request.get<any, MovieInsight>(`/movie/${id}/insight`, { silent: true })
   }
 }

@@ -3,7 +3,7 @@
     <!-- Logo -->
     <div class="logo-block">
       <div class="logo-mark">
-        <span class="msr">movie</span>
+        <img class="brand-logo-image" src="/cinema-logo.png" alt="CINEMA+" />
       </div>
       <div class="logo-text">
         <span class="brand">CINEMA+</span>
@@ -13,7 +13,7 @@
 
     <!-- Search -->
     <div class="sidebar-search" :class="{ focused: searchFocused }">
-      <span class="msr search-ico" @click="onSearch">search</span>
+      <MaterialIcon class="msr search-ico" @click="onSearch" name="search" />
       <input
         v-model="sidebarKeyword"
         class="search-input"
@@ -35,7 +35,7 @@
         :class="{ active: item.key === activeNav }"
         @click="onNavClick(item)"
       >
-        <span class="msr">{{ item.icon }}</span>
+        <MaterialIcon class="msr" :name="item.icon" />
         <span class="nav-label">{{ item.label }}</span>
         <span v-if="item.badge" class="nav-badge" :class="item.badgeClass">{{ item.badge }}</span>
       </a>
@@ -47,20 +47,25 @@
     <div v-if="showQuickAccess" class="quick-access">
       <div class="qa-head">
         <span>QUICK ACCESS</span>
-        <span class="msr">expand_more</span>
+        <MaterialIcon class="msr" name="expand_more" />
       </div>
-      <a class="qa-item" @click="tip('热映榜单')">
-        <span class="msr qa-ico">trending_up</span>
+      <a class="qa-item" :class="{ active: isHotRanking }" @click="goToHotRanking">
+        <MaterialIcon class="msr qa-ico" name="trending_up" />
         <span class="qa-label">热映榜单</span>
         <span class="qa-tag">TOP 10</span>
       </a>
+      <a class="qa-item" :class="{ active: isUpcomingListing }" @click="goToUpcoming">
+        <MaterialIcon class="msr qa-ico" name="calendar_month" />
+        <span class="qa-label">即将上映</span>
+        <span class="qa-tag">NEW</span>
+      </a>
       <a class="qa-item" @click="tip('周末特惠')">
-        <span class="msr qa-ico">local_fire_department</span>
+        <MaterialIcon class="msr qa-ico" name="local_fire_department" />
         <span class="qa-label">周末特惠</span>
         <span class="qa-tag">-30%</span>
       </a>
       <a class="qa-item" @click="tip('兑换券码')">
-        <span class="msr qa-ico">redeem</span>
+        <MaterialIcon class="msr qa-ico" name="redeem" />
         <span class="qa-label">兑换券码</span>
         <span class="qa-tag">新</span>
       </a>
@@ -76,7 +81,7 @@
         <span class="user-tier">GOLD · 1280 积分</span>
       </div>
       <el-dropdown trigger="click">
-        <span class="msr more-btn">more_horiz</span>
+        <MaterialIcon class="msr more-btn" name="more_horiz" />
         <template #dropdown>
           <el-dropdown-menu>
             <el-dropdown-item @click="router.push('/profile')">个人中心</el-dropdown-item>
@@ -88,7 +93,7 @@
     </div>
     <div v-else class="sidebar-footer guest">
       <div class="avatar guest-avatar">
-        <span class="msr">person</span>
+        <MaterialIcon class="msr" name="person" />
       </div>
       <div class="user-info">
         <span class="user-name">访客</span>
@@ -122,7 +127,7 @@ const navItems = [
   { key: 'cinemas', label: '影院', icon: 'theaters', route: '/cinemas' },
   { key: 'profile', label: '个人中心', icon: 'person', route: '/profile' },
   { key: 'orders', label: '订单', icon: 'receipt_long', route: '/orders' },
-  { key: 'favorites', label: '想看', icon: 'favorite' },
+  { key: 'favorites', label: '想看', icon: 'favorite', route: '/favorites' },
   { key: 'settings', label: '设置', icon: 'settings' }
 ]
 
@@ -133,8 +138,17 @@ const activeNav = computed(() => {
   if (path.startsWith('/cinemas')) return 'cinemas'
   if (path.startsWith('/profile')) return 'profile'
   if (path.startsWith('/orders') || path.startsWith('/order')) return 'orders'
+  if (path.startsWith('/favorites')) return 'favorites'
   return ''
 })
+
+const isHotRanking = computed(() =>
+  route.path === '/movies' && route.query.ranking === 'hot'
+)
+
+const isUpcomingListing = computed(() =>
+  route.path === '/movies' && route.query.ranking === 'upcoming'
+)
 
 const avatarChar = computed(() => {
   const n = userStore.userInfo?.nickname || '用'
@@ -143,7 +157,7 @@ const avatarChar = computed(() => {
 
 const onNavClick = (item: { key: string; label: string; route?: string }) => {
   if (item.route) {
-    if ((item.route === '/orders' || item.route === '/profile') && !userStore.isLoggedIn) {
+    if ((item.route === '/orders' || item.route === '/profile' || item.route === '/favorites') && !userStore.isLoggedIn) {
       ElMessage.warning('请先登录')
       router.push('/login')
       return
@@ -161,6 +175,14 @@ const onSearch = () => {
   if (!kw) return
   router.push({ path: '/movies', query: { q: kw } })
   sidebarKeyword.value = ''
+}
+
+const goToHotRanking = () => {
+  router.push({ path: '/movies', query: { ranking: 'hot' } })
+}
+
+const goToUpcoming = () => {
+  router.push({ path: '/movies', query: { ranking: 'upcoming' } })
 }
 
 const tip = (label: string) => {
@@ -368,6 +390,11 @@ const handleLogout = () => {
   transition: background 0.15s;
 }
 .qa-item:hover { background: rgba(0, 0, 0, 0.04); }
+.qa-item.active {
+  background: rgba(255, 132, 0, 0.12);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+.qa-item.active .qa-label { color: var(--primary); font-weight: 700; }
 .qa-ico { font-size: 18px; color: var(--primary); }
 .qa-label {
   flex: 1;

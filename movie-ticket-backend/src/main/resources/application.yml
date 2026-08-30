@@ -9,9 +9,9 @@ spring:
   # 数据源配置
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/movie_ticket?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-    username: root
-    password: ${DB_PASSWORD:}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/movie_ticket?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:123456}
 
   # Redis配置
   data:
@@ -63,6 +63,15 @@ file:
     access-prefix: /api/uploads/
     max-size: 5242880
     allowed-types: jpg,jpeg,png,gif,webp,bmp
+
+# 智能电影助手：通过阿里云百炼 OpenAI 兼容接口调用千问；未配置密钥时使用本地知识库。
+assistant:
+  api-key: ${DASHSCOPE_API_KEY:}
+  base-url: ${AI_ASSISTANT_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
+  model: ${AI_ASSISTANT_MODEL:qwen3.8-flash}
+  reasoning-effort: ${AI_ASSISTANT_REASONING_EFFORT:low}
+  connect-timeout-ms: ${AI_ASSISTANT_CONNECT_TIMEOUT_MS:5000}
+  read-timeout-ms: ${AI_ASSISTANT_READ_TIMEOUT_MS:60000}
 
 # 日志配置
 logging:

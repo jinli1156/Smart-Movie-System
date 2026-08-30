@@ -37,15 +37,19 @@ public class UserController {
 
     @PutMapping("/profile")
     @PreAuthorize("isAuthenticated()")
-    public Result<Void> updateProfile(@RequestBody User user) {
+    public Result<User> updateProfile(@RequestBody User user) {
         Long userId = UserContext.getUserId();
         User update = new User();
         update.setId(userId);
         update.setNickname(user.getNickname());
         update.setEmail(user.getEmail());
         update.setAvatar(user.getAvatar());
+        update.setPhone(user.getPhone());
+        update.setFavoriteGenres(user.getFavoriteGenres());
         userMapper.updateById(update);
-        return Result.success("资料已更新");
+        User saved = userMapper.selectById(userId);
+        saved.setPassword(null);
+        return Result.success("资料已更新", saved);
     }
 
     @PostMapping("/change-password")

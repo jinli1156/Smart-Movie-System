@@ -3,11 +3,11 @@
     <!-- TOP BAR -->
     <header class="top-bar">
       <button class="back-btn" @click="router.back()">
-        <span class="msr">arrow_back</span>
+        <MaterialIcon class="msr" name="arrow_back" />
         <span>返回</span>
       </button>
       <div class="page-title">
-        <span class="msr">receipt_long</span>
+        <MaterialIcon class="msr" name="receipt_long" />
         <span>订单详情</span>
       </div>
       <div class="spacer"></div>
@@ -18,7 +18,7 @@
         <!-- STATUS HEADER -->
         <div class="status-header">
           <div class="status-icon" :class="'status-' + order.status">
-            <span class="msr">{{ getStatusIcon(order.status) }}</span>
+            <MaterialIcon class="msr" :name="getStatusIcon(order.status)" />
           </div>
           <div class="status-info">
             <h2 class="status-title">{{ order.statusText }}</h2>
@@ -29,7 +29,7 @@
         <!-- ORDER INFO -->
         <div class="info-section">
           <div class="section-header">
-            <span class="msr">confirmation_number</span>
+            <MaterialIcon class="msr" name="confirmation_number" />
             <span>订单信息</span>
           </div>
           <div class="info-grid">
@@ -92,7 +92,7 @@
             class="action-btn primary large"
             @click="showQRCode = true"
           >
-            <span class="msr">qr_code</span>
+            <MaterialIcon class="msr" name="qr_code" />
             <span>查看取票码</span>
           </button>
 
@@ -101,7 +101,7 @@
             class="action-btn primary large"
             @click="handlePay"
           >
-            <span class="msr">payment</span>
+            <MaterialIcon class="msr" name="payment" />
             <span>立即支付</span>
           </button>
           <button
@@ -109,7 +109,7 @@
             class="action-btn secondary large"
             @click="handleCancel"
           >
-            <span class="msr">close</span>
+            <MaterialIcon class="msr" name="close" />
             <span>取消订单</span>
           </button>
 
@@ -120,7 +120,7 @@
               class="action-btn danger large"
               @click="handleRefund"
             >
-              <span class="msr">receipt_long</span>
+              <MaterialIcon class="msr" name="receipt_long" />
               <span>申请退票</span>
             </button>
             <button
@@ -128,11 +128,11 @@
               class="action-btn disabled large"
               disabled
             >
-              <span class="msr">block</span>
+              <MaterialIcon class="msr" name="block" />
               <span>{{ refundDisabledReason }}</span>
             </button>
             <div v-if="!canRefund" class="refund-tip">
-              <span class="msr">info</span>
+              <MaterialIcon class="msr" name="info" />
               <span>{{ refundDisabledReason }}</span>
             </div>
           </template>

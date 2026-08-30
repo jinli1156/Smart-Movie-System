@@ -5,7 +5,7 @@
     <main class="main-area">
       <header class="top-bar">
         <button class="back-btn" @click="router.push('/cinemas')">
-          <span class="msr">arrow_back</span>
+          <MaterialIcon class="msr" name="arrow_back" />
           返回影院列表
         </button>
         <div class="breadcrumb">
@@ -19,11 +19,11 @@
 
       <div v-loading="loading" class="content">
         <section v-if="cinema" class="cinema-hero">
-          <div class="hero-mark"><span class="msr">theaters</span></div>
+          <div class="hero-mark"><MaterialIcon class="msr" name="theaters" /></div>
           <div class="hero-main">
             <div class="eyebrow">CINEMA PROFILE</div>
             <h1>{{ cinema.name }}</h1>
-            <p><span class="msr">location_on</span>{{ cinema.address }}</p>
+            <p><MaterialIcon class="msr" name="location_on" />{{ cinema.address }}</p>
             <div class="service-tags">
               <span>可退票</span><span>可改签</span><span>免费停车</span><span>激光放映</span>
             </div>
@@ -43,8 +43,8 @@
               <p>选择影片后，下方会展示该影院的可售场次</p>
             </div>
             <div class="picker-actions">
-              <button aria-label="向左浏览电影" @click="scrollMovies(-1)"><span class="msr">chevron_left</span></button>
-              <button aria-label="向右浏览电影" @click="scrollMovies(1)"><span class="msr">chevron_right</span></button>
+              <button aria-label="向左浏览电影" @click="scrollMovies(-1)"><MaterialIcon class="msr" name="chevron_left" /></button>
+              <button aria-label="向右浏览电影" @click="scrollMovies(1)"><MaterialIcon class="msr" name="chevron_right" /></button>
             </div>
           </div>
 
@@ -59,7 +59,7 @@
             >
               <div class="poster">
                 <img v-if="movie.poster" :src="movie.poster" :alt="movie.title" />
-                <span v-else class="msr">movie</span>
+                <MaterialIcon v-else class="msr" name="movie" />
                 <span v-if="showtimeCount(movie.id)" class="session-count">{{ showtimeCount(movie.id) }} 场</span>
               </div>
               <strong>{{ movie.title }}</strong>
@@ -73,7 +73,7 @@
           <section class="movie-summary">
             <div class="summary-poster">
               <img v-if="selectedMovie.poster" :src="selectedMovie.poster" :alt="selectedMovie.title" />
-              <span v-else class="msr">movie</span>
+              <MaterialIcon v-else class="msr" name="movie" />
             </div>
             <div class="summary-body">
               <div class="title-row">
@@ -88,7 +88,7 @@
               </div>
             </div>
             <button class="detail-btn" @click="router.push(`/movie/${selectedMovie.id}`)">
-              查看影片详情 <span class="msr">arrow_forward</span>
+              查看影片详情 <MaterialIcon class="msr" name="arrow_forward" />
             </button>
           </section>
 

@@ -2,11 +2,13 @@ package com.movie.ticket.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
-@TableName("user")
+@TableName(value = "user", autoResultMap = true)
 public class User {
 
     @TableId(type = IdType.AUTO)
@@ -23,6 +25,9 @@ public class User {
     private String email;
 
     private String avatar;
+
+    @TableField(typeHandler = JacksonTypeHandler.class)
+    private List<String> favoriteGenres;
 
     private String role;
 

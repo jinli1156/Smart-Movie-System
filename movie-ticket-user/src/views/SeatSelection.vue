@@ -4,7 +4,7 @@
     <aside class="sidebar">
       <div class="logo-block" @click="router.push('/home')">
         <div class="logo-mark">
-          <span class="msr">movie</span>
+          <img class="brand-logo-image" src="/cinema-logo.png" alt="CINEMA+" />
         </div>
         <div class="logo-text">
           <span class="brand">CINEMA+</span>
@@ -20,7 +20,7 @@
           :class="{ active: item.key === activeNav }"
           @click="onNavClick(item)"
         >
-          <span class="msr">{{ item.icon }}</span>
+          <MaterialIcon class="msr" :name="item.icon" />
           <span class="nav-label">{{ item.label }}</span>
         </a>
       </nav>
@@ -36,7 +36,7 @@
       </div>
       <div v-else class="sidebar-footer guest">
         <div class="avatar guest-avatar">
-          <span class="msr">person</span>
+          <MaterialIcon class="msr" name="person" />
         </div>
         <div class="user-info">
           <span class="user-name">访客</span>
@@ -61,11 +61,11 @@
         </div>
         <div class="tb-actions">
           <button class="tb-pill" @click="router.back()">
-            <span class="msr">arrow_back</span>
+            <MaterialIcon class="msr" name="arrow_back" />
             <span>返回</span>
           </button>
           <button class="tb-icon" @click="tip('帮助')">
-            <span class="msr">help_outline</span>
+            <MaterialIcon class="msr" name="help_outline" />
           </button>
         </div>
       </div>
@@ -73,7 +73,7 @@
       <!-- Loading -->
       <div v-if="loading" class="page-loading">
         <div class="loading-spin">
-          <span class="msr">progress_activity</span>
+          <MaterialIcon class="msr" name="progress_activity" />
         </div>
       </div>
 
@@ -98,7 +98,7 @@
             </div>
             <div class="mh-meta">
               <span class="mh-rating">
-                <span class="msr">star</span>
+                <MaterialIcon class="msr" name="star" />
                 <span class="mh-rating-num">{{ ratingDisplay }}</span>
               </span>
               <span class="mh-meta-text">{{ showtime.cinemaName }} · {{ showtime.hallName }} · {{ showtime.movieDuration || 120 }} 分钟</span>
@@ -117,15 +117,15 @@
         <!-- ============ SELECTORS ============ -->
         <section class="selectors" v-if="showtime">
           <div class="sel-pill">
-            <span class="msr sel-pill-ico primary">theaters</span>
+            <MaterialIcon class="msr sel-pill-ico primary" name="theaters" />
             <div class="sel-pill-text">
               <span class="sel-pill-label">影厅</span>
               <span class="sel-pill-value">{{ showtime.hallName }}</span>
             </div>
-            <span class="msr sel-pill-caret">keyboard_arrow_down</span>
+            <MaterialIcon class="msr sel-pill-caret" name="keyboard_arrow_down" />
           </div>
           <div class="sel-pill">
-            <span class="msr sel-pill-ico">view_compact</span>
+            <MaterialIcon class="msr sel-pill-ico" name="view_compact" />
             <div class="sel-pill-text">
               <span class="sel-pill-label">视图</span>
               <span class="sel-pill-value">标准布局</span>
@@ -172,7 +172,7 @@
                     @mouseenter="onSeatHover(r, c, $event)"
                     @mouseleave="onSeatLeave"
                   >
-                    <span v-if="isRecommended(r, c)" class="msr seat-glow">stars</span>
+                    <MaterialIcon v-if="isRecommended(r, c)" class="msr seat-glow" name="stars" />
                   </div>
                   <span v-if="c === Math.floor(totalCols / 2)" class="aisle"></span>
                 </template>
@@ -215,13 +215,13 @@
               </div>
               <div class="legend-item">
                 <span class="legend-box couple">
-                  <span class="msr">favorite</span>
+                  <MaterialIcon class="msr" name="favorite" />
                 </span>
                 <span>情侣座</span>
               </div>
               <div class="legend-item">
                 <span class="legend-box accessible">
-                  <span class="msr">accessible</span>
+                  <MaterialIcon class="msr" name="accessible" />
                 </span>
                 <span>无障碍</span>
               </div>
@@ -261,23 +261,78 @@
           <div class="ai-rim"></div>
           <div class="ai-head">
             <div class="ai-icon">
-              <span class="msr">stars</span>
+              <MaterialIcon class="msr" name="stars" />
             </div>
             <div class="ai-title-block">
               <span class="ai-title">AI 智能选座助手</span>
-              <span class="ai-sub">智能推荐 · 个性匹配</span>
+              <span class="ai-sub">{{ analysisSource === 'model' ? `${modelName || 'Qwen'} 实时分析` : '座位算法 · 实时推荐' }}</span>
             </div>
             <span class="ai-tag">NEW</span>
           </div>
 
           <p class="ai-desc">基于你的偏好和影厅热度，AI 为你推荐最佳座位</p>
 
+          <div class="rec-settings">
+            <div class="rec-setting-row">
+              <span class="rec-setting-label">购票人数</span>
+              <div class="party-options">
+                <button
+                  v-for="size in 5"
+                  :key="size"
+                  :class="{ active: partySize === size }"
+                  @click="changePartySize(size)"
+                >{{ size }}</button>
+              </div>
+            </div>
+            <div class="preference-options">
+              <button
+                v-for="option in preferenceOptions"
+                :key="option.value"
+                :class="{ active: seatPreference === option.value }"
+                @click="changePreference(option.value)"
+              >
+                <MaterialIcon class="msr" :name="option.icon" />
+                <span>{{ option.label }}</span>
+              </button>
+            </div>
+            <div class="natural-preference">
+              <div class="natural-input-wrap">
+                <MaterialIcon class="msr" name="chat_bubble" />
+                <textarea
+                  v-model="naturalPreference"
+                  maxlength="300"
+                  rows="2"
+                  placeholder="直接告诉 AI：两个人，想坐中后排，安静一点，不要太靠边…"
+                  @keydown.enter.exact.prevent="submitNaturalPreference"
+                ></textarea>
+                <button :disabled="recommendationLoading || !naturalPreference.trim()" @click="submitNaturalPreference">
+                  <MaterialIcon class="msr" name="auto_awesome" />
+                  <span>分析</span>
+                </button>
+              </div>
+              <div class="natural-examples">
+                <button v-for="example in naturalExamples" :key="example" @click="applyNaturalExample(example)">{{ example }}</button>
+              </div>
+              <div v-if="preferenceSummary" class="preference-summary">
+                <MaterialIcon class="msr" :name="analysisSource === 'model' ? 'psychology' : 'tune'" />
+                <span>{{ preferenceSummary }}</span>
+                <em>{{ analysisSource === 'model' ? '模型解析' : '算法解析' }}</em>
+              </div>
+            </div>
+          </div>
+
           <div class="ai-sec-head">
             <div class="ai-sec-title">
-              <span class="msr">psychology</span>
+              <MaterialIcon class="msr" name="psychology" />
               <span>AI 为你精选</span>
             </div>
-            <span class="ai-sec-count">{{ recommendations.length }} 个推荐</span>
+            <div class="ai-sec-live">
+              <span class="live-dot"></span>
+              <span>{{ recommendationLoading ? '计算中…' : `${recommendations.length} 个推荐 · ${lastUpdatedLabel}` }}</span>
+              <button title="立即重新分析" :disabled="recommendationLoading" @click="loadRecommendations()">
+                <MaterialIcon class="msr" name="refresh" />
+              </button>
+            </div>
           </div>
 
           <div class="rec-list">
@@ -289,7 +344,7 @@
             >
               <div class="rec-head">
                 <div class="rec-name">
-                  <span class="msr">{{ rec.icon }}</span>
+                  <MaterialIcon class="msr" :name="rec.icon" />
                   <span>{{ rec.title }}</span>
                 </div>
                 <span class="rec-match" :class="{ solid: i === activeRecIdx }">{{ rec.match }}% 匹配</span>
@@ -301,17 +356,17 @@
                       v-for="col in 10"
                       :key="`pc-${i}-${row}-${col}`"
                       class="rec-pr-cell"
-                      :class="{ on: rec.preview[(row - 1) * 10 + (col - 1)] }"
+                      :class="{ on: isPreviewSeat(rec, row, col) }"
                     ></span>
                   </div>
                 </div>
                 <div class="rec-info">
                   <div class="rec-seat">
-                    <span class="msr">chair</span>
+                    <MaterialIcon class="msr" name="chair" />
                     <span>{{ rec.seatLabel }}</span>
                   </div>
                   <div class="rec-price">
-                    <span class="rec-price-num">¥{{ rec.price }}</span>
+                    <span class="rec-price-num">¥{{ rec.unitPrice }}</span>
                     <span class="rec-price-sub">× {{ rec.count }} 张</span>
                   </div>
                 </div>
@@ -319,10 +374,28 @@
               <div class="rec-tags">
                 <span v-for="(t, j) in rec.tags" :key="j" class="rec-tag">{{ t }}</span>
               </div>
-              <button class="rec-btn" :class="{ primary: i === activeRecIdx }" @click="applyRecommendation(i)">
-                <span v-if="i === activeRecIdx" class="msr">check_circle</span>
-                <span>{{ i === activeRecIdx ? '已选 · 一键预订' : '一键选座' }}</span>
+              <div class="reason-source" :class="rec.reasonSource">
+                <MaterialIcon class="msr" :name="rec.reasonSource === 'model' ? 'auto_awesome' : 'functions'" />
+                <span>{{ rec.reasonSource === 'model' ? 'Qwen 分析理由' : '评分算法理由' }}</span>
+              </div>
+              <p class="rec-reason">{{ rec.modelReason || rec.reason }}</p>
+              <div class="score-grid">
+                <div v-for="score in scoreItems(rec)" :key="score.label" class="score-item">
+                  <span>{{ score.label }}</span>
+                  <strong>{{ score.value }}</strong>
+                </div>
+                <div class="score-item penalty" v-if="rec.singleSeatPenalty > 0">
+                  <span>留单座扣分</span>
+                  <strong>-{{ rec.singleSeatPenalty }}</strong>
+                </div>
+              </div>
+              <button class="rec-btn" :class="{ primary: isRecommendationApplied(rec) }" @click="applyRecommendation(i)">
+                <MaterialIcon v-if="isRecommendationApplied(rec)" class="msr" name="check_circle" />
+                <span>{{ isRecommendationApplied(rec) ? '已选择该方案' : '一键选座' }}</span>
               </button>
+            </div>
+            <div v-if="!recommendationLoading && recommendations.length === 0" class="rec-empty">
+              暂无满足 {{ partySize }} 人连座的座位块
             </div>
           </div>
         </div>
@@ -331,7 +404,7 @@
         <div class="ai-insight">
           <div class="ins-head">
             <div class="ins-title">
-              <span class="msr">trending_up</span>
+              <MaterialIcon class="msr" name="trending_up" />
               <span>热度对比</span>
             </div>
             <span class="ins-tag">实时</span>
@@ -347,14 +420,14 @@
             </div>
           </div>
           <div class="ins-alert">
-            <span class="msr">bolt</span>
+            <MaterialIcon class="msr" name="bolt" />
             <span>热门时段，建议尽快下单锁定座位</span>
           </div>
         </div>
 
         <!-- Switch Manual -->
         <button class="switch-manual" @click="manualMode = !manualMode">
-          <span class="msr">swap_horiz</span>
+          <MaterialIcon class="msr" name="swap_horiz" />
           <span>{{ manualMode ? '切换 AI 选座' : '切换手动选座' }}</span>
         </button>
       </aside>
@@ -367,7 +440,7 @@
         <div class="cb-seats">
           <span v-for="s in selectedSeats" :key="s" class="cb-seat-tag">
             {{ s }}
-            <span class="msr cb-seat-close" @click.stop="removeSeat(s)">close</span>
+            <MaterialIcon class="msr cb-seat-close" @click.stop="removeSeat(s)" name="close" />
           </span>
         </div>
       </div>
@@ -377,7 +450,7 @@
           <span class="cb-total-num">¥{{ totalPrice }}</span>
         </div>
         <button class="cb-confirm" @click="confirmOrder">
-          <span class="msr">check</span>
+          <MaterialIcon class="msr" name="check" />
           <span>确认选座</span>
         </button>
       </div>
@@ -390,7 +463,7 @@ import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showtimeApi } from '@/api/showtime'
 import { useUserStore } from '@/stores/user'
-import type { Showtime, SeatStatus } from '@/types'
+import type { SeatPreference, SeatRecommendation, Showtime, SeatStatus } from '@/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const route = useRoute()
@@ -405,7 +478,34 @@ const activeNav = ref('movies')
 const activeTimeIdx = ref(2)
 const activeRecIdx = ref(0)
 const manualMode = ref(false)
+const partySize = ref(2)
+const seatPreference = ref<SeatPreference>('CENTER')
+const recommendations = ref<SeatRecommendation[]>([])
+const recommendationLoading = ref(false)
+const realtimeRefreshing = ref(false)
+const naturalPreference = ref('')
+const preferenceSummary = ref('中央视野')
+const analysisSource = ref<'model' | 'algorithm'>('algorithm')
+const modelName = ref('')
+const availabilityToken = ref('')
+const lastGeneratedAt = ref<Date | null>(null)
+let refreshTimer: ReturnType<typeof setInterval> | undefined
 const cursor = reactive({ row: 1, col: 1 })
+
+const preferenceOptions: Array<{ value: SeatPreference; label: string; icon: string }> = [
+  { value: 'CENTER', label: '中央视野', icon: 'preview' },
+  { value: 'QUIET', label: '靠后安静', icon: 'weekend' },
+  { value: 'EASY_ACCESS', label: '方便进出', icon: 'meeting_room' },
+  { value: 'COUPLE', label: '情侣', icon: 'favorite' },
+  { value: 'ACCESSIBLE', label: '无障碍', icon: 'accessible' }
+]
+
+const naturalExamples = ['两人中后排安静些', '靠过道方便进出', '带轮椅家人观影']
+
+const lastUpdatedLabel = computed(() => {
+  if (!lastGeneratedAt.value) return '实时'
+  return lastGeneratedAt.value.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })
+})
 
 const navItems = [
   { key: 'home', label: '首页', icon: 'home', route: '/home' },
@@ -414,7 +514,7 @@ const navItems = [
   { key: 'profile', label: '个人中心', icon: 'person', route: '/profile' },
   { key: 'events', label: '演出', icon: 'event' },
   { key: 'orders', label: '订单', icon: 'receipt_long', route: '/orders' },
-  { key: 'favorites', label: '想看', icon: 'favorite' },
+  { key: 'favorites', label: '想看', icon: 'favorite', route: '/favorites' },
   { key: 'settings', label: '设置', icon: 'settings' }
 ]
 
@@ -492,60 +592,37 @@ const seatClass = (r: number, c: number) => {
   return 'available'
 }
 
-const recommendations = computed(() => {
-  if (!seatStatus.value) return []
-  const rows = totalRows.value
-  const cols = totalCols.value
-  const middleRow = Math.ceil(rows * 0.6)
-  const middleCol = Math.ceil(cols / 2)
-  const sidePart = Math.max(1, Math.floor(cols * 0.15))
+const parseSeatCoordinate = (seat: string) => {
+  const match = seat.match(/^(\d+)排(\d+)座$/)
+  return match ? { row: Number(match[1]), col: Number(match[2]) } : null
+}
 
-  const buildPreview = (centerRow: number, centerCol: number): boolean[] => {
-    const arr = new Array(60).fill(false)
-    const pRow = Math.min(5, Math.max(0, Math.floor((centerRow / rows) * 6)))
-    const pCol1 = Math.min(9, Math.max(0, Math.floor((centerCol / cols) * 10)))
-    const pCol2 = Math.min(9, pCol1 + 1)
-    arr[pRow * 10 + pCol1] = true
-    arr[pRow * 10 + pCol2] = true
-    return arr
-  }
+const isPreviewSeat = (rec: SeatRecommendation, previewRow: number, previewCol: number) => {
+  return rec.seats.some(seat => {
+    const coordinate = parseSeatCoordinate(seat)
+    if (!coordinate) return false
+    const row = Math.min(6, Math.max(1, Math.ceil(coordinate.row / totalRows.value * 6)))
+    const col = Math.min(10, Math.max(1, Math.ceil(coordinate.col / totalCols.value * 10)))
+    return row === previewRow && col === previewCol
+  })
+}
 
-  return [
-    {
-      icon: 'thumb_up',
-      title: '最佳观影位置',
-      match: 95,
-      seatLabel: `${middleRow}排 ${middleCol}-${middleCol + 1}座`,
-      price: Math.round((showtime.value?.basePrice || 45) * 1.1),
-      count: 2,
-      tags: ['视野最佳', '距银幕黄金距离', '中央位置'],
-      preview: buildPreview(middleRow, middleCol),
-      seats: [seatName(middleRow, middleCol), seatName(middleRow, middleCol + 1)]
-    },
-    {
-      icon: 'favorite',
-      title: '情侣专座',
-      match: 92,
-      seatLabel: `${rows - 3}排 ${middleCol - 1}-${middleCol}座`,
-      price: Math.round((showtime.value?.basePrice || 45) * 1.1),
-      count: 2,
-      tags: ['后排私密', '视野开阔', '温馨观影'],
-      preview: buildPreview(rows - 3, middleCol - 1),
-      seats: [seatName(rows - 3, middleCol - 1), seatName(rows - 3, middleCol)]
-    },
-    {
-      icon: 'weekend',
-      title: '边缘静谧位',
-      match: 88,
-      seatLabel: `${Math.ceil(rows / 3)}排 ${sidePart}-${sidePart + 1}座`,
-      price: Math.round((showtime.value?.basePrice || 45) * 1.0),
-      count: 2,
-      tags: ['安静位置', '避免邻座干扰', '快速进出'],
-      preview: buildPreview(Math.ceil(rows / 3), sidePart),
-      seats: [seatName(Math.ceil(rows / 3), sidePart), seatName(Math.ceil(rows / 3), sidePart + 1)]
-    }
-  ]
-})
+const scoreItems = (rec: SeatRecommendation) => [
+  { label: '视野中心度', value: rec.scores.visionCenter },
+  { label: '黄金距离', value: rec.scores.goldenDistance },
+  { label: '连座完整性', value: rec.scores.continuity },
+  { label: '进出便利度', value: rec.scores.accessConvenience },
+  { label: '偏好匹配', value: rec.scores.preference },
+  { label: '实时可用性', value: rec.scores.realtimeAvailability }
+]
+
+const sameSeats = (left: string[], right: string[]) => {
+  if (left.length !== right.length) return false
+  const rightSet = new Set(right)
+  return left.every(seat => rightSet.has(seat))
+}
+
+const isRecommendationApplied = (rec: SeatRecommendation) => sameSeats(selectedSeats.value, rec.seats)
 
 const isRecommended = (r: number, c: number) => {
   if (manualMode.value) return false
@@ -617,17 +694,112 @@ const removeSeat = (seat: string) => {
   if (idx > -1) selectedSeats.value.splice(idx, 1)
 }
 
-const applyRecommendation = (i: number) => {
+const loadRecommendations = async (showLoading = true) => {
+  const id = Number(route.params.id)
+  if (!id) return
+  if (showLoading) recommendationLoading.value = true
+  try {
+    const result = await showtimeApi.getSmartSeatRecommendations(id, {
+      people: partySize.value,
+      preference: seatPreference.value,
+      naturalLanguage: naturalPreference.value.trim() || undefined,
+      limit: 3
+    })
+    recommendations.value = result.recommendations
+    seatPreference.value = result.interpretedPreference
+    preferenceSummary.value = result.preferenceSummary
+    analysisSource.value = result.analysisSource
+    modelName.value = result.model || ''
+    availabilityToken.value = result.availabilityToken
+    lastGeneratedAt.value = result.generatedAt ? new Date(result.generatedAt) : new Date()
+    if (activeRecIdx.value >= recommendations.value.length) activeRecIdx.value = 0
+  } catch (error) {
+    console.error('加载智能选座推荐失败:', error)
+    if (showLoading) ElMessage.error('智能选座推荐加载失败')
+  } finally {
+    if (showLoading) recommendationLoading.value = false
+  }
+}
+
+const changePartySize = async (size: number) => {
+  if (partySize.value === size) return
+  partySize.value = size
+  activeRecIdx.value = 0
+  selectedSeats.value = []
+  await loadRecommendations()
+}
+
+const changePreference = async (preference: SeatPreference) => {
+  if (seatPreference.value === preference) return
+  seatPreference.value = preference
+  naturalPreference.value = ''
+  analysisSource.value = 'algorithm'
+  activeRecIdx.value = 0
+  await loadRecommendations()
+}
+
+const submitNaturalPreference = async () => {
+  if (!naturalPreference.value.trim()) return
+  activeRecIdx.value = 0
+  await loadRecommendations()
+}
+
+const applyNaturalExample = async (example: string) => {
+  naturalPreference.value = example
+  await submitNaturalPreference()
+}
+
+const applyRecommendation = async (i: number) => {
   activeRecIdx.value = i
   const rec = recommendations.value[i]
   if (!rec) return
   const available = rec.seats.filter(s => !occupiedSet.value.has(s))
-  if (available.length === 0) {
-    ElMessage.warning('推荐座位已售，请手动选择')
+  if (available.length !== rec.seats.length) {
+    await refreshSeatRecommendations(true)
     return
   }
-  selectedSeats.value = [...available]
+  selectedSeats.value = [...rec.seats]
   ElMessage.success(`已为你选择 ${rec.title}`)
+}
+
+const refreshSeatRecommendations = async (notifyOnReplacement = false) => {
+  if (loading.value || recommendationLoading.value || realtimeRefreshing.value) return
+  const id = Number(route.params.id)
+  if (!id) return
+  const previousActive = recommendations.value[activeRecIdx.value]
+  const wasApplied = !!previousActive && isRecommendationApplied(previousActive)
+  realtimeRefreshing.value = true
+  try {
+    const latestStatus = await showtimeApi.getSeatStatus(id)
+    const latestOccupied = new Set(latestStatus.occupiedSeats)
+    const becameUnavailable = !!previousActive && previousActive.seats.some(seat => latestOccupied.has(seat))
+    seatStatus.value = latestStatus
+    if (becameUnavailable) {
+      activeRecIdx.value = 0
+      await loadRecommendations(false)
+      recommendations.value = recommendations.value.filter(rec =>
+        rec.seats.every(seat => !latestOccupied.has(seat))
+      )
+      if (wasApplied) {
+        const replacement = recommendations.value[0]
+        selectedSeats.value = replacement ? [...replacement.seats] : []
+      } else {
+        selectedSeats.value = selectedSeats.value.filter(seat => !latestOccupied.has(seat))
+      }
+      if (notifyOnReplacement || wasApplied) {
+        ElMessage.warning(recommendations.value.length
+          ? '原推荐座位已售，已自动生成并切换到下一组'
+          : '原推荐座位已售，暂无满足条件的连续座位')
+      }
+    } else {
+      selectedSeats.value = selectedSeats.value.filter(seat => !latestOccupied.has(seat))
+      lastGeneratedAt.value = new Date()
+    }
+  } catch (error) {
+    console.error('刷新座位推荐失败:', error)
+  } finally {
+    realtimeRefreshing.value = false
+  }
 }
 
 const goBackToMovie = () => {
@@ -779,6 +951,7 @@ const loadData = async () => {
     seatStatus.value = ssData
     cursor.row = Math.ceil(ssData.totalRows / 2)
     cursor.col = Math.ceil(ssData.totalCols / 2)
+    await loadRecommendations(false)
   } catch (error) {
     console.error('加载数据失败:', error)
     ElMessage.error('加载失败')
@@ -789,10 +962,12 @@ const loadData = async () => {
 
 onMounted(() => {
   loadData()
+  refreshTimer = setInterval(() => refreshSeatRecommendations(), 5000)
   window.addEventListener('keydown', handleKey)
 })
 
 onUnmounted(() => {
+  if (refreshTimer) clearInterval(refreshTimer)
   window.removeEventListener('keydown', handleKey)
 })
 </script>
@@ -1500,6 +1675,120 @@ onUnmounted(() => {
 }
 .ai-desc { font-size: 12px; color: var(--muted); line-height: 1.6; margin: 0; }
 
+.rec-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 10px;
+  background: var(--muted-bg);
+  border: 1px solid var(--border);
+}
+.rec-setting-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.rec-setting-label { font-size: 11px; font-weight: 600; color: var(--muted); }
+.party-options { display: flex; gap: 4px; }
+.party-options button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+}
+.party-options button.active {
+  border-color: var(--ai-purple);
+  background: var(--ai-purple);
+  color: #fff;
+}
+.preference-options { display: flex; flex-wrap: wrap; gap: 5px; }
+.preference-options button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 5px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--muted);
+  font-size: 10px;
+  cursor: pointer;
+}
+.preference-options button .msr { font-size: 12px; }
+.preference-options button.active {
+  border-color: rgba(168, 85, 247, 0.45);
+  background: rgba(168, 85, 247, 0.1);
+  color: var(--ai-purple);
+  font-weight: 600;
+}
+.natural-preference { display: flex; flex-direction: column; gap: 7px; }
+.natural-input-wrap {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid rgba(168,85,247,.28);
+  border-radius: 10px;
+  background: var(--card);
+}
+.natural-input-wrap > .msr { color: var(--ai-purple); font-size: 16px; }
+.natural-input-wrap textarea {
+  min-width: 0;
+  resize: none;
+  outline: none;
+  border: 0;
+  color: var(--fg);
+  background: transparent;
+  font: inherit;
+  font-size: 10px;
+  line-height: 1.5;
+}
+.natural-input-wrap textarea::placeholder { color: #9ca19e; }
+.natural-input-wrap button {
+  height: 31px;
+  padding: 0 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--ai-purple);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.natural-input-wrap button:disabled { opacity: .45; cursor: not-allowed; }
+.natural-input-wrap button .msr { font-size: 13px; }
+.natural-examples { display: flex; gap: 5px; overflow-x: auto; scrollbar-width: none; }
+.natural-examples button {
+  flex: 0 0 auto;
+  padding: 4px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  background: var(--card);
+  font-size: 9px;
+  cursor: pointer;
+}
+.natural-examples button:hover { border-color: var(--ai-purple); color: var(--ai-purple); }
+.preference-summary {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  color: #6f36a9;
+  background: rgba(168,85,247,.08);
+  font-size: 9px;
+}
+.preference-summary .msr { font-size: 13px; }
+.preference-summary span { flex: 1; line-height: 1.4; }
+.preference-summary em { padding: 2px 5px; border-radius: 5px; background: rgba(168,85,247,.13); font-style: normal; white-space: nowrap; }
+
 .ai-sec-head {
   display: flex;
   justify-content: space-between;
@@ -1513,6 +1802,11 @@ onUnmounted(() => {
   font-weight: 600;
   color: var(--fg);
 }
+.ai-sec-live { display: flex; align-items: center; gap: 5px; color: var(--ai-purple); font-family: var(--font-mono); font-size: 9px; }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 7px rgba(34,197,94,.7); }
+.ai-sec-live button { width: 23px; height: 23px; display: grid; place-items: center; border: 0; border-radius: 7px; color: var(--ai-purple); background: rgba(168,85,247,.1); cursor: pointer; }
+.ai-sec-live button:disabled { opacity: .45; }
+.ai-sec-live button .msr { font-size: 13px; }
 .ai-sec-count {
   padding: 2px 8px;
   border-radius: 999px;
@@ -1611,6 +1905,35 @@ onUnmounted(() => {
   background: var(--muted-bg);
   font-size: 10px;
   color: var(--muted);
+}
+.rec-reason {
+  margin: 0;
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.reason-source { display: flex; align-items: center; gap: 4px; color: #727873; font-size: 9px; font-weight: 700; }
+.reason-source .msr { font-size: 12px; }
+.reason-source.model { color: var(--ai-purple); }
+.score-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 10px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(168, 85, 247, 0.05);
+}
+.score-item { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.score-item span { font-size: 9px; color: var(--muted); }
+.score-item strong { font-family: var(--font-mono); font-size: 10px; color: var(--fg); }
+.score-item.penalty strong { color: #dc2626; }
+.rec-empty {
+  padding: 20px 12px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 11px;
+  text-align: center;
 }
 
 .rec-btn {

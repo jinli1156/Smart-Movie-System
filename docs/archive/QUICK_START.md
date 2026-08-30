@@ -264,6 +264,6 @@ npm install
 
 ## 下一步
 
-- 查看 [设计文档](docs/superpowers/specs/2026-05-16-movie-ticket-system-design.md) 了解系统架构
+- 查看 [设计文档](../design/SYSTEM_DESIGN.md) 了解系统架构
 - 查看各子项目的 README 了解详细功能
 - 开始开发新功能

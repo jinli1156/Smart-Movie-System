@@ -36,6 +36,7 @@
         <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column label="操作" width="250" fixed="right">
           <template #default="{ row }">
+            <div class="table-actions">
             <el-button type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
             <el-button
               :type="row.status === 1 ? 'warning' : 'success'"
@@ -46,6 +47,7 @@
               {{ row.status === 1 ? '停业' : '营业' }}
             </el-button>
             <el-button type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -311,7 +313,7 @@ const handleFileSelected = async (uploadFile: UploadFile) => {
 }
 
 const removeImage = (index: number) => {
-  const list = formData.images.split(',').filter(s => s.trim())
+  const list = (formData.images || '').split(',').filter(s => s.trim())
   list.splice(index, 1)
   formData.images = list.join(',')
 }
@@ -577,7 +579,10 @@ onMounted(() => {
   height: 120px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #dcdfe6;
+  border: 0;
+  box-shadow:
+    4px 4px 8px var(--admin-shadow-dark),
+    -4px -4px 8px var(--admin-shadow-light);
 }
 
 .preview-img {
@@ -631,16 +636,21 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 2px dashed #dcdfe6;
+  border: 0;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s;
-  background: #fafafa;
+  transition: box-shadow 0.3s ease-in-out;
+  background: var(--admin-card);
+  box-shadow:
+    inset 4px 4px 8px var(--admin-shadow-dark),
+    inset -4px -4px 8px var(--admin-shadow-light);
 }
 
 .upload-trigger:hover {
-  border-color: var(--admin-primary);
   background: var(--admin-primary-soft);
+  box-shadow:
+    inset 2px 2px 4px var(--admin-shadow-dark),
+    inset -2px -2px 4px var(--admin-shadow-light);
 }
 
 .upload-trigger.is-uploading {

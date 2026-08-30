@@ -47,6 +47,7 @@ public class AuthService {
         userInfo.setPhone(user.getPhone());
         userInfo.setEmail(user.getEmail());
         userInfo.setAvatar(user.getAvatar());
+        userInfo.setFavoriteGenres(user.getFavoriteGenres());
         userInfo.setRole(user.getRole());
 
         return new LoginResponse(token, userInfo);

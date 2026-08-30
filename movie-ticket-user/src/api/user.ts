@@ -1,4 +1,5 @@
 import request from '@/utils/request'
+import type { UserInfo } from '@/types/auth'
 
 export interface ChangePasswordPayload {
   oldPassword: string
@@ -10,8 +11,8 @@ export const userApi = {
     return request.get<any, any>('/user/me')
   },
 
-  updateProfile(data: { nickname?: string; email?: string; avatar?: string }) {
-    return request.put<any, void>('/user/profile', data)
+  updateProfile(data: Partial<UserInfo>) {
+    return request.put<any, UserInfo>('/user/profile', data)
   },
 
   changePassword(data: ChangePasswordPayload) {

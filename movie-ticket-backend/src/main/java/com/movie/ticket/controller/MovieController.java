@@ -3,7 +3,9 @@ package com.movie.ticket.controller;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.movie.ticket.common.Result;
 import com.movie.ticket.dto.MovieDTO;
+import com.movie.ticket.service.MovieInsightService;
 import com.movie.ticket.service.MovieService;
+import com.movie.ticket.vo.MovieInsightVO;
 import com.movie.ticket.vo.MovieVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +20,7 @@ import java.util.List;
 public class MovieController {
 
     private final MovieService movieService;
+    private final MovieInsightService movieInsightService;
 
     @GetMapping("/page")
     public Result<IPage<MovieVO>> getPage(
@@ -45,6 +48,11 @@ public class MovieController {
     public Result<MovieVO> getById(@PathVariable Long id) {
         MovieVO movie = movieService.getById(id);
         return Result.success(movie);
+    }
+
+    @GetMapping("/{id}/insight")
+    public Result<MovieInsightVO> getInsight(@PathVariable Long id) {
+        return Result.success(movieInsightService.getInsight(id));
     }
 
     @PostMapping

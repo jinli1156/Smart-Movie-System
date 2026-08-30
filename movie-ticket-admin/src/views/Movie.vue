@@ -72,7 +72,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="releaseDate" label="上映日期" width="120" />
-        <el-table-column prop="rating" label="评分" width="100">
+        <el-table-column prop="rating" label="评分" width="170">
           <template #default="{ row }">
             <el-rate
               v-if="row.rating"
@@ -93,6 +93,7 @@
         </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
+            <div class="table-actions">
             <el-button link type="primary" @click="handleView(row)">
               <el-icon><View /></el-icon>
               查看
@@ -101,7 +102,7 @@
               <el-icon><Edit /></el-icon>
               编辑
             </el-button>
-            <el-dropdown @command="(cmd) => handleStatusChange(row, cmd)">
+            <el-dropdown @command="(cmd: number) => handleStatusChange(row, cmd)">
               <el-button link type="warning">
                 <el-icon><Switch /></el-icon>
                 状态
@@ -118,6 +119,7 @@
               <el-icon><Delete /></el-icon>
               删除
             </el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -383,7 +385,6 @@ import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'elem
 import { Plus, Search, Refresh, View, Edit, Switch, Delete, Picture, Loading } from '@element-plus/icons-vue'
 import type { UploadProps } from 'element-plus'
 import { movieApi } from '@/api/movie'
-import { uploadApi } from '@/api/upload'
 import { useUserStore } from '@/stores/user'
 import type { Movie } from '@/types'
 
@@ -631,16 +632,22 @@ onMounted(() => {
 }
 
 .poster-uploader :deep(.el-upload) {
-  border: 1px dashed var(--el-border-color);
-  border-radius: 6px;
+  border: 0;
+  border-radius: 14px;
   cursor: pointer;
   position: relative;
   overflow: hidden;
-  transition: var(--el-transition-duration-fast);
+  background: var(--admin-card);
+  box-shadow:
+    inset 4px 4px 8px var(--admin-shadow-dark),
+    inset -4px -4px 8px var(--admin-shadow-light);
+  transition: box-shadow 0.3s ease-in-out;
 }
 
 .poster-uploader :deep(.el-upload:hover) {
-  border-color: var(--el-color-primary);
+  box-shadow:
+    inset 2px 2px 4px var(--admin-shadow-dark),
+    inset -2px -2px 4px var(--admin-shadow-light);
 }
 
 .poster-upload-area {
@@ -659,7 +666,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   color: var(--el-text-color-secondary);
-  background-color: var(--el-fill-color-light);
+  background-color: transparent;
 }
 
 .poster-uploader-icon .el-icon {

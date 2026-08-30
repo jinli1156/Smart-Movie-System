@@ -43,6 +43,7 @@
         <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
+            <div class="table-actions">
             <el-button type="primary" size="small" link @click="handlePreviewLayout(row)">预览</el-button>
             <el-button type="primary" size="small" link @click="handleEdit(row)">编辑</el-button>
             <el-button
@@ -54,6 +55,7 @@
               {{ row.status === 1 ? '停用' : '启用' }}
             </el-button>
             <el-button type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -630,10 +632,13 @@ onMounted(() => {
 
 .hall-dialog .seat-editor-wrapper {
   width: 100%;
-  border: 1px solid var(--admin-border);
-  border-radius: 12px;
+  border: 0;
+  border-radius: 16px;
   padding: 16px;
-  background: #fafaf8;
+  background: var(--admin-card);
+  box-shadow:
+    inset 5px 5px 10px var(--admin-shadow-dark),
+    inset -5px -5px 10px var(--admin-shadow-light);
 }
 
 .hall-dialog .seat-toolbar {

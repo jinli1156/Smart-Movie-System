@@ -2,13 +2,13 @@
   <div class="login-page">
     <header class="header-bar">
       <div class="header-logo">
-        <span class="logo-dot"></span>
+        <img class="header-logo-image" src="/cinema-logo.png" alt="JINLI ADMIN" />
         <span class="logo-text">JINLI · ADMIN</span>
       </div>
       <div class="lang-switch">
-        <span class="msr">language</span>
+        <el-icon><Connection /></el-icon>
         <span class="lang-label">简体中文</span>
-        <span class="msr small">expand_more</span>
+        <el-icon class="small"><ArrowDown /></el-icon>
       </div>
     </header>
 
@@ -16,7 +16,7 @@
       <section class="brand-block">
         <div class="brand-row">
           <div class="brand-icon">
-            <span class="msr">movie</span>
+            <img class="brand-logo-image" src="/cinema-logo.png" alt="JINLI ADMIN" />
           </div>
           <div class="brand-text">
             <div class="brand-title">JINLI ADMIN</div>
@@ -49,7 +49,7 @@
           <div class="field">
             <div class="field-label">管理员账号</div>
             <div class="input-row" :class="{ valid: form.username && form.username.length >= 3 }">
-              <span class="msr leading">person</span>
+              <el-icon class="leading"><User /></el-icon>
               <input
                 v-model="form.username"
                 class="input-control"
@@ -57,7 +57,7 @@
                 placeholder="请输入管理员账号"
                 autocomplete="username"
               />
-              <span v-if="form.username && form.username.length >= 3" class="msr trailing ok">check_circle</span>
+              <el-icon v-if="form.username && form.username.length >= 3" class="trailing ok"><CircleCheck /></el-icon>
             </div>
           </div>
 
@@ -67,7 +67,7 @@
               <a class="link-forgot" @click.prevent>忘记密码</a>
             </div>
             <div class="input-row password">
-              <span class="msr leading">lock</span>
+              <el-icon class="leading"><Lock /></el-icon>
               <input
                 v-model="form.password"
                 class="input-control"
@@ -76,9 +76,17 @@
                 autocomplete="current-password"
                 @keyup.enter="handleLogin"
               />
-              <span class="msr trailing toggle" @click="showPwd = !showPwd">
-                {{ showPwd ? 'visibility' : 'visibility_off' }}
-              </span>
+              <button
+                class="password-toggle"
+                type="button"
+                :aria-label="showPwd ? '隐藏密码' : '显示密码'"
+                @click="showPwd = !showPwd"
+              >
+                <el-icon class="trailing toggle">
+                  <View v-if="showPwd" />
+                  <Hide v-else />
+                </el-icon>
+              </button>
             </div>
           </div>
 
@@ -86,7 +94,7 @@
             <div class="field-label">验证码</div>
             <div class="captcha-row">
               <div class="input-row captcha">
-                <span class="msr leading">shield</span>
+                <el-icon class="leading"><Lock /></el-icon>
                 <input
                   v-model="form.captcha"
                   class="input-control"
@@ -107,12 +115,12 @@
           <div class="remember-row">
             <label class="remember-left">
               <span class="checkbox" :class="{ checked: remember }" @click="remember = !remember">
-                <span v-if="remember" class="msr tiny">check</span>
+                <el-icon v-if="remember" class="tiny"><Check /></el-icon>
               </span>
               <span class="remember-label">7天内自动登录</span>
             </label>
             <div class="remember-right">
-              <span class="msr tiny shield">shield_lock</span>
+              <el-icon class="tiny shield"><Lock /></el-icon>
               <span class="secure-label">安全连接</span>
             </div>
           </div>
@@ -122,7 +130,7 @@
           <div class="field">
             <div class="field-label">手机号</div>
             <div class="input-row">
-              <span class="msr leading">smartphone</span>
+              <el-icon class="leading"><Iphone /></el-icon>
               <input
                 v-model="form.phone"
                 class="input-control"
@@ -136,7 +144,7 @@
             <div class="field-label">短信验证码</div>
             <div class="captcha-row">
               <div class="input-row captcha">
-                <span class="msr leading">sms</span>
+                <el-icon class="leading"><Message /></el-icon>
                 <input
                   v-model="form.smsCode"
                   class="input-control"
@@ -152,7 +160,7 @@
           </div>
           <div class="remember-row">
             <div class="remember-right">
-              <span class="msr tiny shield">shield_lock</span>
+              <el-icon class="tiny shield"><Lock /></el-icon>
               <span class="secure-label">短信通道已加密</span>
             </div>
           </div>
@@ -160,7 +168,7 @@
 
         <button class="login-button" :disabled="loading" @click="handleLogin">
           <span class="login-label">{{ loading ? '登录中…' : '登录控制台' }}</span>
-          <span class="msr arrow">arrow_forward</span>
+          <el-icon class="arrow"><Right /></el-icon>
         </button>
 
         <div class="alt-row">
@@ -171,22 +179,22 @@
 
         <div class="sso-row">
           <button class="sso" @click.prevent>
-            <span class="msr">key</span>
+            <el-icon><Key /></el-icon>
             <span>工号 SSO</span>
           </button>
           <button class="sso" @click.prevent>
-            <span class="msr">qr_code_2</span>
+            <el-icon><Grid /></el-icon>
             <span>扫码登录</span>
           </button>
           <button class="sso" @click.prevent>
-            <span class="msr">fingerprint</span>
+            <el-icon><Pointer /></el-icon>
             <span>指纹</span>
           </button>
         </div>
       </section>
 
       <div class="card-footnote">
-        <span class="msr tiny">info</span>
+        <el-icon class="tiny"><InfoFilled /></el-icon>
         <span>仅限授权员工使用 · 所有操作日志将被记录 · v2.6.0</span>
       </div>
     </main>
@@ -213,6 +221,23 @@
 import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import {
+  ArrowDown,
+  Check,
+  CircleCheck,
+  Connection,
+  Grid,
+  Hide,
+  InfoFilled,
+  Iphone,
+  Key,
+  Lock,
+  Message,
+  Pointer,
+  Right,
+  User,
+  View
+} from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -337,23 +362,8 @@ onBeforeUnmount(() => {
   color: var(--text);
 }
 
-.msr {
-  font-family: 'Material Symbols Rounded';
-  font-weight: 400;
-  font-style: normal;
-  font-size: 20px;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-feature-settings: 'liga';
-  -webkit-font-smoothing: antialiased;
-}
-.msr.small { font-size: 14px; }
-.msr.tiny { font-size: 14px; }
+.small { font-size: 14px; }
+.tiny { font-size: 14px; }
 
 .header-bar {
   display: flex;
@@ -362,6 +372,12 @@ onBeforeUnmount(() => {
   padding: 32px 60px 0 60px;
 }
 .header-logo { display: inline-flex; align-items: center; gap: 10px; }
+.header-logo-image {
+  width: 24px;
+  height: 24px;
+  display: block;
+  object-fit: contain;
+}
 .logo-dot {
   width: 8px; height: 8px; border-radius: 999px; background: var(--primary);
   display: inline-block;
@@ -380,7 +396,7 @@ onBeforeUnmount(() => {
   border-radius: 999px;
   cursor: pointer;
 }
-.lang-switch .msr { color: var(--muted); }
+.lang-switch .el-icon { color: var(--muted); font-size: 17px; }
 .lang-label { font-size: 13px; }
 
 .center-wrap {
@@ -402,7 +418,7 @@ onBeforeUnmount(() => {
   background: var(--primary);
   display: inline-flex; align-items: center; justify-content: center;
 }
-.brand-icon .msr { font-size: 26px; color: #111111; font-weight: 500; }
+.brand-icon .el-icon { font-size: 26px; color: #111111; }
 .brand-text { display: flex; flex-direction: column; gap: 4px; }
 .brand-title {
   font-family: var(--font-primary);
@@ -513,6 +529,22 @@ onBeforeUnmount(() => {
 .trailing { color: var(--muted); font-size: 18px; }
 .trailing.ok { color: var(--success); font-size: 16px; }
 .trailing.toggle { cursor: pointer; }
+.password-toggle {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: var(--muted);
+  background: transparent;
+  cursor: pointer;
+}
+.password-toggle:hover { color: var(--text); background: var(--background); }
+.password-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 .captcha-row { display: flex; align-items: center; gap: 12px; }
 .captcha-img {
@@ -583,7 +615,7 @@ onBeforeUnmount(() => {
   background: var(--primary);
   border-color: var(--primary);
 }
-.checkbox .msr.tiny { color: #111111; font-size: 12px; font-weight: 700; }
+.checkbox .el-icon.tiny { color: #111111; font-size: 12px; font-weight: 700; }
 .remember-label { font-size: 13px; }
 .remember-right { display: inline-flex; align-items: center; gap: 6px; }
 .shield { color: var(--success); }
@@ -635,10 +667,10 @@ onBeforeUnmount(() => {
   transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 .sso:hover { border-color: var(--primary); background: #fff; }
-.sso .msr { font-size: 16px; }
+.sso .el-icon { font-size: 16px; }
 
 .card-footnote { display: inline-flex; align-items: center; gap: 12px; color: var(--muted); }
-.card-footnote .msr { font-size: 14px; }
+.card-footnote .el-icon { font-size: 14px; flex: 0 0 auto; }
 .card-footnote span:last-child { font-family: var(--font-primary); font-size: 11px; }
 
 .page-footer {

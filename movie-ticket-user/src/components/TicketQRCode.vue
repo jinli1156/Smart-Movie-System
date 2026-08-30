@@ -10,7 +10,7 @@
       <div class="qrcode-container">
         <div class="ticket-header">
           <div class="ticket-icon">
-            <span class="msr">confirmation_number</span>
+            <MaterialIcon class="msr" name="confirmation_number" />
           </div>
           <div class="ticket-info">
             <h3 class="movie-title">{{ order?.movieTitle }}</h3>
@@ -23,7 +23,7 @@
             <canvas ref="qrcodeCanvas"></canvas>
           </div>
           <div class="qrcode-tip">
-            <span class="msr">info</span>
+            <MaterialIcon class="msr" name="info" />
             <span>请在影院自助取票机扫描此二维码取票</span>
           </div>
         </div>
@@ -53,18 +53,18 @@
 
         <div class="qrcode-actions">
           <button class="action-btn secondary" @click="handleDownload">
-            <span class="msr">download</span>
+            <MaterialIcon class="msr" name="download" />
             <span>保存二维码</span>
           </button>
           <button class="action-btn secondary" @click="handleCopyData">
-            <span class="msr">content_copy</span>
+            <MaterialIcon class="msr" name="content_copy" />
             <span>复制数据</span>
           </button>
         </div>
 
         <div class="qrcode-notice">
           <div class="notice-title">
-            <span class="msr">tips_and_updates</span>
+            <MaterialIcon class="msr" name="tips_and_updates" />
             <span>温馨提示</span>
           </div>
           <ul class="notice-list">

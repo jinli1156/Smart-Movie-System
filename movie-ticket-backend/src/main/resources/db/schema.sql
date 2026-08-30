@@ -10,6 +10,7 @@ USE `movie_ticket`;
 SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `comment`;
+DROP TABLE IF EXISTS `user_movie_behavior`;
 DROP TABLE IF EXISTS `user_coupon`;
 DROP TABLE IF EXISTS `ticket_order`;
 DROP TABLE IF EXISTS `showtime`;
@@ -26,6 +27,7 @@ CREATE TABLE `user` (
   `email` VARCHAR(100) DEFAULT NULL COMMENT '邮箱',
   `phone` VARCHAR(20) DEFAULT NULL COMMENT '手机号',
   `avatar` VARCHAR(255) DEFAULT NULL COMMENT '头像',
+  `favorite_genres` JSON DEFAULT NULL COMMENT '喜欢的电影类型 JSON 数组',
   `role` VARCHAR(20) NOT NULL DEFAULT 'USER' COMMENT 'USER/CINEMA_ADMIN/ADMIN',
   `status` INT NOT NULL DEFAULT 1 COMMENT '0-禁用，1-启用',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -178,5 +180,22 @@ CREATE TABLE `comment` (
   KEY `idx_movie_id` (`movie_id`),
   KEY `idx_order_id` (`order_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='电影评价表';
+
+CREATE TABLE `user_movie_behavior` (
+  `id` BIGINT NOT NULL AUTO_INCREMENT COMMENT '行为ID',
+  `user_id` BIGINT NOT NULL COMMENT '用户ID',
+  `movie_id` BIGINT NOT NULL COMMENT '电影ID',
+  `behavior_type` VARCHAR(20) NOT NULL COMMENT 'VIEW/FAVORITE',
+  `behavior_count` INT NOT NULL DEFAULT 1 COMMENT '累计次数',
+  `active` INT NOT NULL DEFAULT 1 COMMENT '收藏等可撤销行为是否生效',
+  `last_occurred_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '最近发生时间',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_movie_behavior` (`user_id`, `movie_id`, `behavior_type`),
+  KEY `idx_behavior_user_active` (`user_id`, `active`),
+  KEY `idx_behavior_movie_type` (`movie_id`, `behavior_type`),
+  KEY `idx_behavior_time` (`last_occurred_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户电影行为表';
 
 SET FOREIGN_KEY_CHECKS = 1;

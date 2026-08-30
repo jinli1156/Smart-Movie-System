@@ -5,7 +5,7 @@
       <div class="hero-top">
         <div class="logo-row">
           <div class="logo-mark">
-            <el-icon><VideoCamera /></el-icon>
+            <img class="brand-logo-image" src="/cinema-logo.png" alt="JINLI 影" />
           </div>
           <div class="logo-text">
             <span class="brand">JINLI · 影</span>

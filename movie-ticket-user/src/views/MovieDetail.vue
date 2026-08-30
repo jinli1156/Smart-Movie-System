@@ -5,7 +5,7 @@
       <!-- Logo -->
       <div class="logo-block" @click="router.push('/home')">
         <div class="logo-mark">
-          <span class="msr">movie</span>
+          <img class="brand-logo-image" src="/cinema-logo.png" alt="CINEMA+" />
         </div>
         <div class="logo-text">
           <span class="brand">CINEMA+</span>
@@ -15,7 +15,7 @@
 
       <!-- Search -->
       <div class="sidebar-search">
-        <span class="msr search-ico">search</span>
+        <MaterialIcon class="msr search-ico" name="search" />
         <span class="search-text">搜索影片...</span>
         <span class="kbd">⌘K</span>
       </div>
@@ -29,7 +29,7 @@
           :class="{ active: item.key === activeNav }"
           @click="onNavClick(item)"
         >
-          <span class="msr">{{ item.icon }}</span>
+          <MaterialIcon class="msr" :name="item.icon" />
           <span class="nav-label">{{ item.label }}</span>
           <span v-if="item.badge" class="nav-badge" :class="item.badgeClass">{{ item.badge }}</span>
         </a>
@@ -41,20 +41,20 @@
       <div class="quick-access">
         <div class="qa-head">
           <span>QUICK ACCESS</span>
-          <span class="msr">expand_more</span>
+          <MaterialIcon class="msr" name="expand_more" />
         </div>
         <a class="qa-item" @click="tip('热映榜单')">
-          <span class="msr qa-ico">trending_up</span>
+          <MaterialIcon class="msr qa-ico" name="trending_up" />
           <span class="qa-label">热映榜单</span>
           <span class="qa-tag">TOP 10</span>
         </a>
         <a class="qa-item" @click="tip('周末特惠')">
-          <span class="msr qa-ico">local_fire_department</span>
+          <MaterialIcon class="msr qa-ico" name="local_fire_department" />
           <span class="qa-label">周末特惠</span>
           <span class="qa-tag">-30%</span>
         </a>
         <a class="qa-item" @click="tip('兑换券码')">
-          <span class="msr qa-ico">redeem</span>
+          <MaterialIcon class="msr qa-ico" name="redeem" />
           <span class="qa-label">兑换券码</span>
           <span class="qa-tag">新</span>
         </a>
@@ -70,7 +70,7 @@
           <span class="user-tier">GOLD · 1280 积分</span>
         </div>
         <el-dropdown trigger="click">
-          <span class="msr more-btn">more_horiz</span>
+          <MaterialIcon class="msr more-btn" name="more_horiz" />
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item @click="router.push('/profile')">个人中心</el-dropdown-item>
@@ -82,7 +82,7 @@
       </div>
       <div v-else class="sidebar-footer guest">
         <div class="avatar guest-avatar">
-          <span class="msr">person</span>
+          <MaterialIcon class="msr" name="person" />
         </div>
         <div class="user-info">
           <span class="user-name">访客</span>
@@ -97,16 +97,16 @@
       <!-- Top Bar -->
       <div class="top-bar">
         <button class="tb-back" @click="router.back()">
-          <span class="msr">arrow_back</span>
+          <MaterialIcon class="msr" name="arrow_back" />
           <span>返回</span>
         </button>
         <div class="tb-pill">
-          <span class="msr tb-pill-ico primary">location_on</span>
+          <MaterialIcon class="msr tb-pill-ico primary" name="location_on" />
           <span class="tb-pill-text">上海 · 浦东新区</span>
-          <span class="msr tb-pill-caret">keyboard_arrow_down</span>
+          <MaterialIcon class="msr tb-pill-caret" name="keyboard_arrow_down" />
         </div>
         <div class="tb-search">
-          <span class="msr tb-search-ico" @click="onSearch">search</span>
+          <MaterialIcon class="msr tb-search-ico" @click="onSearch" name="search" />
           <input
             type="text"
             placeholder="搜索电影 · 影院 · 演员"
@@ -115,20 +115,20 @@
           />
         </div>
         <div class="tb-pill">
-          <span class="msr">calendar_month</span>
+          <MaterialIcon class="msr" name="calendar_month" />
           <span class="tb-pill-text">{{ todayLabel }}</span>
         </div>
         <div class="tb-icon-group">
           <button class="tb-icon" @click="tip('通知')">
-            <span class="msr">notifications</span>
+            <MaterialIcon class="msr" name="notifications" />
             <span class="tb-dot"></span>
           </button>
           <button class="tb-icon" @click="tip('购物车')">
-            <span class="msr">shopping_cart</span>
+            <MaterialIcon class="msr" name="shopping_cart" />
           </button>
         </div>
         <button class="tb-cta" @click="tip('扫码取票')">
-          <span class="msr">qr_code_scanner</span>
+          <MaterialIcon class="msr" name="qr_code_scanner" />
           <span>扫码取票</span>
         </button>
       </div>
@@ -136,7 +136,7 @@
       <!-- Loading -->
       <div v-if="loading" class="page-loading">
         <div class="loading-spin">
-          <span class="msr">progress_activity</span>
+          <MaterialIcon class="msr" name="progress_activity" />
         </div>
       </div>
 
@@ -151,7 +151,7 @@
               <div class="hpc-top">
                 <div class="hpc-num">01</div>
                 <div class="hpc-tag">
-                  <span class="msr">videocam</span>
+                  <MaterialIcon class="msr" name="videocam" />
                   <span>{{ heroFormatBadge }}</span>
                 </div>
               </div>
@@ -166,11 +166,11 @@
                 <div class="hpc-line"></div>
                 <div class="hpc-meta">
                   <span class="hpc-meta-item">
-                    <span class="msr">schedule</span>
+                    <MaterialIcon class="msr" name="schedule" />
                     <span>{{ movie.duration }} 分钟</span>
                   </span>
                   <span class="hpc-meta-item">
-                    <span class="msr">calendar_today</span>
+                    <MaterialIcon class="msr" name="calendar_today" />
                     <span>{{ formatReleaseDate(movie.releaseDate) }}</span>
                   </span>
                 </div>
@@ -195,17 +195,17 @@
 
                 <div class="hero-meta-row">
                   <span class="meta-item">
-                    <span class="msr">schedule</span>
+                    <MaterialIcon class="msr" name="schedule" />
                     <span>{{ movie.duration }} 分钟</span>
                   </span>
                   <span class="meta-sep-dot">·</span>
                   <span class="meta-item">
-                    <span class="msr">event</span>
+                    <MaterialIcon class="msr" name="event" />
                     <span>{{ formatReleaseDate(movie.releaseDate) }} 上映</span>
                   </span>
                   <span class="meta-sep-dot">·</span>
                   <span class="meta-item">
-                    <span class="msr">translate</span>
+                    <MaterialIcon class="msr" name="translate" />
                     <span>{{ movie.language || '英语·中字' }}</span>
                   </span>
                 </div>
@@ -216,9 +216,7 @@
                     <div class="rating-side">
                       <span class="rating-label">综合评分</span>
                       <div class="rating-stars">
-                        <span v-for="i in 5" :key="i" class="msr star-ico">
-                          {{ i <= Math.round(ratingNum / 2) ? 'star' : 'star_outline' }}
-                        </span>
+                        <MaterialIcon v-for="i in 5" :key="i" class="msr star-ico" :name="i <= Math.round(ratingNum / 2) ? 'star' : 'star_outline'" />
                       </div>
                     </div>
                   </div>
@@ -249,17 +247,18 @@
 
               <div class="hero-actions">
                 <button class="hero-cta" @click="scrollToBuy">
-                  <span class="msr">play_arrow</span>
+                  <MaterialIcon class="msr" name="play_arrow" />
                   <span>立即购票</span>
                   <span class="hero-cta-price">起 ¥{{ minPrice }}</span>
                 </button>
-                <button class="hero-ghost" @click="tip('已加入想看')">
-                  <span class="msr">favorite_border</span>
-                  <span>想看</span>
-                  <span class="hero-ghost-num">12.4K</span>
-                </button>
+                <WatchlistHeartButton
+                  size="large"
+                  variant="dark"
+                  :active="isFavorite"
+                  @click="toggleFavorite"
+                />
                 <button class="hero-icon" @click="tip('分享')">
-                  <span class="msr">share</span>
+                  <MaterialIcon class="msr" name="share" />
                 </button>
                 <button
                   class="hero-icon"
@@ -267,10 +266,7 @@
                   title="查看观众评价"
                   @click="scrollToReviews"
                 >
-                  <span class="msr">chat_bubble_outline</span>
-                </button>
-                <button class="hero-icon" @click="tip('想看')">
-                  <span class="msr">bookmark_border</span>
+                  <MaterialIcon class="msr" name="chat_bubble_outline" />
                 </button>
               </div>
             </div>
@@ -290,7 +286,7 @@
                 </div>
                 <button class="card-action" @click="tip('展开全文')">
                   <span>展开全文</span>
-                  <span class="msr">expand_more</span>
+                  <MaterialIcon class="msr" name="expand_more" />
                 </button>
               </div>
               <p class="synopsis-text">
@@ -321,7 +317,7 @@
                 </div>
                 <button class="card-action" @click="tip('查看全部')">
                   <span>查看全部</span>
-                  <span class="msr">arrow_forward</span>
+                  <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
               </div>
               <div class="cast-grid">
@@ -348,7 +344,7 @@
                 </div>
                 <button class="card-action" @click="tip('查看全部剧照')">
                   <span>全部 12 张</span>
-                  <span class="msr">arrow_forward</span>
+                  <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
               </div>
               <div class="stills-grid">
@@ -359,7 +355,7 @@
                   :style="{ background: stillGradient(i) }"
                   @click="tip('查看剧照')"
                 >
-                  <span class="msr still-ico">image</span>
+                  <MaterialIcon class="msr still-ico" name="image" />
                 </div>
               </div>
             </article>
@@ -373,12 +369,12 @@
                 </div>
                 <button class="card-action" @click="tip('全部预告')">
                   <span>3 个预告</span>
-                  <span class="msr">arrow_forward</span>
+                  <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
               </div>
               <div class="trailer-frame" @click="tip('播放预告片')">
                 <div class="trailer-play">
-                  <span class="msr">play_arrow</span>
+                  <MaterialIcon class="msr" name="play_arrow" />
                 </div>
                 <div class="trailer-meta">
                   <span class="trailer-title">官方正式预告 · 2 分 38 秒</span>
@@ -393,14 +389,14 @@
                 <div class="card-head-left">
                   <div class="ai-eyebrow-row">
                     <span class="ai-icon-wrap">
-                      <span class="msr">auto_awesome</span>
+                      <MaterialIcon class="msr" name="auto_awesome" />
                     </span>
                     <span class="card-eyebrow purple">AI 相似推荐</span>
                   </div>
                   <h2 class="card-title">看了这部还想看</h2>
                 </div>
                 <button class="card-action" @click="loadSimilarMovies(movie.id)">
-                  <span class="msr">refresh</span>
+                  <MaterialIcon class="msr" name="refresh" />
                   <span>换一批</span>
                 </button>
               </div>
@@ -419,7 +415,7 @@
                   <div class="similar-info">
                     <span class="similar-name">{{ m.title }}</span>
                     <span class="similar-meta">
-                      <span class="msr">star</span>
+                      <MaterialIcon class="msr" name="star" />
                       <span>{{ m.rating?.toFixed(1) || '8.5' }}</span>
                       <span class="sep">·</span>
                       <span>{{ m.genre || '剧情' }}</span>
@@ -428,12 +424,12 @@
                 </article>
               </div>
               <div v-else class="similar-empty">
-                <span class="msr">auto_awesome</span>
+                <MaterialIcon class="msr" name="auto_awesome" />
                 <p>暂无相似推荐</p>
               </div>
 
               <div class="ai-insight-banner">
-                <span class="msr">auto_awesome</span>
+                <MaterialIcon class="msr" name="auto_awesome" />
                 <span class="aib-text">
                   AI 分析:基于你对《{{ movie.title }}》的兴趣,以上 {{ similarDisplay.length }} 部影片的题材、风格和导演手法最为契合。
                 </span>
@@ -455,9 +451,7 @@
                   <span class="rv-avg">{{ commentAvgStars.toFixed(1) }}</span>
                   <div class="rv-summary-side">
                     <div class="rv-stars-row">
-                      <span v-for="i in 5" :key="i" class="msr rv-star">
-                        {{ i <= Math.round(commentAvgStars) ? 'star' : 'star_outline' }}
-                      </span>
+                      <MaterialIcon v-for="i in 5" :key="i" class="msr rv-star" :name="i <= Math.round(commentAvgStars) ? 'star' : 'star_outline'" />
                     </div>
                     <span class="rv-count">{{ comments.length }} 条评价</span>
                   </div>
@@ -471,28 +465,28 @@
                   class="review-write-btn"
                   @click="openReviewDialog"
                 >
-                  <span class="msr">rate_review</span>
+                  <MaterialIcon class="msr" name="rate_review" />
                   <span>写评价</span>
                 </button>
                 <div v-else-if="commentEligibility.commented" class="review-owned-actions">
                   <div class="review-hint done">
-                    <span class="msr">check_circle</span>
+                    <MaterialIcon class="msr" name="check_circle" />
                     <span>我的评价：{{ commentEligibility.ownComment?.rating || 0 }} 星</span>
                   </div>
                   <button class="review-edit-btn" @click="openReviewDialog">
-                    <span class="msr">edit</span>
+                    <MaterialIcon class="msr" name="edit" />
                     <span>修改评价</span>
                   </button>
                 </div>
                 <div v-else class="review-hint">
-                  <span class="msr">lock</span>
+                  <MaterialIcon class="msr" name="lock" />
                   <span>购票观影后才能评价</span>
                 </div>
               </div>
 
               <!-- Reviews list -->
               <div v-if="commentsLoading" class="reviews-loading">
-                <span class="msr">progress_activity</span>
+                <MaterialIcon class="msr" name="progress_activity" />
               </div>
               <div v-else-if="comments.length > 0" class="reviews-list">
                 <div v-for="c in comments" :key="c.id" class="review-item">
@@ -504,9 +498,7 @@
                     <div class="review-head">
                       <span class="review-name">{{ c.userName || '匿名影迷' }}</span>
                       <div class="review-stars">
-                        <span v-for="i in 5" :key="i" class="msr rv-star sm">
-                          {{ i <= c.rating ? 'star' : 'star_outline' }}
-                        </span>
+                        <MaterialIcon v-for="i in 5" :key="i" class="msr rv-star sm" :name="i <= c.rating ? 'star' : 'star_outline'" />
                       </div>
                       <span class="review-date">{{ formatReviewDate(c.createTime) }}</span>
                     </div>
@@ -515,7 +507,7 @@
                 </div>
               </div>
               <div v-else class="reviews-empty">
-                <span class="msr">reviews</span>
+                <MaterialIcon class="msr" name="reviews" />
                 <p>还没有评价，看完电影来抢沙发吧</p>
               </div>
             </article>
@@ -531,7 +523,7 @@
                   <h3 class="buy-title">今日 {{ showtimes.length }} 个场次</h3>
                 </div>
                 <span class="buy-trending">
-                  <span class="msr">trending_up</span>
+                  <MaterialIcon class="msr" name="trending_up" />
                   <span>TRENDING</span>
                 </span>
               </div>
@@ -552,7 +544,7 @@
 
               <!-- Cinema Selector -->
               <div class="cinema-select-wrap">
-                <span class="msr cs-ico">location_on</span>
+                <MaterialIcon class="msr cs-ico" name="location_on" />
                 <el-select
                   v-model="selectedCinemaId"
                   placeholder="请选择影院"
@@ -571,11 +563,11 @@
               <!-- Showtimes List -->
               <div v-loading="showtimesLoading" class="showtime-list-wrap">
                 <div v-if="!selectedCinemaId" class="showtime-empty">
-                  <span class="msr">theaters</span>
+                  <MaterialIcon class="msr" name="theaters" />
                   <p>请先选择影院查看场次</p>
                 </div>
                 <div v-else-if="showtimes.length === 0 && !showtimesLoading" class="showtime-empty">
-                  <span class="msr">event_busy</span>
+                  <MaterialIcon class="msr" name="event_busy" />
                   <p>该日期暂无可订场次</p>
                 </div>
                 <div v-else class="showtime-list">
@@ -605,7 +597,7 @@
               </div>
 
               <div class="buy-footer">
-                <span class="msr">verified</span>
+                <MaterialIcon class="msr" name="verified" />
                 <span>支持改签 · 选座保障 · 无忧购票</span>
               </div>
             </article>
@@ -614,7 +606,7 @@
             <article class="card ai-friends-card">
               <div class="aifc-head">
                 <div class="ai-icon-wrap purple">
-                  <span class="msr">groups</span>
+                  <MaterialIcon class="msr" name="groups" />
                 </div>
                 <div class="aifc-title-block">
                   <span class="aifc-title">AI 同好观影</span>
@@ -637,11 +629,11 @@
               </div>
               <div class="aifc-actions">
                 <button class="aifc-btn primary" @click="tip('发起组团')">
-                  <span class="msr">campaign</span>
+                  <MaterialIcon class="msr" name="campaign" />
                   <span>发起组团</span>
                 </button>
                 <button class="aifc-btn ghost" @click="tip('浏览同好')">
-                  <span class="msr">visibility</span>
+                  <MaterialIcon class="msr" name="visibility" />
                   <span>浏览</span>
                 </button>
               </div>
@@ -651,7 +643,7 @@
             <article class="card ai-helper-card">
               <div class="ahc-head">
                 <div class="ai-icon-wrap">
-                  <span class="msr">smart_toy</span>
+                  <MaterialIcon class="msr" name="smart_toy" />
                 </div>
                 <div class="ahc-title-block">
                   <span class="ahc-title">AI 观影助手</span>
@@ -676,7 +668,7 @@
                   @keyup.enter="askAi(aiQuestion)"
                 />
                 <button class="ahc-send" @click="askAi(aiQuestion)">
-                  <span class="msr">send</span>
+                  <MaterialIcon class="msr" name="send" />
                 </button>
               </div>
             </article>
@@ -734,7 +726,7 @@
         <div class="review-dialog-footer">
           <button class="rd-btn cancel" @click="showReviewDialog = false">取消</button>
           <button class="rd-btn primary" @click="submitReview" :disabled="submittingReview">
-            <span class="msr" v-if="submittingReview">progress_activity</span>
+            <MaterialIcon class="msr" v-if="submittingReview" name="progress_activity" />
             <span>{{ submittingReview ? '提交中...' : (commentEligibility.ownComment ? '保存修改' : '发布评价') }}</span>
           </button>
         </div>
@@ -751,9 +743,11 @@ import { movieApi } from '@/api/movie'
 import { cinemaApi } from '@/api/cinema'
 import { showtimeApi } from '@/api/showtime'
 import { commentApi } from '@/api/comment'
+import { recommendApi } from '@/api/recommend'
 import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
 import type { Movie, Cinema, Showtime, Comment, CommentEligibility } from '@/types'
+import WatchlistHeartButton from '@/components/WatchlistHeartButton.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -761,6 +755,7 @@ const userStore = useUserStore()
 
 const loading = ref(false)
 const movie = ref<Movie | null>(null)
+const isFavorite = ref(false)
 const cinemas = ref<Cinema[]>([])
 const selectedCinemaId = ref<number>()
 const selectedDate = ref(new Date())
@@ -790,7 +785,7 @@ const navItems = [
   { key: 'profile', label: '个人中心', icon: 'person', route: '/profile' },
   { key: 'events', label: '演出', icon: 'event' },
   { key: 'orders', label: '订单', icon: 'receipt_long', route: '/orders' },
-  { key: 'favorites', label: '想看', icon: 'favorite' },
+  { key: 'favorites', label: '想看', icon: 'favorite', route: '/favorites' },
   { key: 'settings', label: '设置', icon: 'settings' }
 ]
 
@@ -941,6 +936,10 @@ const loadMovie = async () => {
   try {
     const id = Number(route.params.id)
     movie.value = await movieApi.getById(id)
+    if (userStore.isLoggedIn) {
+      recommendApi.recordView(id).catch(() => undefined)
+      recommendApi.isFavorite(id).then(value => { isFavorite.value = value }).catch(() => undefined)
+    }
     loadSimilarMovies(id)
     loadComments(id)
     loadEligibility(id)
@@ -949,6 +948,17 @@ const loadMovie = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const toggleFavorite = async () => {
+  if (!movie.value) return
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('登录后才能加入想看')
+    router.push('/login')
+    return
+  }
+  isFavorite.value = await recommendApi.toggleFavorite(movie.value.id)
+  ElMessage.success(isFavorite.value ? '已加入想看' : '已移出想看')
 }
 
 const loadSimilarMovies = async (movieId: number) => {
@@ -1123,14 +1133,14 @@ const scrollToReviews = () => {
 
 const askAi = (q: string) => {
   if (!q.trim()) return
-  ElMessage.info(`AI 助手即将回答:"${q}"`)
+  window.dispatchEvent(new CustomEvent('open-movie-assistant', { detail: q.trim() }))
   aiQuestion.value = ''
 }
 
 const onNavClick = (item: { key: string; route?: string }) => {
   activeNav.value = item.key
   if (item.route) {
-    if ((item.route === '/orders' || item.route === '/profile') && !userStore.isLoggedIn) {
+    if ((item.route === '/orders' || item.route === '/profile' || item.route === '/favorites') && !userStore.isLoggedIn) {
       ElMessage.warning('请先登录')
       router.push('/login')
       return
@@ -1887,6 +1897,7 @@ onBeforeUnmount(() => {
   transition: background 0.15s;
 }
 .hero-ghost:hover { background: rgba(255, 255, 255, 0.14); }
+.hero-ghost.active { border-color: #EC4899; color: #FF8FBC; background: rgba(236, 72, 153, 0.12); }
 .hero-ghost .msr { font-size: 18px; }
 .hero-ghost-num {
   font-family: var(--font-mono);

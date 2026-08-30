@@ -8,7 +8,7 @@
       <!-- TOP BAR -->
       <header class="top-bar">
         <div class="page-title">
-          <span class="msr">receipt_long</span>
+          <MaterialIcon class="msr" name="receipt_long" />
           <span>我的订单</span>
         </div>
         <div class="spacer"></div>
@@ -24,7 +24,7 @@
           :class="{ active: activeTab === tab.value }"
           @click="handleTabChange(tab.value)"
         >
-          <span class="msr" v-if="tab.icon">{{ tab.icon }}</span>
+          <MaterialIcon class="msr" v-if="tab.icon" :name="tab.icon" />
           <span>{{ tab.label }}</span>
           <span v-if="tab.badge" class="tab-badge">{{ tab.badge }}</span>
         </button>
@@ -41,12 +41,12 @@
             <!-- CARD HEADER -->
             <div class="card-header">
               <div class="order-no">
-                <span class="msr">tag</span>
+                <MaterialIcon class="msr" name="tag" />
                 <span>{{ order.orderNo }}</span>
               </div>
               <div class="header-right">
                 <div v-if="order.status === 0 && getCountdown(order)" class="countdown-badge" :class="{ urgent: getCountdown(order)! < 120 }">
-                  <span class="msr">schedule</span>
+                  <MaterialIcon class="msr" name="schedule" />
                   <span class="time">{{ formatCountdown(getCountdown(order)!) }}</span>
                 </div>
                 <span class="status-badge" :class="'status-' + order.status">
@@ -60,26 +60,26 @@
               <div class="movie-poster">
                 <img :src="order.moviePoster || '/placeholder.jpg'" :alt="order.movieTitle" />
                 <div class="poster-overlay">
-                  <span class="msr">movie</span>
+                  <MaterialIcon class="msr" name="movie" />
                 </div>
               </div>
 
               <div class="order-info">
                 <h3 class="movie-title">{{ order.movieTitle }}</h3>
                 <div class="info-row">
-                  <span class="msr">theaters</span>
+                  <MaterialIcon class="msr" name="theaters" />
                   <span>{{ order.cinemaName }}</span>
                 </div>
                 <div class="info-row">
-                  <span class="msr">meeting_room</span>
+                  <MaterialIcon class="msr" name="meeting_room" />
                   <span>{{ order.hallName }}</span>
                 </div>
                 <div class="info-row">
-                  <span class="msr">event</span>
+                  <MaterialIcon class="msr" name="event" />
                   <span>{{ formatDateTime(order.showtime!) }}</span>
                 </div>
                 <div class="info-row seats">
-                  <span class="msr">event_seat</span>
+                  <MaterialIcon class="msr" name="event_seat" />
                   <span>{{ order.seats }}</span>
                 </div>
               </div>
@@ -101,7 +101,7 @@
                 class="action-btn primary"
                 @click.stop="showQRCode(order)"
               >
-                <span class="msr">qr_code</span>
+                <MaterialIcon class="msr" name="qr_code" />
                 <span>查看取票码</span>
               </button>
               <button
@@ -109,7 +109,7 @@
                 class="action-btn primary"
                 @click.stop="handlePay(order.orderNo)"
               >
-                <span class="msr">payment</span>
+                <MaterialIcon class="msr" name="payment" />
                 <span>立即支付</span>
               </button>
               <button
@@ -117,7 +117,7 @@
                 class="action-btn secondary"
                 @click.stop="handleCancel(order.orderNo)"
               >
-                <span class="msr">close</span>
+                <MaterialIcon class="msr" name="close" />
                 <span>取消订单</span>
               </button>
               <button
@@ -125,11 +125,11 @@
                 class="action-btn danger"
                 @click.stop="handleRefund(order.orderNo)"
               >
-                <span class="msr">receipt_long</span>
+                <MaterialIcon class="msr" name="receipt_long" />
                 <span>申请退票</span>
               </button>
               <button class="action-btn ghost" @click.stop="goToDetail(order.orderNo)">
-                <span class="msr">info</span>
+                <MaterialIcon class="msr" name="info" />
                 <span>查看详情</span>
               </button>
             </div>
@@ -137,11 +137,11 @@
         </div>
 
         <div v-else class="empty-state">
-          <span class="msr empty-icon">receipt_long</span>
+          <MaterialIcon class="msr empty-icon" name="receipt_long" />
           <p class="empty-text">暂无订单</p>
           <button class="empty-btn" @click="router.push('/movies')">
             <span>去选片</span>
-            <span class="msr">arrow_forward</span>
+            <MaterialIcon class="msr" name="arrow_forward" />
           </button>
         </div>
 
@@ -151,7 +151,7 @@
             :disabled="page === 1"
             @click="changePage(page - 1)"
           >
-            <span class="msr">arrow_back</span>
+            <MaterialIcon class="msr" name="arrow_back" />
             <span>上一页</span>
           </button>
           <div class="page-info">
@@ -165,7 +165,7 @@
             @click="changePage(page + 1)"
           >
             <span>下一页</span>
-            <span class="msr">arrow_forward</span>
+            <MaterialIcon class="msr" name="arrow_forward" />
           </button>
         </div>
       </div>

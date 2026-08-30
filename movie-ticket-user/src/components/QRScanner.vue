@@ -10,7 +10,7 @@
       <div class="scanner-container">
         <div class="scanner-header">
           <div class="header-icon">
-            <span class="msr">qr_code_scanner</span>
+            <MaterialIcon class="msr" name="qr_code_scanner" />
           </div>
           <div class="header-info">
             <h3 class="header-title">请将取票码对准扫描框</h3>
@@ -21,13 +21,13 @@
         <!-- 扫描器区域 -->
         <div class="scanner-wrapper">
           <div v-if="!isScanning && !scanResult && !scanError && !isLoading" class="scanner-placeholder">
-            <span class="msr">videocam</span>
+            <MaterialIcon class="msr" name="videocam" />
             <p>点击下方按钮开始扫描</p>
           </div>
 
           <!-- 加载状态 -->
           <div v-if="isLoading" class="scanner-loading">
-            <span class="msr loading-icon">progress_activity</span>
+            <MaterialIcon class="msr loading-icon" name="progress_activity" />
             <p>正在启动摄像头...</p>
           </div>
 
@@ -42,7 +42,7 @@
           <!-- 扫描成功结果 -->
           <div v-if="scanResult" class="scan-result">
             <div class="result-icon success">
-              <span class="msr">check_circle</span>
+              <MaterialIcon class="msr" name="check_circle" />
             </div>
             <h3 class="result-title">扫描成功！</h3>
             <div class="result-info">
@@ -69,11 +69,11 @@
             </div>
             <div class="result-actions">
               <button class="result-btn primary" @click="handleConfirmTicket">
-                <span class="msr">confirmation_number</span>
+                <MaterialIcon class="msr" name="confirmation_number" />
                 <span>确认取票</span>
               </button>
               <button class="result-btn secondary" @click="handleRescan">
-                <span class="msr">refresh</span>
+                <MaterialIcon class="msr" name="refresh" />
                 <span>重新扫描</span>
               </button>
             </div>
@@ -82,12 +82,12 @@
           <!-- 扫描失败 -->
           <div v-if="scanError" class="scan-result">
             <div class="result-icon error">
-              <span class="msr">error</span>
+              <MaterialIcon class="msr" name="error" />
             </div>
             <h3 class="result-title error">扫描失败</h3>
             <p class="result-message">{{ errorMessage }}</p>
             <button class="result-btn secondary" @click="handleRescan">
-              <span class="msr">refresh</span>
+              <MaterialIcon class="msr" name="refresh" />
               <span>重新扫描</span>
             </button>
           </div>
@@ -100,7 +100,7 @@
             class="control-btn primary"
             @click="startScanning"
           >
-            <span class="msr">play_arrow</span>
+            <MaterialIcon class="msr" name="play_arrow" />
             <span>开始扫描</span>
           </button>
           <button
@@ -108,11 +108,11 @@
             class="control-btn secondary"
             @click="stopScanning"
           >
-            <span class="msr">stop</span>
+            <MaterialIcon class="msr" name="stop" />
             <span>停止扫描</span>
           </button>
           <button class="control-btn secondary" @click="showManualInput = true">
-            <span class="msr">keyboard</span>
+            <MaterialIcon class="msr" name="keyboard" />
             <span>手动输入</span>
           </button>
         </div>
@@ -120,7 +120,7 @@
         <!-- 使用提示 -->
         <div class="scanner-tips">
           <div class="tip-title">
-            <span class="msr">lightbulb</span>
+            <MaterialIcon class="msr" name="lightbulb" />
             <span>使用提示</span>
           </div>
           <ul class="tip-list">
@@ -151,7 +151,7 @@
           clearable
         >
           <template #prefix>
-            <span class="msr">confirmation_number</span>
+            <MaterialIcon class="msr" name="confirmation_number" />
           </template>
         </el-input>
         <p class="input-tip">取票码为8位数字，可在订单详情中查看</p>

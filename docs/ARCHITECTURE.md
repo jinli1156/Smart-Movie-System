@@ -1,7 +1,7 @@
 # 系统架构与功能说明
 
 > 单一来源的开发文档：项目结构、数据库、接口、各功能模块的实现细节都在这里。  
-> 历史改动按日期记录在 [CHANGELOG.md](CHANGELOG.md)；启动步骤见 [QUICK_START.md](QUICK_START.md)。
+> 历史改动按日期记录在 [CHANGELOG.md](CHANGELOG.md)；启动步骤见 [GETTING_STARTED.md](GETTING_STARTED.md)。
 
 ---
 
@@ -12,9 +12,12 @@ movie-ticket-system/
 ├── docs/
 │   ├── ARCHITECTURE.md                    # 本文档
 │   ├── CHANGELOG.md                       # 变更记录
-│   ├── QUICK_START.md                     # 启动指南
-│   └── superpowers/specs/                 # 原始设计文档
-│       └── 2026-05-16-movie-ticket-system-design.md
+│   ├── GETTING_STARTED.md                 # 启动与验收
+│   ├── DATABASE.md                        # 数据库脚本指南
+│   ├── PROJECT_STATUS.md                  # 完成度与待办
+│   ├── design/                            # 系统设计与 UI 原型
+│   ├── features/                          # 专题功能说明
+│   └── archive/                           # 历史阶段文档
 │
 ├── movie-ticket-backend/                  # SpringBoot 3.2.5 后端
 │   ├── src/main/java/com/movie/ticket/
