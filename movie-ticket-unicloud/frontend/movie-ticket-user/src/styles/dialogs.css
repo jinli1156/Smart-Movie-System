@@ -1,0 +1,69 @@
+/* Explicitly opt in so media viewers and specialist dialogs keep their layout. */
+.el-overlay .el-dialog.consumer-dialog {
+  --el-color-primary: #ed7a00;
+  --el-color-primary-light-3: #f59b3c;
+  --el-color-primary-light-9: #fff5e9;
+  --el-text-color-primary: #252a20;
+  --el-border-color: #dfe2d8;
+  --primary: #ff8400;
+  --fg: #252a20;
+  --border: #dfe2d8;
+  --font-mono: ui-monospace, monospace;
+  display: flex;
+  flex-direction: column;
+  max-width: calc(100vw - 32px);
+  max-height: calc(100dvh - 40px);
+  margin: 20px auto;
+  padding: 0;
+  border: 1px solid #e6e7e1;
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 24px 80px #18201026;
+}
+.el-overlay .consumer-dialog .el-dialog__header { flex-shrink: 0; margin: 0; padding: 24px 60px 20px 24px; border-bottom: 1px solid #eceee7; background: #fff; }
+.el-overlay .consumer-dialog .el-dialog__title { color: #252a20; font-size: 20px; font-weight: 650; line-height: 1.4; }
+.el-overlay .consumer-dialog .el-dialog__headerbtn { top: 21px; right: 20px; width: 32px; height: 32px; border-radius: 50%; }
+.el-overlay .consumer-dialog .el-dialog__headerbtn:hover { background: #f2f3ef; }
+.el-overlay .consumer-dialog .el-dialog__body { min-height: 0; max-height: none; padding: 24px; overflow-y: auto; overscroll-behavior: contain; color: #52584b; }
+.el-overlay .consumer-dialog .el-dialog__footer { flex-shrink: 0; padding: 18px 24px; border-top: 1px solid #eceee7; background: #fff; }
+.el-overlay .consumer-dialog .el-dialog__footer, .el-overlay .consumer-dialog .dialog-footer { display: flex; justify-content: flex-end; gap: 12px; }
+.el-overlay .consumer-dialog .dialog-footer { width: 100%; }
+.el-overlay .consumer-dialog .el-dialog__footer button { min-width: 108px; min-height: 44px; margin: 0; justify-content: center; border-radius: 10px; font-size: 14px; font-weight: 600; }
+.el-overlay .consumer-dialog .el-button--primary { --el-button-bg-color: #ff8400; --el-button-border-color: #ff8400; --el-button-text-color: #20170b; --el-button-hover-bg-color: #ed7a00; --el-button-hover-border-color: #ed7a00; --el-button-hover-text-color: #20170b; }
+.el-overlay .consumer-dialog .el-input__wrapper, .consumer-dialog .el-select__wrapper { min-height: 42px; border-radius: 9px; }
+.el-overlay .consumer-dialog button:focus-visible { outline: 2px solid #b65b00; outline-offset: 2px; }
+.el-overlay .consumer-dialog .payment-amount { background: #f6f7f3; border: 1px solid #e0e4d8; border-radius: 14px; }
+.el-overlay .consumer-dialog .payment-amount .value { color: #252a20; }
+.el-overlay .consumer-dialog .ticket-header { padding: 0 0 18px; background: #fff; border-bottom: 1px dashed #dfe2d8; }
+.el-overlay .consumer-dialog .ticket-icon { width: 44px; height: 44px; background: #fff0dc; color: #a85800; box-shadow: none; }
+.el-overlay .consumer-dialog .qrcode-wrapper { padding: 20px 0; }
+.el-overlay .consumer-dialog .qrcode-box { padding: 10px; max-width: 100%; border: 1px solid #dfe2d8; box-shadow: none; }
+.el-overlay .consumer-dialog .qrcode-box canvas { max-width: 100%; height: auto !important; }
+.el-overlay .consumer-dialog .qrcode-tip { color: #626c56; background: #f6f7f3; border-color: #e6e9df; font-size: 12px; line-height: 1.6; }
+.el-overlay .consumer-dialog .ticket-details { padding: 16px; background: #f6f7f3; border: 1px solid #e6e9df; border-radius: 12px; }
+.el-overlay .consumer-dialog .detail-label { flex-shrink: 0; }
+.el-overlay .consumer-dialog .detail-value { min-width: 0; overflow-wrap: anywhere; }
+.el-overlay .consumer-dialog .qrcode-actions { padding: 18px 0; gap: 10px; }
+.el-overlay .consumer-dialog .qrcode-actions button { padding: 12px 8px; }
+.el-overlay .consumer-dialog .qrcode-notice { padding: 16px; border-radius: 12px; background: #faf8f3; }
+.el-overlay .consumer-dialog .notice-title { color: #7a694b; }
+.el-message-box.order-cancel-dialog { width: 420px; max-width: calc(100vw - 32px); padding: 26px; border-radius: 20px; border: 1px solid #e6e7e1; box-shadow: 0 24px 80px #18201026; }
+.order-cancel-dialog .el-message-box__header { padding: 0 28px 14px 0; }
+.order-cancel-dialog .el-message-box__title { font-size: 20px; font-weight: 650; color: #252a20; }
+.order-cancel-dialog .el-message-box__headerbtn { top: 22px; right: 20px; }
+.order-cancel-dialog .el-message-box__content { padding: 0; }
+.order-cancel-dialog .el-message-box__message { color: #73786b; font-size: 14px; line-height: 1.8; }
+.order-cancel-dialog .el-message-box__btns { display: flex; gap: 12px; padding: 24px 0 0; }
+.order-cancel-dialog .el-message-box__btns button { flex: 1; min-height: 44px; margin: 0; border-radius: 10px; }
+.order-cancel-dialog .el-button--primary { --el-button-bg-color: #ff8400; --el-button-border-color: #ff8400; --el-button-text-color: #20170b; --el-button-hover-bg-color: #ed7a00; --el-button-hover-border-color: #ed7a00; --el-button-hover-text-color: #20170b; }
+@media (max-width: 480px) {
+  .el-overlay .el-dialog.consumer-dialog { max-height: calc(100dvh - 24px); margin: 12px auto; border-radius: 18px; }
+  .el-overlay .consumer-dialog .el-dialog__header { padding: 20px 52px 16px 20px; }
+  .el-overlay .consumer-dialog .el-dialog__headerbtn { top: 16px; right: 14px; }
+  .el-overlay .consumer-dialog .el-dialog__body { padding: 18px; }
+  .el-overlay .consumer-dialog .el-dialog__footer { padding: 16px 18px; }
+  .el-overlay .consumer-dialog .el-dialog__footer button { flex: 1; min-width: 0; }
+  .el-overlay .consumer-dialog .gender-group { flex-wrap: wrap; gap: 8px; }
+  .el-overlay .consumer-dialog .method-item { gap: 10px; padding: 14px 10px; }
+  .el-overlay .consumer-dialog .method-info { min-width: 0; }
+}

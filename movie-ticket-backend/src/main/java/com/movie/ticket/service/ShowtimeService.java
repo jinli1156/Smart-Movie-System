@@ -8,7 +8,9 @@ import com.movie.ticket.entity.*;
 import com.movie.ticket.exception.BusinessException;
 import com.movie.ticket.mapper.*;
 import com.movie.ticket.vo.ShowtimeVO;
+import com.movie.ticket.security.UserContext;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 
@@ -19,9 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/** 场次查询与维护，校验影院权限、影厅时间冲突，并汇总实时座位占用状态。 */
 @Service
 @RequiredArgsConstructor
 public class ShowtimeService {
+
+    /** 场次结束后预留的散场、保洁和下一场入场准备时间。 */
+    @Value("${movie.showtime.cleanup-minutes:15}")
+    private long cleanupMinutes = 15L;
 
     private final ShowtimeMapper showtimeMapper;
     private final MovieMapper movieMapper;
@@ -29,74 +36,52 @@ public class ShowtimeService {
     private final HallMapper hallMapper;
     private final TicketOrderMapper orderMapper;
 
-    private static final Map<Integer, String> STATUS_MAP = new HashMap<>();
-
-    static {
-        STATUS_MAP.put(0, "可售");
-        STATUS_MAP.put(1, "已结束");
-        STATUS_MAP.put(2, "已取消");
-    }
-
+    /** 按筛选条件分页查询场次，供列表页展示。 */
     public IPage<ShowtimeVO> getPage(Integer page, Integer size, Long movieId, Long cinemaId, LocalDate date, Integer status) {
-        Page<Showtime> pageParam = new Page<>(page, size);
-        LambdaQueryWrapper<Showtime> wrapper = new LambdaQueryWrapper<>();
-
-        if (movieId != null) {
-            wrapper.eq(Showtime::getMovieId, movieId);
-        }
-
-        if (cinemaId != null) {
-            wrapper.eq(Showtime::getCinemaId, cinemaId);
-        }
-
+        cinemaId = UserContext.scopeCinemaId(cinemaId);
+        Page<ShowtimeVO> pageParam = new Page<>(page, size);
+        LocalDateTime startOfDay = null;
+        LocalDateTime endOfDay = null;
         if (date != null) {
-            LocalDateTime startOfDay = date.atStartOfDay();
-            LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-            wrapper.between(Showtime::getStartTime, startOfDay, endOfDay);
+            startOfDay = date.atStartOfDay();
+            endOfDay = date.plusDays(1).atStartOfDay();
         }
-
-        if (status != null) {
-            wrapper.eq(Showtime::getStatus, status);
-        }
-
-        wrapper.orderByAsc(Showtime::getStatus)
-                .orderByDesc(Showtime::getStartTime);
-        IPage<Showtime> showtimePage = showtimeMapper.selectPage(pageParam, wrapper);
-
-        return showtimePage.convert(this::convertToVO);
+        return showtimeMapper.selectShowtimePage(
+                pageParam, movieId, cinemaId, startOfDay, endOfDay, status);
     }
 
+    /** 查询指定影片在影院和日期范围内的可选场次。 */
     public List<ShowtimeVO> getByMovieAndCinema(Long movieId, Long cinemaId, LocalDate date) {
-        LambdaQueryWrapper<Showtime> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Showtime::getMovieId, movieId)
-                .eq(Showtime::getCinemaId, cinemaId)
-                .eq(Showtime::getStatus, 0);
-
+        LocalDateTime startOfDay = null;
+        LocalDateTime endOfDay = null;
         if (date != null) {
-            LocalDateTime startOfDay = date.atStartOfDay();
-            LocalDateTime endOfDay = date.plusDays(1).atStartOfDay();
-            wrapper.between(Showtime::getStartTime, startOfDay, endOfDay);
+            startOfDay = date.atStartOfDay();
+            endOfDay = date.plusDays(1).atStartOfDay();
         }
-
-        wrapper.orderByAsc(Showtime::getStartTime);
-        List<Showtime> showtimes = showtimeMapper.selectList(wrapper);
-
-        return showtimes.stream().map(this::convertToVO).collect(Collectors.toList());
+        return showtimeMapper.selectShowtimeViews(
+                movieId, cinemaId, startOfDay, endOfDay, 0, null);
     }
 
+    /** 根据 ID 查询场次详情。 */
     public ShowtimeVO getById(Long id) {
-        Showtime showtime = showtimeMapper.selectById(id);
-        if (showtime == null) {
+        List<ShowtimeVO> showtimes = showtimeMapper.selectShowtimeViews(
+                null, null, null, null, null, id);
+        if (showtimes.isEmpty()) {
             throw new BusinessException("场次不存在");
         }
-        return convertToVO(showtime);
+        return showtimes.get(0);
     }
 
+    /** 新增场次，由业务层执行参数及关联数据校验。 */
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void create(ShowtimeDTO dto) {
+        UserContext.requireCinema(dto.getCinemaId());
+        hallMapper.lockCinemaHalls(dto.getCinemaId());
         Movie movie = movieMapper.selectById(dto.getMovieId());
         if (movie == null) {
             throw new BusinessException("电影不存在");
         }
+        validateMovieCanSchedule(movie);
 
         Cinema cinema = cinemaMapper.selectById(dto.getCinemaId());
         if (cinema == null) {
@@ -112,27 +97,8 @@ public class ShowtimeService {
             throw new BusinessException("影厅不属于该影院");
         }
 
-        if (dto.getStartTime().isBefore(LocalDateTime.now())) {
-            throw new BusinessException("开始时间不能早于当前时间");
-        }
-
-        if (dto.getEndTime().isBefore(dto.getStartTime())) {
-            throw new BusinessException("结束时间不能早于开始时间");
-        }
-
-        Long count = showtimeMapper.selectCount(
-                new LambdaQueryWrapper<Showtime>()
-                        .eq(Showtime::getHallId, dto.getHallId())
-                        .and(w -> w
-                                .between(Showtime::getStartTime, dto.getStartTime(), dto.getEndTime())
-                                .or()
-                                .between(Showtime::getEndTime, dto.getStartTime(), dto.getEndTime())
-                        )
-        );
-
-        if (count > 0) {
-            throw new BusinessException("该时间段影厅已有排片");
-        }
+        validateTimeRange(dto, true);
+        validateHallConflict(null, dto);
 
         Showtime showtime = new Showtime();
         BeanUtils.copyProperties(dto, showtime);
@@ -146,7 +112,15 @@ public class ShowtimeService {
         showtimeMapper.insert(showtime);
     }
 
+    /** 更新场次，由业务层校验当前操作权限与业务条件。 */
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void update(Long id, ShowtimeDTO dto) {
+        UserContext.requireCinema(dto.getCinemaId());
+        Showtime source = showtimeMapper.selectById(id);
+        if (source == null) throw new BusinessException("场次不存在");
+        UserContext.requireCinema(source.getCinemaId());
+        java.util.stream.Stream.of(source.getCinemaId(), dto.getCinemaId()).distinct().sorted()
+                .forEach(hallMapper::lockCinemaHalls);
         Showtime showtime = showtimeMapper.selectById(id);
         if (showtime == null) {
             throw new BusinessException("场次不存在");
@@ -156,6 +130,7 @@ public class ShowtimeService {
         if (movie == null) {
             throw new BusinessException("电影不存在");
         }
+        validateMovieCanSchedule(movie);
 
         Cinema cinema = cinemaMapper.selectById(dto.getCinemaId());
         if (cinema == null) {
@@ -171,13 +146,22 @@ public class ShowtimeService {
             throw new BusinessException("影厅不属于该影院");
         }
 
+        validateTimeRange(dto, false);
+        validateHallConflict(id, dto);
+
         BeanUtils.copyProperties(dto, showtime);
         showtime.setId(id);
         showtime.setStatus(calculateStatus(dto.getEndTime(), showtime.getStatus()));
         showtimeMapper.updateById(showtime);
     }
 
+    /** 删除场次，由业务层检查权限及关联数据限制。 */
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void delete(Long id) {
+        Showtime source = showtimeMapper.selectById(id);
+        if (source == null) throw new BusinessException("场次不存在");
+        UserContext.requireCinema(source.getCinemaId());
+        hallMapper.lockCinemaHalls(source.getCinemaId());
         Showtime showtime = showtimeMapper.selectById(id);
         if (showtime == null) {
             throw new BusinessException("场次不存在");
@@ -190,7 +174,13 @@ public class ShowtimeService {
         showtimeMapper.deleteById(id);
     }
 
+    /** 修改场次状态，具体可用状态和操作限制由业务层校验。 */
+    @org.springframework.transaction.annotation.Transactional(rollbackFor = Exception.class)
     public void updateStatus(Long id, Integer status) {
+        Showtime source = showtimeMapper.selectById(id);
+        if (source == null) throw new BusinessException("场次不存在");
+        UserContext.requireCinema(source.getCinemaId());
+        hallMapper.lockCinemaHalls(source.getCinemaId());
         Showtime showtime = showtimeMapper.selectById(id);
         if (showtime == null) {
             throw new BusinessException("场次不存在");
@@ -209,31 +199,36 @@ public class ShowtimeService {
         return 0;
     }
 
-    private ShowtimeVO convertToVO(Showtime showtime) {
-        ShowtimeVO vo = new ShowtimeVO();
-        BeanUtils.copyProperties(showtime, vo);
-        vo.setStatusText(STATUS_MAP.getOrDefault(showtime.getStatus(), "未知"));
-
-        Movie movie = movieMapper.selectById(showtime.getMovieId());
-        if (movie != null) {
-            vo.setMovieTitle(movie.getTitle());
-            vo.setMoviePoster(movie.getPoster());
-            vo.setMovieDuration(movie.getDuration());
+    private void validateMovieCanSchedule(Movie movie) {
+        if (!Integer.valueOf(1).equals(movie.getStatus())) {
+            throw new BusinessException("仅正在热映的影片可以排片");
         }
-
-        Cinema cinema = cinemaMapper.selectById(showtime.getCinemaId());
-        if (cinema != null) {
-            vo.setCinemaName(cinema.getName());
-        }
-
-        Hall hall = hallMapper.selectById(showtime.getHallId());
-        if (hall != null) {
-            vo.setHallName(hall.getName());
-        }
-
-        return vo;
     }
 
+    private void validateTimeRange(ShowtimeDTO dto, boolean requireFutureStart) {
+        if (requireFutureStart && dto.getStartTime().isBefore(LocalDateTime.now())) {
+            throw new BusinessException("开始时间不能早于当前时间");
+        }
+        if (!dto.getEndTime().isAfter(dto.getStartTime())) {
+            throw new BusinessException("结束时间必须晚于开始时间");
+        }
+    }
+
+    private void validateHallConflict(Long excludedShowtimeId, ShowtimeDTO dto) {
+        // 等价于：existing.start < new.end + cleanup
+        //       AND existing.end + cleanup > new.start。
+        LocalDateTime occupiedFrom = dto.getStartTime().minusMinutes(cleanupMinutes);
+        LocalDateTime occupiedUntil = dto.getEndTime().plusMinutes(cleanupMinutes);
+        long conflictCount = showtimeMapper.countConflictingShowtimes(
+                dto.getHallId(), occupiedFrom, occupiedUntil, excludedShowtimeId);
+
+        if (conflictCount > 0) {
+            throw new BusinessException(String.format(
+                    "该时间段影厅已有排片（需预留%d分钟清场时间）", cleanupMinutes));
+        }
+    }
+
+    /** 合并座位布局、有效订单与临时占用，返回当前座位状态。 */
     public Map<String, Object> getSeatStatus(Long id) {
         Showtime showtime = showtimeMapper.selectById(id);
         if (showtime == null) {

@@ -1,0 +1,28 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_ai_job",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "id": {
+      "bsonType": "string"
+    },
+    "ownerId": {
+      "bsonType": "number"
+    },
+    "kind": {
+      "bsonType": "string"
+    },
+    "status": {
+      "bsonType": "string"
+    },
+    "inputHash": {
+      "bsonType": "string"
+    }
+  }
+}

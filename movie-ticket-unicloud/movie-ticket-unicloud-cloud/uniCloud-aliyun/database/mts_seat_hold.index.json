@@ -1,0 +1,45 @@
+[
+  {
+    "IndexName": "showtimeId_seat_unique",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "showtimeId",
+          "Direction": "1"
+        },
+        {
+          "Name": "seat",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "orderNo_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "orderNo",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "expiresAt_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "expiresAt",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  }
+]

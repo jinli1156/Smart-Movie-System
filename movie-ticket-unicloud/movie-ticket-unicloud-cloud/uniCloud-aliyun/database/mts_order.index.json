@@ -1,0 +1,88 @@
+[
+  {
+    "IndexName": "id_unique",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "id",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "orderNo_unique",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "orderNo",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "ticketCode_unique",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "ticketCode",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true,
+      "MgoIsSparse": true
+    }
+  },
+  {
+    "IndexName": "assistantDraftId_unique",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "assistantDraftId",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true,
+      "MgoIsSparse": true
+    }
+  },
+  {
+    "IndexName": "userId_createTime_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "userId",
+          "Direction": "1"
+        },
+        {
+          "Name": "createTime",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "showtimeId_status_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "showtimeId",
+          "Direction": "1"
+        },
+        {
+          "Name": "status",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  }
+]

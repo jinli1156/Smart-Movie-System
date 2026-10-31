@@ -1,693 +1,382 @@
 <template>
-  <div class="login-page">
-    <header class="header-bar">
-      <div class="header-logo">
-        <img class="header-logo-image" src="/cinema-logo.png" alt="JINLI ADMIN" />
-        <span class="logo-text">JINLI · ADMIN</span>
+  <div class="auth-page admin-auth" @pointermove="moveLight" @pointerleave="resetLight">
+    <div class="ambient-background" aria-hidden="true">
+      <div class="ambient-glow ambient-glow-warm"></div>
+      <div class="ambient-glow ambient-glow-sage"></div>
+      <div ref="cinemaAtmosphere" class="cinema-atmosphere">
+        <div class="projector-beam projector-beam-primary"></div>
+        <div class="projector-beam projector-beam-secondary"></div>
+        <div class="light-orbit light-orbit-outer"></div>
+        <div class="light-orbit light-orbit-inner"></div>
+        <span v-for="particle in 14" :key="particle" class="film-dust" :style="{
+          left: `${(particle * 37) % 100}%`, top: `${(particle * 23) % 95}%`,
+          '--drift-time': `${16 + particle % 5 * 3}s`, '--drift-delay': `${-particle * 2.7}s`,
+          '--dust-size': `${particle % 3 + 2}px`
+        }"></span>
       </div>
-      <div class="lang-switch">
-        <el-icon><Connection /></el-icon>
-        <span class="lang-label">简体中文</span>
-        <el-icon class="small"><ArrowDown /></el-icon>
+      <div ref="pointerLight" class="pointer-light"></div>
+    </div>
+    <header class="auth-header">
+      <div class="brand-lockup">
+        <img src="/xiangzhi-ticket.png" alt="" />
+        <span class="brand-wordmark" role="img" aria-label="响指电影"></span>
+        <span class="brand-caption">管理工作台</span>
       </div>
+      <span class="header-status"><span class="signal"></span> 幕后有序，台前精彩</span>
     </header>
 
-    <main class="center-wrap">
-      <section class="brand-block">
-        <div class="brand-row">
-          <div class="brand-icon">
-            <img class="brand-logo-image" src="/cinema-logo.png" alt="JINLI ADMIN" />
+    <main class="auth-main">
+      <section class="story" aria-labelledby="story-title">
+        <div class="overline"><span class="signal"></span> GREAT STORIES START BEHIND THE SCENES</div>
+        <h1 id="story-title">好戏背后，<br /><em>由你掌镜。</em></h1>
+        <p class="story-copy">从第一场排片，到最后一张检票。<br />让每一场热爱，都能准时开场。</p>
+        <div class="scene backstage" aria-hidden="true">
+          <div class="scene-label">XIANGZHI / CONTROL ROOM</div><span class="scene-index">SCENE / 02</span>
+          <div class="schedule-board">
+            <div class="board-heading"><span><i></i> 放映计划</span><span>PROGRAMMING</span></div>
+            <div class="timeline"><span></span><span>14:00</span><span>16:00</span><span>18:00</span><span>20:00</span></div>
+            <div v-for="(hall, index) in halls" :key="hall" class="schedule-row">
+              <span class="hall-name">{{ hall }}</span>
+              <div class="track"><span class="show-block" :class="'show-' + index"><i></i>{{ ['光影序章', '心动时刻', '好戏开场'][index] }}</span><span class="show-block next-block"></span></div>
+            </div>
+            <div class="playhead"><span></span></div>
           </div>
-          <div class="brand-text">
-            <div class="brand-title">JINLI ADMIN</div>
-            <div class="brand-sub">影管理 · 管理员后台</div>
-          </div>
+          <div class="backstage-pass"><el-icon><VideoCamera /></el-icon><span>每一幕精彩<br /><strong>都有你在场</strong></span><span class="pass-star">✦</span></div>
+          <div class="scene-footer"><span>YOU MAKE THE MAGIC HAPPEN.</span><span>✦</span></div>
         </div>
-        <div class="brand-note">请使用您的工号与密码登录管理控制台</div>
+        <div class="story-bottom"><p><strong>影院管理</strong> / 智能排片 / 经营洞察</p><span class="frame-counter">02 — BEHIND THE SCENES</span></div>
       </section>
 
-      <section class="login-card">
-        <header class="card-title-row">
-          <div class="card-title">欢迎回来</div>
-          <div class="card-subtitle">Sign in to continue · 安全登录</div>
-        </header>
-
-        <div class="tabs-row">
-          <div
-            class="tab"
-            :class="{ active: activeTab === 'account' }"
-            @click="activeTab = 'account'"
-          >账号密码</div>
-          <div
-            class="tab"
-            :class="{ active: activeTab === 'sms' }"
-            @click="activeTab = 'sms'"
-          >手机验证码</div>
-        </div>
-
-        <div class="form-column" v-if="activeTab === 'account'">
-          <div class="field">
-            <div class="field-label">管理员账号</div>
-            <div class="input-row" :class="{ valid: form.username && form.username.length >= 3 }">
-              <el-icon class="leading"><User /></el-icon>
-              <input
-                v-model="form.username"
-                class="input-control"
-                type="text"
-                placeholder="请输入管理员账号"
-                autocomplete="username"
-              />
-              <el-icon v-if="form.username && form.username.length >= 3" class="trailing ok"><CircleCheck /></el-icon>
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label-row">
-              <span class="field-label">密码</span>
-              <a class="link-forgot" @click.prevent>忘记密码</a>
-            </div>
-            <div class="input-row password">
-              <el-icon class="leading"><Lock /></el-icon>
-              <input
-                v-model="form.password"
-                class="input-control"
-                :type="showPwd ? 'text' : 'password'"
-                placeholder="请输入密码"
-                autocomplete="current-password"
-                @keyup.enter="handleLogin"
-              />
-              <button
-                class="password-toggle"
-                type="button"
-                :aria-label="showPwd ? '隐藏密码' : '显示密码'"
-                @click="showPwd = !showPwd"
-              >
-                <el-icon class="trailing toggle">
-                  <View v-if="showPwd" />
-                  <Hide v-else />
-                </el-icon>
-              </button>
-            </div>
-          </div>
-
-          <div class="field">
-            <div class="field-label">验证码</div>
-            <div class="captcha-row">
-              <div class="input-row captcha">
-                <el-icon class="leading"><Lock /></el-icon>
-                <input
-                  v-model="form.captcha"
-                  class="input-control"
-                  type="text"
-                  placeholder="请输入验证码"
-                  maxlength="4"
-                />
+      <section class="ticket-wrap" aria-labelledby="login-title">
+        <div class="ticket-kicker"><span>THE PEOPLE BEHIND THE PICTURE</span><span>STAFF</span></div>
+        <div class="ticket" :class="{ 'is-admitted': admitted }">
+          <div class="ticket-top">
+            <div class="admit-label"><el-icon><Key /></el-icon> BACKSTAGE PASS · 幕后通行证</div>
+            <h2 id="login-title">欢迎回到幕后</h2>
+            <p class="welcome-copy">使用管理员账号，进入响指电影管理工作台。</p>
+            <form class="auth-form" @submit.prevent="handleLogin">
+              <div class="field">
+                <label for="username">管理员账号</label>
+                <div class="input-row"><el-icon><User /></el-icon><input id="username" v-model="form.username" placeholder="请输入管理员账号" autocomplete="username" required /></div>
               </div>
-              <div class="captcha-img" @click="rollCaptcha">
-                <span class="cc cc-1">{{ captcha[0] }}</span>
-                <span class="cc cc-2">{{ captcha[1] }}</span>
-                <span class="cc cc-3">{{ captcha[2] }}</span>
-                <span class="cc cc-4">{{ captcha[3] }}</span>
+              <div class="field">
+                <div class="field-head"><label for="password">密码</label><button type="button" class="quiet-button" @click="showHelp">忘记密码？</button></div>
+                <div class="input-row">
+                  <el-icon><Lock /></el-icon>
+                  <input id="password" v-model="form.password" :type="showPwd ? 'text' : 'password'" placeholder="请输入密码" autocomplete="current-password" required />
+                  <button type="button" class="password-toggle" :aria-label="showPwd ? '隐藏密码' : '显示密码'" :aria-pressed="showPwd" @click="showPwd = !showPwd"><el-icon><View v-if="showPwd" /><Hide v-else /></el-icon></button>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div class="remember-row">
-            <label class="remember-left">
-              <span class="checkbox" :class="{ checked: remember }" @click="remember = !remember">
-                <el-icon v-if="remember" class="tiny"><Check /></el-icon>
-              </span>
-              <span class="remember-label">7天内自动登录</span>
-            </label>
-            <div class="remember-right">
-              <el-icon class="tiny shield"><Lock /></el-icon>
-              <span class="secure-label">安全连接</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="form-column sms" v-else>
-          <div class="field">
-            <div class="field-label">手机号</div>
-            <div class="input-row">
-              <el-icon class="leading"><Iphone /></el-icon>
-              <input
-                v-model="form.phone"
-                class="input-control"
-                type="tel"
-                placeholder="请输入管理员手机号"
-                maxlength="11"
-              />
-            </div>
-          </div>
-          <div class="field">
-            <div class="field-label">短信验证码</div>
-            <div class="captcha-row">
-              <div class="input-row captcha">
-                <el-icon class="leading"><Message /></el-icon>
-                <input
-                  v-model="form.smsCode"
-                  class="input-control"
-                  type="text"
-                  placeholder="请输入短信验证码"
-                  maxlength="6"
-                />
+              <div class="field">
+                <div class="field-head"><label for="captcha">验证码</label><button type="button" class="quiet-button" :disabled="loading || captchaLoading" @click="rollCaptcha">换一张 <span aria-hidden="true">↻</span></button></div>
+                <div class="captcha-row">
+                  <div class="input-row"><el-icon><CircleCheck /></el-icon><input id="captcha" v-model="captcha" placeholder="请输入验证码" maxlength="4" autocomplete="off" spellcheck="false" required /></div>
+                  <button type="button" class="captcha-img" :disabled="loading || captchaLoading" aria-label="刷新验证码" @click="rollCaptcha"><img v-if="captchaImage" :src="captchaImage" alt="图形验证码，点击可刷新" /><span v-else>{{ captchaLoading ? '加载中…' : '点击重试' }}</span></button>
+                </div>
               </div>
-              <button class="sms-btn" :disabled="smsCountdown > 0" @click="sendSms">
-                {{ smsCountdown > 0 ? `${smsCountdown}s` : '获取验证码' }}
-              </button>
+              <p v-if="captchaError" class="captcha-error" role="status">{{ captchaError }}</p>
+              <button class="submit-button" type="submit" :disabled="loading || captchaLoading || !captchaId" :aria-busy="loading"><span>{{ admitted ? '验证通过，欢迎进入' : loading ? '正在验证…' : '登录控制台' }}</span><el-icon><Check v-if="admitted" /><Right v-else /></el-icon></button>
+              <p class="form-note"><el-icon><Lock /></el-icon> 仅限授权管理员与影院工作人员使用</p>
+            </form>
+          </div>
+          <div class="ticket-stub">
+            <div><p class="stub-title">你的工作台，每一场的起点。</p><p class="stub-subtitle">XIANGZHI CINEMA · STAFF ACCESS</p></div><div class="barcode" aria-hidden="true"></div>
+            <div v-if="admitted" class="admission-stamp" aria-hidden="true">
+              <el-icon><CircleCheck /></el-icon>
+              <div><strong>验证通过</strong><span>VERIFIED · STAFF ACCESS</span></div>
             </div>
           </div>
-          <div class="remember-row">
-            <div class="remember-right">
-              <el-icon class="tiny shield"><Lock /></el-icon>
-              <span class="secure-label">短信通道已加密</span>
-            </div>
-          </div>
         </div>
-
-        <button class="login-button" :disabled="loading" @click="handleLogin">
-          <span class="login-label">{{ loading ? '登录中…' : '登录控制台' }}</span>
-          <el-icon class="arrow"><Right /></el-icon>
-        </button>
-
-        <div class="alt-row">
-          <span class="line"></span>
-          <span class="alt-text">其它登录方式</span>
-          <span class="line"></span>
-        </div>
-
-        <div class="sso-row">
-          <button class="sso" @click.prevent>
-            <el-icon><Key /></el-icon>
-            <span>工号 SSO</span>
-          </button>
-          <button class="sso" @click.prevent>
-            <el-icon><Grid /></el-icon>
-            <span>扫码登录</span>
-          </button>
-          <button class="sso" @click.prevent>
-            <el-icon><Pointer /></el-icon>
-            <span>指纹</span>
-          </button>
-        </div>
+        <p v-if="admitted" class="ticket-after" role="status">登录成功，正在进入管理工作台…</p>
+        <p v-else class="ticket-after">账号或权限遇到问题？<button type="button" class="quiet-button" @click="showHelp">联系平台管理员 <span aria-hidden="true">↗</span></button></p>
       </section>
-
-      <div class="card-footnote">
-        <el-icon class="tiny"><InfoFilled /></el-icon>
-        <span>仅限授权员工使用 · 所有操作日志将被记录 · v2.6.0</span>
-      </div>
     </main>
-
-    <footer class="page-footer">
-      <div class="footer-l">
-        <span>© 2026 JINLI Film Group</span>
-        <span class="dot">·</span>
-        <span>粤ICP备 20260520 号</span>
-        <span class="dot">·</span>
-        <span>公网安备 44030302026005 号</span>
-      </div>
-      <div class="footer-r">
-        <a @click.prevent>使用协议</a>
-        <a @click.prevent>隐私政策</a>
-        <a @click.prevent>帮助中心</a>
-        <a @click.prevent>管理员手册</a>
-      </div>
-    </footer>
+    <footer class="auth-footer"><span>© {{ new Date().getFullYear() }} 响指电影 · 管理工作台</span><span class="footer-motto">EVERY GREAT SHOW HAS A GREAT CREW.</span></footer>
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, onMounted, onBeforeUnmount } from 'vue'
+/**
+ * 后台登录：验证账号与验证码，并检查用户是否具有管理权限。
+ */
+import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import {
-  ArrowDown,
-  Check,
-  CircleCheck,
-  Connection,
-  Grid,
-  Hide,
-  InfoFilled,
-  Iphone,
-  Key,
-  Lock,
-  Message,
-  Pointer,
-  Right,
-  User,
-  View
-} from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { Check, CircleCheck, Hide, Key, Lock, Right, User, VideoCamera, View } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
+import { useLoginCaptcha } from '@/composables/useLoginCaptcha'
 
 const router = useRouter()
 const userStore = useUserStore()
-
-const activeTab = ref<'account' | 'sms'>('account')
 const loading = ref(false)
-const showPwd = ref(false)
-const remember = ref(true)
-const smsCountdown = ref(0)
-let smsTimer: number | null = null
-
-const form = reactive({
-  username: '',
-  password: '',
-  captcha: '',
-  phone: '',
-  smsCode: ''
-})
-
-const captcha = ref<string[]>([])
-const captchaSeed = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'
-
-const rollCaptcha = () => {
-  const next: string[] = []
-  for (let i = 0; i < 4; i++) {
-    next.push(captchaSeed[Math.floor(Math.random() * captchaSeed.length)])
-  }
-  captcha.value = next
+const admitted = ref(false)
+let disposed = false
+const pointerLight = ref<HTMLElement | null>(null)
+const cinemaAtmosphere = ref<HTMLElement | null>(null)
+let pointerMedia: MediaQueryList | undefined
+let pointerFrame = 0
+let pointerX = 0
+let pointerY = 0
+const resetLight = () => {
+  cancelAnimationFrame(pointerFrame)
+  pointerFrame = 0
+  pointerLight.value?.style.setProperty('opacity', '0')
+  cinemaAtmosphere.value?.style.removeProperty('transform')
 }
+const moveLight = (event: PointerEvent) => {
+  if (!pointerMedia?.matches || event.pointerType !== 'mouse') return
+  pointerX = event.clientX
+  pointerY = event.clientY
+  if (pointerFrame) return
+  pointerFrame = requestAnimationFrame(() => {
+    pointerFrame = 0
+    if (!pointerLight.value) return
+    pointerLight.value.style.transform = `translate3d(${pointerX}px, ${pointerY}px, 0)`
+    pointerLight.value.style.opacity = '1'
+    const x = (pointerX / window.innerWidth - .5) * 20
+    const y = (pointerY / window.innerHeight - .5) * 14
+    cinemaAtmosphere.value?.style.setProperty('transform', `translate3d(${x}px, ${y}px, 0)`)
+  })
+}
+onMounted(() => {
+  pointerMedia = window.matchMedia('(min-width: 761px) and (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)')
+  pointerMedia.addEventListener('change', resetLight)
+})
+let admissionTimer: ReturnType<typeof setTimeout> | undefined
+let finishAdmission: (() => void) | undefined
+onBeforeUnmount(() => {
+  disposed = true
+  resetLight()
+  pointerMedia?.removeEventListener('change', resetLight)
+  clearTimeout(admissionTimer)
+  finishAdmission?.()
+})
+const showPwd = ref(false)
+const form = reactive({ username: '', password: '' })
+const halls = ['01 厅', '02 厅', '03 厅']
+const { captchaId, captchaImage, captcha, captchaLoading, captchaError, refreshCaptcha: rollCaptcha } = useLoginCaptcha()
+const showHelp = () => ElMessage.info('请联系为你分配账号的平台管理员，协助重置密码或开通权限。')
 
-const sendSms = () => {
-  if (!form.phone || form.phone.length < 11) {
-    ElMessage.warning('请输入正确的手机号')
+/** 提交账号、密码和验证码，登录成功后进入管理页面。 */
+const handleLogin = async () => {
+  if (loading.value) return
+  if (!form.username.trim() || !form.password) {
+    ElMessage.warning('请输入管理员账号和密码')
     return
   }
-  smsCountdown.value = 60
-  smsTimer = window.setInterval(() => {
-    smsCountdown.value -= 1
-    if (smsCountdown.value <= 0 && smsTimer) {
-      window.clearInterval(smsTimer)
-      smsTimer = null
-    }
-  }, 1000)
-  ElMessage.success('验证码已发送')
-}
-
-const handleLogin = async () => {
-  if (activeTab.value === 'account') {
-    if (!form.username) {
-      ElMessage.warning('请输入管理员账号')
-      return
-    }
-    if (!form.password) {
-      ElMessage.warning('请输入密码')
-      return
-    }
-    if (!form.captcha || form.captcha.toUpperCase() !== captcha.value.join('')) {
-      ElMessage.warning('验证码错误')
-      rollCaptcha()
-      form.captcha = ''
-      return
-    }
-  } else {
-    if (!form.phone) {
-      ElMessage.warning('请输入手机号')
-      return
-    }
-    if (!form.smsCode) {
-      ElMessage.warning('请输入短信验证码')
-      return
-    }
+  if (!captchaId.value || !captcha.value.trim()) {
+    ElMessage.warning('请输入验证码')
+    return
   }
-
   loading.value = true
   try {
-    const account = activeTab.value === 'account' ? form.username : form.phone
-    await userStore.login(account, form.password || form.smsCode)
+    await userStore.login(form.username.trim(), form.password, captchaId.value, captcha.value.trim())
+    if (disposed) return
     if (userStore.userInfo?.role === 'USER') {
       ElMessage.error('权限不足，请使用管理员账号登录')
       userStore.logout()
+      await rollCaptcha()
       return
     }
-    ElMessage.success('登录成功')
-    router.push('/dashboard')
+    if (disposed) return
+    admitted.value = true
+    await new Promise<void>((resolve) => {
+      finishAdmission = resolve
+      admissionTimer = setTimeout(resolve, window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 250 : 850)
+    })
+    if (disposed) return
+    await router.push('/dashboard')
   } catch (error) {
     console.error('登录失败:', error)
+    if (!disposed) await rollCaptcha()
   } finally {
     loading.value = false
+    admitted.value = false
+    finishAdmission = undefined
   }
 }
-
-onMounted(() => {
-  rollCaptcha()
-})
-
-onBeforeUnmount(() => {
-  if (smsTimer) {
-    window.clearInterval(smsTimer)
-    smsTimer = null
-  }
-})
 </script>
 
 <style scoped>
-.login-page {
-  --background: #f2f3f0;
-  --card: #ffffff;
-  --border: #cbccc9;
-  --primary: #ff8400;
-  --primary-shadow: rgba(255, 132, 0, 0.25);
-  --text: #111111;
-  --muted: #666666;
-  --success: #22a06b;
-  --font-primary: 'JetBrains Mono', ui-monospace, monospace;
-  --font-secondary: 'Geist', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  min-height: 100vh;
-  background: var(--background);
-  display: flex;
-  flex-direction: column;
-  font-family: var(--font-secondary);
-  color: var(--text);
-}
+.auth-page .captcha-img { height: 50px; min-height: 0; padding: 0; overflow: hidden; }
+.captcha-img img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.auth-page .captcha-img > span { font: 12px/1.5 "Microsoft YaHei", sans-serif; letter-spacing: 0; }
+.captcha-error { font-size: 11px; color: #bd451e; margin: 0; }
 
-.small { font-size: 14px; }
-.tiny { font-size: 14px; }
+.auth-page {
+  position: relative; isolation: isolate;
+  --paper: #f6f3eb; --ink: #22241f; --orange: #ff6b2b; --muted: #797b72;
+  min-height: 100vh; min-height: 100svh; padding: 0 5.2%;
+  background: var(--paper); color: var(--ink);
+  font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  display: flex; flex-direction: column; -webkit-font-smoothing: antialiased;
+}
+.ambient-background { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; mask-image: linear-gradient(to bottom, #000 0%, #000 75%, transparent 100%); }
+.ambient-glow { position: absolute; width: min(75vw, 1000px); aspect-ratio: 1; border-radius: 50%; }
+.ambient-glow-warm { top: -36%; right: -15%; background: radial-gradient(circle, #efb27830, #efb2780c 45%, transparent 70%); animation: warm-light-drift 22s ease-in-out infinite alternate; }
+.ambient-glow-sage { bottom: -46%; left: -18%; background: radial-gradient(circle, #98ae8730, #98ae870a 45%, transparent 70%); animation: sage-light-drift 26s ease-in-out infinite alternate; }
+.pointer-light { position: absolute; top: -280px; left: -280px; width: 560px; height: 560px; opacity: 0; background: radial-gradient(circle, #f4b47726, #f4b4770b 40%, transparent 68%); transition: transform .65s cubic-bezier(.2,.65,.3,1), opacity .6s ease; }
+.auth-page:focus-within .ambient-glow { animation-play-state: paused; }
+.cinema-atmosphere { position: absolute; inset: -24px; transition: transform 1.2s cubic-bezier(.2,.65,.3,1); }
+.projector-beam { position: absolute; width: 150vmax; height: 150vmax; top: -75vmax; left: calc(78% - 75vmax); border-radius: 50%; transform-origin: center; }
+.projector-beam-primary { background: conic-gradient(from 151deg, transparent 0deg, #e8b57b00 4deg, #e8b57b24 13deg, #fffaf2a6 18deg, #e8b57b18 24deg, transparent 31deg); animation: projector-sweep 24s ease-in-out infinite alternate; }
+.projector-beam-secondary { background: conic-gradient(from 183deg, transparent 0deg, #a9b2941c 10deg, #fffdf570 16deg, transparent 27deg); animation: projector-sweep 31s -12s ease-in-out infinite alternate-reverse; }
+.light-orbit { position: absolute; right: -190px; top: -320px; width: 690px; height: 690px; border: 1px solid #aa896b1c; border-radius: 50%; animation: orbit-turn 65s linear infinite; }
+.light-orbit::after { content: ''; position: absolute; left: 50%; top: -3px; width: 5px; height: 5px; border-radius: 50%; background: #d1935c80; box-shadow: 0 0 16px #e6a06555; }
+.light-orbit-inner { width: 550px; height: 550px; top: -250px; right: -120px; border-style: dashed; border-color: #aa896b14; animation-direction: reverse; animation-duration: 90s; }
+.film-dust { position: absolute; width: var(--dust-size); height: var(--dust-size); border-radius: 50%; background: #b78856; opacity: .2; animation: dust-drift var(--drift-time) var(--drift-delay) ease-in-out infinite; }
+.auth-page:focus-within .cinema-atmosphere > * { animation-play-state: paused; }
+@keyframes projector-sweep { from { transform: rotate(-9deg); opacity: .55; } to { transform: rotate(12deg); opacity: .95; } }
+@keyframes orbit-turn { to { transform: rotate(360deg); } }
+@keyframes dust-drift {
+  0%, 100% { transform: translate3d(0, 14px, 0); opacity: 0; }
+  25% { opacity: .28; }
+  70% { opacity: .16; }
+  90% { transform: translate3d(28px, -65px, 0); opacity: 0; }
+}
+@keyframes warm-light-drift { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-12vw, 12vh, 0) scale(1.12); } }
+@keyframes sage-light-drift { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(14vw, -10vh, 0); } }
+@media (max-width: 760px), (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+  .ambient-glow { animation: none; }
+  .pointer-light { display: none; }
+  .cinema-atmosphere { display: none; }
+}
+.auth-page button, .auth-page input { font: inherit; }
+.auth-page button, .auth-page a { -webkit-tap-highlight-color: transparent; }
+.auth-page button { cursor: pointer; }
+.auth-page a { text-decoration: none; color: inherit; }
+.auth-page button:focus-visible, .auth-page a:focus-visible, .auth-page input:focus-visible {
+  outline: 3px solid var(--orange); outline-offset: 5px;
+}
+.auth-header { height: 108px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.brand-lockup { display: flex; align-items: center; gap: 16px; }
+.brand-lockup img { width: 43px; height: 43px; object-fit: contain; transform: none; }
+.brand-caption { border-left: 1px solid #cccac2; padding-left: 18px; font-size: 12px; color: #78796f; letter-spacing: 2px; }
+.header-link { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; }
+.header-link:hover { color: #c94a15; }
+.header-link .el-icon { font-size: 17px; }
+.auth-main { width: 100%; max-width: 1360px; margin: auto; display: grid; grid-template-columns: minmax(0, 1.22fr) minmax(365px, .85fr); gap: clamp(44px, 6.4vw, 104px); align-items: center; padding: 28px 0 48px; }
+.story { min-width: 0; }
+.overline { display: flex; align-items: center; gap: 10px; font: 10px/1.5 ui-monospace, Consolas, monospace; letter-spacing: 2.4px; }
+.signal { width: 6px; height: 6px; background: var(--orange); border-radius: 50%; box-shadow: 0 0 0 4px #ff6b2b16; }
+.story h1 { margin: 24px 0 19px; font-size: clamp(44px, 4.35vw, 68px); line-height: 1.22; font-weight: 850; letter-spacing: -2px; }
+.story h1 em { color: #e85a20; font-style: normal; position: relative; }
+.story-copy { font-size: 14px; line-height: 1.9; color: #7a7b72; }
+.scene { position: relative; margin-top: 35px; height: 290px; border-radius: 14px; overflow: hidden; background: #20251f; isolation: isolate; }
+.scene-label { position: absolute; top: 22px; left: 23px; z-index: 3; font: 9px ui-monospace, Consolas, monospace; letter-spacing: 2px; color: #b6beb0; }
+.scene-label::before { content: ''; display: inline-block; width: 5px; height: 5px; margin-right: 8px; border-radius: 50%; background: var(--orange); }
+.scene-index { position: absolute; top: 22px; right: 23px; font: 10px ui-monospace, Consolas, monospace; color: #9ca396; }
+.scene-footer { position: absolute; bottom: 18px; left: 23px; right: 23px; display: flex; justify-content: space-between; color: #a8b0a0; font-size: 10px; letter-spacing: 1.4px; z-index: 4; }
+.story-bottom { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; gap: 15px; }
+.story-bottom p { font-size: 12px; color: #6d7065; }
+.story-bottom strong { color: #33382e; font-weight: 600; }
+.frame-counter { font: 10px ui-monospace, Consolas, monospace; color: #8a8c81; letter-spacing: 1px; }
+.ticket-wrap { position: relative; width: 100%; max-width: 460px; justify-self: center; }
+.ticket-kicker { display: flex; align-items: center; justify-content: space-between; margin: 0 2px 13px; color: #898a7e; font: 10px ui-monospace, Consolas, monospace; letter-spacing: 1.8px; }
+.ticket { position: relative; isolation: isolate; background: linear-gradient(115deg, #fffefb, #faf7ef); border: 1px solid #e3ded1; border-radius: 16px; box-shadow: inset 0 1px 0 #fff, inset 0 -3px 0 #e8e1d34d, 0 22px 50px -18px #443b3029, 0 3px 6px #30322208; }
+.ticket::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; opacity: .3; background-image: repeating-linear-gradient(0deg, #99886c0a 0 1px, transparent 1px 3px), repeating-linear-gradient(93deg, #99886c09 0 1px, transparent 1px 5px); }
+.ticket-top { padding: 32px 35px 26px; }
+.admit-label { font: 10px ui-monospace, Consolas, monospace; letter-spacing: 2px; color: #a35531; display: flex; align-items: center; gap: 8px; text-shadow: 0 1px 0 #fff; }
+.admit-label .el-icon { font-size: 17px; }
+.ticket h2 { margin: 18px 0 10px; font-size: 29px; letter-spacing: -.6px; font-weight: 750; }
+.welcome-copy { font-size: 12px; line-height: 1.8; color: #86867b; }
+.auth-form { display: flex; flex-direction: column; gap: 20px; margin-top: 27px; }
+.field label, .field-head label { font-size: 12px; font-weight: 600; }
+.field-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 9px; }
+.field > label { display: block; margin-bottom: 9px; }
+.quiet-button { border: 0; background: none; color: #818277; padding: 0; font-size: 11px !important; }
+.quiet-button:hover { color: #bf4718; }
+.input-row { display: flex; align-items: center; height: 50px; border: 1px solid #dfdfd5; border-radius: 7px; background: #faf9f4; padding: 0 14px; gap: 10px; transition: border-color .2s, box-shadow .2s; }
+.input-row:focus-within { border-color: #e67b43; box-shadow: 0 0 0 3px #ff6b2b0d; background: #fff; }
+.input-row > .el-icon { color: #939688; font-size: 17px; flex-shrink: 0; }
+.input-row input { border: 0; outline: none !important; width: 100%; min-width: 0; height: 100%; background: transparent; font-size: 13px; color: var(--ink); }
+.input-row input::placeholder { color: #a0a195; }
+.password-toggle { background: none; border: 0; color: #858879; display: grid; place-items: center; padding: 7px 0 7px 7px; }
+.password-toggle .el-icon { font-size: 17px; }
+.form-note { color: #828377; font-size: 11px; display: flex; align-items: center; gap: 7px; line-height: 1.7; }
+.submit-button { border: 0; width: 100%; height: 51px; border-radius: 7px; background: #ff7134; color: #291b13; padding: 0 18px; display: flex; align-items: center; justify-content: space-between; font-size: 14px !important; font-weight: 650 !important; transition: background .2s, transform .2s, box-shadow .2s; }
+.submit-button:hover { background: #ff8148; box-shadow: 0 6px 18px #ed6a2826; transform: translateY(-1px); }
+.submit-button:disabled { cursor: wait; opacity: .65; transform: none; }
+.submit-button .el-icon { font-size: 20px; }
+.register-line { text-align: center; margin-top: 23px; font-size: 12px; color: #8a8b80; }
+.register-line a { color: #be481b; font-weight: 600; padding: 6px; }
+.register-line a:hover { text-decoration: underline; }
+.ticket-stub { position: relative; padding: 23px 35px; border-top: 1px dashed #cec6b6; box-shadow: inset 0 1px 0 #fff; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.is-admitted .ticket-stub > :not(.admission-stamp) { visibility: hidden; }
+.admission-stamp { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-6deg); display: flex; align-items: center; gap: 10px; width: max-content; padding: 8px 17px; border: 2px solid #437254; outline: 1px solid #43725470; outline-offset: -5px; border-radius: 5px; color: #386447; animation: stamp-admission .32s ease-out both; }
+.admission-stamp > .el-icon { font-size: 28px; }
+.admission-stamp strong { display: block; font-size: 21px; line-height: 1.3; letter-spacing: 5px; }
+.admission-stamp span { display: block; margin-top: 3px; font: 8px/1.4 ui-monospace, Consolas, monospace; letter-spacing: 1px; }
+.is-admitted .submit-button { background: #e4ecdf; color: #31583e; opacity: 1; }
+@keyframes stamp-admission {
+  from { opacity: 0; transform: translate(-50%, -50%) rotate(-10deg) scale(1.22); }
+  to { opacity: 1; transform: translate(-50%, -50%) rotate(-6deg) scale(1); }
+}
+.ticket-stub::before, .ticket-stub::after { content: ''; position: absolute; width: 22px; height: 22px; border: 1px solid #e3e0d6; border-radius: 50%; background: var(--paper); top: -12px; }
+.ticket-stub::before { left: -12px; clip-path: inset(0 0 0 50%); }
+.ticket-stub::after { right: -12px; clip-path: inset(0 50% 0 0); }
+.stub-title { font-size: 12px; font-weight: 600; }
+.stub-subtitle { font: 8px ui-monospace, Consolas, monospace; letter-spacing: 1.5px; color: #929486; margin-top: 7px; }
+.barcode { width: 93px; height: 28px; opacity: .65; background: repeating-linear-gradient(90deg,#39402e 0 1px,transparent 1px 3px,#39402e 3px 6px,transparent 6px 8px,#39402e 8px 9px,transparent 9px 13px,#39402e 13px 15px,transparent 15px 17px); }
+.ticket-after { margin-top: 19px; text-align: center; color: #8c8d81; font-size: 10px; letter-spacing: .5px; }
+.auth-footer { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-top: 1px solid #ddded2; color: #929386; font-size: 10px; letter-spacing: 1px; }
+.footer-motto { padding-right: 100px; font: 9px ui-monospace, Consolas, monospace; letter-spacing: 2px; }
+@media (min-width: 1600px) { .auth-header, .auth-footer { width: 100%; max-width: 1540px; margin-inline: auto; } .scene { height: 330px; } }
+@media (max-width: 1050px) { .auth-page { padding-inline: 4%; } .auth-main { gap: 36px; grid-template-columns: minmax(0,1fr) minmax(340px,.95fr); } .story h1 { font-size: 45px; } .ticket-top { padding: 28px; } .ticket-stub { padding-inline: 28px; } .scene { height: 255px; } .frame-counter { display: none; } }
+@media (max-width: 760px) {
+  .auth-page { padding-inline: 24px; }
+  .auth-header { height: 85px; } .brand-caption { display: none; } .brand-lockup { gap: 9px; } .brand-lockup img { width: 34px; height: 34px; }
+  .auth-main { grid-template-columns: 1fr; gap: 30px; max-width: 460px; padding: 18px 0 40px; }
+  .story h1 { font-size: 42px; margin-top: 16px; margin-bottom: 12px; } .story h1 br { display: none; }
+  .story-copy { font-size: 12px; } .scene, .story-bottom { display: none; }
+  .overline { font-size: 9px; letter-spacing: 1.8px; }
+  .ticket-top { padding: 28px; } .ticket-kicker { font-size: 9px; }
+  .auth-footer { padding: 17px 0 75px; align-items: flex-start; min-height: 0; } .footer-motto { display: none; }
+}
+@media (max-width: 390px) {
+  .auth-page { padding-inline: 18px; } .brand-lockup .brand-wordmark { width: 106px; height: 25px; } .header-link { font-size: 11px; }
+  .story h1 { font-size: 35px; } .ticket-top { padding: 24px; } .ticket-stub { padding-inline: 24px; } .ticket h2 { font-size: 26px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 
-.header-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 32px 60px 0 60px;
-}
-.header-logo { display: inline-flex; align-items: center; gap: 10px; }
-.header-logo-image {
-  width: 24px;
-  height: 24px;
-  display: block;
-  object-fit: contain;
-}
-.logo-dot {
-  width: 8px; height: 8px; border-radius: 999px; background: var(--primary);
-  display: inline-block;
-}
-.logo-text {
-  font-family: var(--font-primary);
-  font-size: 13px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-}
-.lang-switch {
-  display: inline-flex; align-items: center; gap: 8px;
-  padding: 8px 14px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  cursor: pointer;
-}
-.lang-switch .el-icon { color: var(--muted); font-size: 17px; }
-.lang-label { font-size: 13px; }
-
-.center-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 24px 60px;
-}
-
-.brand-block {
-  display: flex; flex-direction: column; align-items: center; gap: 10px;
-}
-.brand-row { display: inline-flex; align-items: center; gap: 14px; }
-.brand-icon {
-  width: 44px; height: 44px; border-radius: 12px;
-  background: var(--primary);
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.brand-icon .el-icon { font-size: 26px; color: #111111; }
-.brand-text { display: flex; flex-direction: column; gap: 4px; }
-.brand-title {
-  font-family: var(--font-primary);
-  font-size: 22px;
-  font-weight: 600;
-  line-height: 1.1;
-}
-.brand-sub { font-size: 13px; color: var(--muted); }
-.brand-note { font-size: 13px; color: var(--muted); }
-
-.login-card {
-  width: 480px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 40px 40px 32px 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  box-shadow: 0 8px 24px rgba(17, 17, 17, 0.08);
-}
-
-.card-title-row { display: flex; flex-direction: column; gap: 6px; }
-.card-title { font-size: 22px; font-weight: 600; }
-.card-subtitle {
-  font-family: var(--font-primary);
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.tabs-row {
-  display: flex;
-  gap: 4px;
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 4px;
-}
-.tab {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 12px;
-  border-radius: 8px;
-  font-size: 13px;
-  color: var(--muted);
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.15s ease, color 0.15s ease;
-}
-.tab.active {
-  background: var(--card);
-  color: var(--text);
-  border: 1px solid var(--border);
-  font-weight: 500;
-}
-
-.form-column {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.field { display: flex; flex-direction: column; gap: 8px; }
-.field-label {
-  font-family: var(--font-primary);
-  font-size: 12px;
-  font-weight: 500;
-}
-.field-label-row { display: flex; align-items: center; justify-content: space-between; }
-.link-forgot {
-  font-size: 12px;
-  color: var(--primary);
-  cursor: pointer;
-  text-decoration: none;
-}
-
-.input-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.input-row:focus-within {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(255, 132, 0, 0.12);
-}
-.input-row.valid { border-color: var(--primary); }
-.input-row.captcha { flex: 1; }
-.input-control {
-  flex: 1;
-  border: 0;
-  outline: 0;
-  background: transparent;
-  font-family: var(--font-secondary);
-  font-size: 14px;
-  color: var(--text);
-  min-width: 0;
-}
-.input-row.password .input-control { font-size: 16px; font-weight: 500; letter-spacing: 0.08em; }
-.input-control::placeholder { color: #b0b0b0; }
-.leading { color: var(--muted); font-size: 18px; }
-.trailing { color: var(--muted); font-size: 18px; }
-.trailing.ok { color: var(--success); font-size: 16px; }
-.trailing.toggle { cursor: pointer; }
-.password-toggle {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  padding: 0;
-  border: 0;
-  border-radius: 7px;
-  color: var(--muted);
-  background: transparent;
-  cursor: pointer;
-}
-.password-toggle:hover { color: var(--text); background: var(--background); }
-.password-toggle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
-
-.captcha-row { display: flex; align-items: center; gap: 12px; }
-.captcha-img {
-  width: 140px;
-  height: 50px;
-  border-radius: 10px;
-  background: #fff5e8;
-  border: 1px solid var(--border);
-  display: inline-flex;
-  align-items: center;
-  justify-content: space-around;
-  cursor: pointer;
-  user-select: none;
-  overflow: hidden;
-  position: relative;
-}
-.captcha-img::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background:
-    radial-gradient(circle at 20% 30%, rgba(255, 132, 0, 0.2) 0 1px, transparent 2px),
-    radial-gradient(circle at 60% 70%, rgba(34, 160, 107, 0.2) 0 1px, transparent 2px),
-    radial-gradient(circle at 80% 20%, rgba(17, 17, 17, 0.15) 0 1px, transparent 2px);
-  background-size: 16px 16px, 22px 22px, 14px 14px;
-}
-.cc {
-  position: relative;
-  font-family: var(--font-primary);
-  font-size: 22px;
-  font-weight: 600;
-  color: var(--text);
-}
-.cc-1 { transform: rotate(-8deg); color: #ff8400; }
-.cc-2 { transform: rotate(6deg); color: #111111; }
-.cc-3 { transform: rotate(-4deg); color: #22a06b; }
-.cc-4 { transform: rotate(10deg); color: #c44a18; }
-
-.sms-btn {
-  height: 50px;
-  padding: 0 18px;
-  border-radius: 10px;
-  background: var(--background);
-  border: 1px solid var(--border);
-  color: var(--text);
-  font-family: var(--font-secondary);
-  font-size: 13px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.sms-btn:disabled {
-  color: var(--muted);
-  cursor: not-allowed;
-}
-
-.remember-row { display: flex; align-items: center; justify-content: space-between; }
-.remember-left { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; }
-.checkbox {
-  width: 16px; height: 16px;
-  border-radius: 4px;
-  background: var(--card);
-  border: 1px solid var(--border);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.checkbox.checked {
-  background: var(--primary);
-  border-color: var(--primary);
-}
-.checkbox .el-icon.tiny { color: #111111; font-size: 12px; font-weight: 700; }
-.remember-label { font-size: 13px; }
-.remember-right { display: inline-flex; align-items: center; gap: 6px; }
-.shield { color: var(--success); }
-.secure-label {
-  font-family: var(--font-primary);
-  font-size: 11px;
-  color: var(--success);
-}
-
-.login-button {
-  height: 52px;
-  border-radius: 999px;
-  background: var(--primary);
-  color: #111111;
-  border: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  cursor: pointer;
-  font-family: var(--font-secondary);
-  box-shadow: 0 6px 16px var(--primary-shadow);
-  transition: transform 0.1s ease, box-shadow 0.15s ease;
-}
-.login-button:hover { box-shadow: 0 8px 20px var(--primary-shadow); }
-.login-button:active { transform: translateY(1px); }
-.login-button:disabled { opacity: 0.7; cursor: not-allowed; }
-.login-label { font-size: 15px; font-weight: 600; }
-.login-button .arrow { font-size: 18px; font-weight: 600; }
-
-.alt-row { display: flex; align-items: center; gap: 12px; }
-.line { flex: 1; height: 1px; background: var(--border); }
-.alt-text { font-size: 11px; color: var(--muted); }
-
-.sso-row { display: flex; gap: 12px; }
-.sso {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 12px;
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 12px;
-  cursor: pointer;
-  color: var(--text);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-.sso:hover { border-color: var(--primary); background: #fff; }
-.sso .el-icon { font-size: 16px; }
-
-.card-footnote { display: inline-flex; align-items: center; gap: 12px; color: var(--muted); }
-.card-footnote .el-icon { font-size: 14px; flex: 0 0 auto; }
-.card-footnote span:last-child { font-family: var(--font-primary); font-size: 11px; }
-
-.page-footer {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 60px 32px 60px;
-}
-.footer-l { display: inline-flex; align-items: center; gap: 16px; }
-.footer-l span { font-family: var(--font-primary); font-size: 11px; color: var(--muted); }
-.footer-l .dot { color: #cbccc9; }
-.footer-r { display: inline-flex; align-items: center; gap: 18px; }
-.footer-r a { font-size: 11px; color: var(--muted); cursor: pointer; }
-.footer-r a:hover { color: var(--text); }
-
-@media (max-width: 640px) {
-  .login-card { width: 100%; padding: 28px 22px; }
-  .header-bar, .page-footer { padding-left: 20px; padding-right: 20px; }
-  .center-wrap { padding: 20px; }
-  .footer-l, .footer-r { flex-wrap: wrap; gap: 8px 14px; justify-content: center; }
-}
+.admin-auth .auth-main { padding-top: 16px; padding-bottom: 34px; }
+.admin-auth .story h1 em { color: #58634a; }
+.header-status { display: flex; align-items: center; gap: 10px; font-size: 11px; color: #7c8072; letter-spacing: 1px; }
+.admin-auth .auth-form { gap: 18px; margin-top: 23px; }
+.admin-auth .ticket-top { padding-top: 28px; padding-bottom: 23px; }
+.admin-auth .admit-label { color: #6a765b; }
+.admin-auth .submit-button { background: #303c2d; color: #fff8ec; }
+.admin-auth .submit-button:hover { background: #44533c; box-shadow: 0 6px 18px #303c2d22; }
+.admin-auth .ticket-after .quiet-button { color: #526147; font-size: 10px !important; }
+.captcha-row { display: flex; gap: 10px; }
+.captcha-row .input-row { flex: 1; min-width: 0; }
+.captcha-img { width: 108px; flex-shrink: 0; border: 1px solid #d9dece; border-radius: 7px; display: flex; align-items: center; justify-content: center; gap: 6px; color: #536448; background: repeating-linear-gradient(155deg, transparent 0 8px, #a8b29338 8px 9px), #edf0e3; font: italic 22px Georgia, serif !important; letter-spacing: 1px; }
+.backstage { background-color: #263024; background-image: linear-gradient(#cedec107 1px, transparent 1px), linear-gradient(90deg, #cedec107 1px, transparent 1px); background-size: 24px 24px; }
+.schedule-board { position: absolute; top: 57px; left: 27px; right: 43px; border: 1px solid #65765c66; border-radius: 8px; padding: 17px 18px 14px; background: #303b2b; transform: perspective(900px) rotateY(-8deg) rotateZ(-3deg); box-shadow: 14px 15px 24px #0d160e44; }
+.board-heading { display: flex; align-items: center; justify-content: space-between; color: #e6ebdd; font-size: 11px; padding-bottom: 13px; border-bottom: 1px solid #d5dfbe13; }
+.board-heading span:last-child { font: 8px ui-monospace, Consolas, monospace; letter-spacing: 1px; color: #9cab8e; }
+.board-heading i { display: inline-block; width: 6px; height: 6px; border-radius: 2px; background: #e8904c; margin-right: 6px; }
+.timeline { display: grid; grid-template-columns: 48px repeat(4, 1fr); font: 8px ui-monospace, Consolas, monospace; color: #91a083; margin: 12px 0; }
+.schedule-row { display: flex; align-items: center; gap: 10px; margin-top: 9px; }
+.hall-name { width: 38px; flex-shrink: 0; font-size: 9px; color: #aebba0; }
+.track { height: 24px; flex: 1; display: flex; gap: 12px; background: repeating-linear-gradient(90deg, #d4e4bf0a 0 1px, transparent 1px 25%); }
+.show-block { display: flex; align-items: center; gap: 7px; width: 47%; background: #657655; border: 1px solid #94aa7966; color: #e5edda; border-radius: 4px; font-size: 9px; padding: 0 9px; white-space: nowrap; }
+.show-block i { width: 3px; height: 10px; background: #c3d6a8; border-radius: 1px; }
+.show-1 { margin-left: 13%; background: #c7753c; border-color: #eea771; color: #fff3df; }
+.show-1 i { background: #ffdfaa; }
+.show-2 { width: 38%; margin-left: 5%; }
+.next-block { width: 24%; opacity: .4; }
+.playhead { position: absolute; left: 62%; top: 53px; bottom: 12px; width: 1px; background: #f1bb7e; }
+.playhead span { position: absolute; width: 7px; height: 7px; left: -3px; top: -2px; background: #f1bb7e; clip-path: polygon(0 0,100% 0,50% 100%); }
+.backstage-pass { position: absolute; right: 18px; bottom: 43px; display: flex; align-items: center; gap: 12px; padding: 14px 17px; border: 1px solid #ead6ac; border-radius: 6px; color: #42492f; background: #f1e6ca; transform: rotate(7deg); box-shadow: 0 6px 15px #111a1133; }
+.backstage-pass > .el-icon { font-size: 23px; }
+.backstage-pass > span { font-size: 9px; line-height: 1.8; }
+.backstage-pass strong { font-size: 12px; }
+.backstage-pass .pass-star { margin-left: 7px; font-size: 28px; color: #c17842; }
+@media (min-width: 1600px) { .schedule-board { top: 70px; } .schedule-row { margin-top: 14px; } }
+@media (max-width: 1050px) { .schedule-board { left: 18px; right: 24px; top: 48px; padding: 14px; } .backstage-pass { bottom: 32px; transform: rotate(5deg) scale(.85); transform-origin: right bottom; } .show-block { font-size: 8px; padding: 0 5px; } }
+@media (max-width: 760px) { .header-status { font-size: 10px; letter-spacing: 0; } .header-status .signal { display: none; } .admin-auth .auth-main { gap: 28px; padding-bottom: 40px; } }
+@media (max-width: 390px) { .header-status { font-size: 9px; } .captcha-img { width: 93px; } .captcha-row { gap: 8px; } }
+.schedule-board { animation: backstage-reveal .8s ease-out both; }
+@keyframes backstage-reveal { from { opacity: .15; filter: brightness(.6); } to { opacity: 1; filter: brightness(1); } }
 </style>

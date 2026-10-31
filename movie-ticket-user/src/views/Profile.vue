@@ -26,18 +26,13 @@
         </button>
       </div>
 
-      <!-- 钱包信息 -->
-      <div class="wallet-card">
-        <div class="wallet-header">
-          <MaterialIcon class="msr" name="account_balance_wallet" />
-          <span>钱包余额</span>
+      <!-- 会员权益 -->
+      <div class="benefits-card" v-loading="loadingProfile">
+        <div class="benefits-header">
+          <MaterialIcon class="msr" name="workspace_premium" />
+          <span>我的会员权益</span>
         </div>
-        <div class="wallet-amount">
-          <span class="currency">¥</span>
-          <span class="amount">256</span>
-          <span class="decimal">.00</span>
-        </div>
-        <div class="wallet-stats">
+        <div class="benefits-stats">
           <div class="stat-item">
             <span class="stat-label">优惠券</span>
             <span class="stat-value">{{ availableCouponCount }} 张</span>
@@ -45,7 +40,7 @@
           <div class="stat-divider"></div>
           <div class="stat-item">
             <span class="stat-label">积分</span>
-            <span class="stat-value">1,280</span>
+            <span class="stat-value">{{ Number(userStore.userInfo?.points || 0).toLocaleString() }}</span>
           </div>
         </div>
       </div>
@@ -66,17 +61,13 @@
           </button>
         </div>
       </section>
-    </aside>
-
-    <!-- 右侧主要内容 -->
-    <main class="profile-main">
       <!-- 我的优惠券 -->
       <section ref="couponSectionRef" class="coupons-section">
         <div class="coupon-section-head">
           <div>
             <div class="coupon-eyebrow">MY COUPONS</div>
             <h3 class="section-title">我的优惠券</h3>
-            <p>新用户专享券自领取日起 30 天内有效，每笔订单限用一张</p>
+            <p>新账号赠送 1 张满 ¥80 减 ¥6.99 优惠券，领取后 7 天内有效</p>
           </div>
           <div class="coupon-tabs">
             <button
@@ -99,7 +90,7 @@
           >
             <div class="coupon-value">
               <span class="coupon-currency">¥</span>
-              <strong>{{ Number(coupon.amount).toFixed(0) }}</strong>
+              <strong>{{ Number(coupon.amount).toFixed(2) }}</strong>
             </div>
             <div class="coupon-detail">
               <div class="coupon-name-row">
@@ -118,56 +109,10 @@
         <el-empty v-if="!loadingCoupons && displayCoupons.length === 0" description="暂无优惠券" />
       </section>
 
-      <!-- 观影记录 -->
-      <section ref="historySectionRef" class="history-section">
-        <div class="history-head">
-          <div>
-            <div class="history-eyebrow">WATCH HISTORY</div>
-            <h3 class="section-title">观影记录</h3>
-            <p>回顾每一次银幕相遇</p>
-          </div>
-          <div class="history-stats">
-            <div>
-              <strong>{{ historyTotal }}</strong>
-              <span>累计观影</span>
-            </div>
-            <i></i>
-            <div>
-              <strong>¥{{ historySpend.toFixed(0) }}</strong>
-              <span>记录内消费</span>
-            </div>
-          </div>
-        </div>
+    </aside>
 
-        <div v-loading="loadingHistory" class="history-list">
-          <article v-for="record in viewingHistory" :key="record.id" class="history-card">
-            <div class="history-poster">
-              <img v-if="record.moviePoster" :src="record.moviePoster" :alt="record.movieTitle" />
-              <MaterialIcon v-else class="msr" name="movie" />
-              <span class="history-watched"><MaterialIcon class="msr" name="check" /> 已观影</span>
-            </div>
-            <div class="history-info">
-              <div class="history-date">{{ formatHistoryDate(record.showtime) }}</div>
-              <h4>{{ record.movieTitle || '未知影片' }}</h4>
-              <div class="history-meta">
-                <span><MaterialIcon class="msr" name="theaters" />{{ record.cinemaName }}</span>
-                <span><MaterialIcon class="msr" name="event_seat" />{{ record.hallName }} · {{ record.seats }}</span>
-              </div>
-              <div class="history-footer">
-                <span class="history-price">实付 ¥{{ Number(record.totalPrice).toFixed(2) }}</span>
-                <button v-if="record.movieId" @click="router.push(`/movie/${record.movieId}`)">
-                  去评价 <MaterialIcon class="msr" name="arrow_forward" />
-                </button>
-              </div>
-            </div>
-          </article>
-        </div>
-        <el-empty
-          v-if="!loadingHistory && viewingHistory.length === 0"
-          description="还没有观影记录，完成一次观影后会显示在这里"
-        />
-      </section>
-
+    <!-- 右侧主要内容 -->
+    <main class="profile-main">
       <!-- 我的电影票 -->
       <section class="tickets-section">
         <div class="section-header">
@@ -185,21 +130,15 @@
             </button>
           </div>
           <div class="section-actions">
-            <button class="action-btn" @click="tip('筛选')">
-              <MaterialIcon class="msr" name="filter_list" />
-              <span>筛选</span>
-            </button>
-            <button class="action-btn" @click="tip('时间顺序')">
-              <MaterialIcon class="msr" name="schedule" />
-              <span>时间顺序</span>
-            </button>
+
+
           </div>
         </div>
 
         <div class="tickets-grid" v-loading="loadingOrders">
           <div v-for="order in displayOrders" :key="order.id" class="ticket-card">
             <div class="ticket-poster">
-              <img v-if="order.moviePoster" :src="order.moviePoster" :alt="order.movieTitle" />
+              <img v-if="order.moviePoster" v-poster :src="order.moviePoster" :alt="order.movieTitle" />
               <div v-else class="poster-placeholder">
                 <MaterialIcon class="msr" name="movie" />
               </div>
@@ -280,6 +219,59 @@
 
         <el-empty v-if="!loadingOrders && displayOrders.length === 0" description="暂无订单" />
       </section>
+      <!-- 观影记录 -->
+      <section ref="historySectionRef" class="history-section">
+        <div class="history-head">
+          <div>
+            <div class="history-eyebrow">WATCH HISTORY</div>
+            <h3 class="section-title">观影记录</h3>
+            <p>回顾每一次银幕相遇</p>
+          </div>
+          <div class="history-stats">
+            <div>
+              <strong>{{ historyTotal }}</strong>
+              <span>累计观影</span>
+            </div>
+            <i></i>
+            <div>
+              <strong>¥{{ historySpend.toFixed(0) }}</strong>
+              <span>记录内消费</span>
+            </div>
+          </div>
+        </div>
+
+        <div v-loading="loadingHistory" class="history-list">
+          <article v-for="record in viewingHistory" :key="record.id" class="history-card">
+            <div class="history-poster">
+              <img v-if="record.moviePoster" v-poster :src="record.moviePoster" :alt="record.movieTitle" />
+              <MaterialIcon v-else class="msr" name="movie" />
+              <span class="history-watched"><MaterialIcon class="msr" name="check" /> 已观影</span>
+            </div>
+            <div class="history-info">
+              <div class="history-date">{{ formatHistoryDate(record.showtime) }}</div>
+              <h4>{{ record.movieTitle || '未知影片' }}</h4>
+              <div class="history-meta">
+                <span><MaterialIcon class="msr" name="theaters" />{{ record.cinemaName }}</span>
+                <span><MaterialIcon class="msr" name="event_seat" />{{ record.hallName }} · {{ record.seats }}</span>
+              </div>
+              <div class="history-footer">
+                <span class="history-price">实付 ¥{{ Number(record.totalPrice).toFixed(2) }}</span>
+                <button @click="router.push({ path: `/order/${record.orderNo}`, query: { souvenir: '1' } })">
+                  观影纪念票 <MaterialIcon class="msr" name="auto_awesome" />
+                </button>
+                <button v-if="record.movieId" @click="router.push(`/movie/${record.movieId}`)">
+                  去评价 <MaterialIcon class="msr" name="arrow_forward" />
+                </button>
+              </div>
+            </div>
+          </article>
+        </div>
+        <el-empty
+          v-if="!loadingHistory && viewingHistory.length === 0"
+          description="还没有观影记录，完成一次观影后会显示在这里"
+        />
+      </section>
+
     </main>
     </div>
 
@@ -289,7 +281,8 @@
       title="编辑资料"
       width="600px"
       :close-on-click-modal="false"
-      class="edit-profile-dialog"
+      class="edit-profile-dialog consumer-dialog"
+      align-center
     >
       <div class="edit-form">
         <div class="form-section">
@@ -404,7 +397,7 @@
           </div>
         </div>
 
-        <div class="form-section">
+        <div ref="preferenceSectionRef" class="form-section">
           <div class="form-section-title">
             <MaterialIcon class="msr" name="movie" />
             <span>观影偏好</span>
@@ -462,7 +455,8 @@
       title="修改密码"
       width="480px"
       :close-on-click-modal="false"
-      class="edit-profile-dialog"
+      class="edit-profile-dialog consumer-dialog"
+      align-center
     >
       <div class="edit-form">
         <div class="form-section">
@@ -529,25 +523,31 @@
     </el-dialog>
 
     <!-- 取票码二维码对话框 -->
-    <TicketQRCode v-model="showQRCode" :order="selectedOrder" />
+    <TicketQRCode v-if="showQRCode" v-model="showQRCode" :order="selectedOrder" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+/**
+ * 个人中心：维护资料与密码，展示订单、观影历史、积分及优惠券。
+ */
+import { ref, computed, defineAsyncComponent, nextTick, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { useUserStore } from '@/stores/user'
 import { orderApi } from '@/api/order'
 import { userApi } from '@/api/user'
 import { couponApi } from '@/api/coupon'
 import type { Coupon, Order } from '@/types'
-import TicketQRCode from '@/components/TicketQRCode.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 
+const TicketQRCode = defineAsyncComponent(() => import('@/components/TicketQRCode.vue'))
+
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
+const loadingProfile = ref(false)
 const loadingOrders = ref(false)
 const orders = ref<Order[]>([])
 const coupons = ref<Coupon[]>([])
@@ -558,6 +558,7 @@ const historyTotal = ref(0)
 const activeCouponTab = ref<'available' | 'used' | 'expired'>('available')
 const couponSectionRef = ref<HTMLElement | null>(null)
 const historySectionRef = ref<HTMLElement | null>(null)
+const preferenceSectionRef = ref<HTMLElement | null>(null)
 const activeTicketTab = ref<'all' | 'pending' | 'paid' | 'cancelled' | 'refunded'>('all')
 const showEditDialog = ref(false)
 const saving = ref(false)
@@ -608,7 +609,6 @@ const quickActions = computed(() => [
   { key: 'favorites', label: '想看清单', icon: 'favorite', color: '#EC4899' },
   { key: 'history', label: '观影记录', icon: 'history', color: '#8B5CF6' },
   { key: 'coupons', label: '优惠券', icon: 'confirmation_number', color: '#10B981', badge: String(availableCouponCount.value) },
-  { key: 'points', label: '积分商城', icon: 'stars', color: '#F59E0B' },
   { key: 'settings', label: '修改密码', icon: 'lock', color: '#6B7280' }
 ])
 
@@ -658,6 +658,17 @@ const initEditForm = () => {
   }
 }
 
+const openPreferenceEditor = async () => {
+  initEditForm()
+  showEditDialog.value = true
+  await nextTick()
+  const section = preferenceSectionRef.value
+  const dialogBody = section?.closest('.el-dialog__body') as HTMLElement | null
+  if (section && dialogBody) {
+    dialogBody.scrollTo({ top: Math.max(0, section.offsetTop - 20), behavior: 'smooth' })
+  }
+}
+
 // 切换电影类型
 const toggleGenre = (genre: string) => {
   const index = editForm.value.favoriteGenres.indexOf(genre)
@@ -698,6 +709,7 @@ const handleSaveProfile = async () => {
   }
 }
 
+/** 按当前状态和页码加载订单列表。 */
 const loadOrders = async () => {
   loadingOrders.value = true
   try {
@@ -710,6 +722,7 @@ const loadOrders = async () => {
   }
 }
 
+/** 读取本人优惠券，更新页面可用优惠信息。 */
 const loadCoupons = async () => {
   loadingCoupons.value = true
   try {
@@ -722,6 +735,7 @@ const loadCoupons = async () => {
   }
 }
 
+/** 加载本人已完成的观影记录。 */
 const loadViewingHistory = async () => {
   loadingHistory.value = true
   try {
@@ -813,8 +827,6 @@ const onQuickAction = (action: { key: string; label: string }) => {
     historySectionRef.value?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   } else if (action.key === 'settings') {
     openPasswordDialog()
-  } else {
-    ElMessage.info(`${action.label} 功能敬请期待`)
   }
 }
 
@@ -823,6 +835,7 @@ const openPasswordDialog = () => {
   showPasswordDialog.value = true
 }
 
+/** 校验旧密码与新密码输入，提交密码修改。 */
 const handleChangePassword = async () => {
   const { oldPassword, newPassword, confirmPassword } = passwordForm.value
   if (!oldPassword) {
@@ -855,25 +868,31 @@ const handleChangePassword = async () => {
   }
 }
 
-const tip = (label: string) => {
-  ElMessage.info(`${label} 功能敬请期待`)
-}
 
-onMounted(() => {
+onMounted(async () => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('请先登录')
     router.push('/login')
     return
   }
+  loadingProfile.value = true
+  try {
+    const profile = await userApi.getCurrent()
+    userStore.setUserInfo(profile)
+  } catch (error) {
+    console.error('加载用户钱包信息失败:', error)
+  } finally {
+    loadingProfile.value = false
+  }
   initEditForm()
   loadOrders()
   loadCoupons()
   loadViewingHistory()
+  if (route.query.edit === 'preferences') await openPreferenceEditor()
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .profile-page {
   --primary: #FF8400;
@@ -1024,8 +1043,8 @@ onMounted(() => {
   font-size: 16px;
 }
 
-/* 钱包卡片 */
-.wallet-card {
+/* 会员权益卡片 */
+.benefits-card {
   background: linear-gradient(135deg, #1F1340 0%, #2D1B4E 100%);
   border-radius: 20px;
   padding: 24px;
@@ -1033,50 +1052,21 @@ onMounted(() => {
   box-shadow: 0 8px 24px rgba(168, 85, 247, 0.2);
 }
 
-.wallet-header {
+.benefits-header {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 12px;
+  margin-bottom: 20px;
 }
 
-.wallet-header .msr {
+.benefits-header .msr {
   font-size: 18px;
   color: #A855F7;
 }
 
-.wallet-amount {
-  display: flex;
-  align-items: baseline;
-  gap: 4px;
-  margin-bottom: 20px;
-}
-
-.currency {
-  font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 700;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.amount {
-  font-family: var(--font-mono);
-  font-size: 42px;
-  font-weight: 800;
-  color: #fff;
-  line-height: 1;
-}
-
-.decimal {
-  font-family: var(--font-mono);
-  font-size: 24px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.wallet-stats {
+.benefits-stats {
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1117,6 +1107,15 @@ onMounted(() => {
 }
 
 /* 优惠券 */
+.profile-sidebar .coupons-section { width: 100%; min-width: 0; flex-shrink: 0; }
+.profile-sidebar .coupon-section-head { flex-direction: column; align-items: flex-start; gap: 14px; padding: 18px; }
+.profile-sidebar .coupon-grid { grid-template-columns: 1fr; padding: 14px; }
+.profile-sidebar .profile-coupon { grid-template-columns: 76px minmax(0, 1fr); }
+.profile-sidebar .profile-coupon::before,
+.profile-sidebar .profile-coupon::after { left: 68px; }
+.profile-sidebar .coupon-name-row { flex-wrap: wrap; }
+.profile-sidebar .coupon-use { grid-column: 2; justify-self: start; margin: 0 0 14px 16px; }
+
 .coupons-section {
   scroll-margin-top: 24px;
   overflow: hidden;
@@ -1334,7 +1333,7 @@ onMounted(() => {
   white-space: nowrap;
 }
 .history-meta .msr { flex-shrink: 0; font-size: 12px; }
-.history-footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 10px; }
+.history-footer { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 10px; }
 .history-price { color: var(--fg); font-family: var(--font-mono); font-size: 10px; font-weight: 700; }
 .history-footer button {
   display: inline-flex;
@@ -1718,7 +1717,7 @@ onMounted(() => {
   }
 
   .profile-card,
-  .wallet-card {
+  .benefits-card {
     flex: 1;
     min-width: 280px;
   }
@@ -1761,32 +1760,6 @@ onMounted(() => {
 }
 
 /* ============ 编辑资料对话框样式 ============ */
-:deep(.edit-profile-dialog) {
-  border-radius: 20px;
-}
-
-:deep(.edit-profile-dialog .el-dialog__header) {
-  padding: 24px 24px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-:deep(.edit-profile-dialog .el-dialog__title) {
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--fg);
-}
-
-:deep(.edit-profile-dialog .el-dialog__body) {
-  padding: 24px;
-  max-height: 70vh;
-  overflow-y: auto;
-}
-
-:deep(.edit-profile-dialog .el-dialog__footer) {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border);
-}
-
 .edit-form {
   display: flex;
   flex-direction: column;

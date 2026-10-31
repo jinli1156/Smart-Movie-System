@@ -10,7 +10,7 @@
 - Redis
 - MySQL 8.0
 - Maven 3.8+
-- JDK 17
+- JDK 21
 
 ## 项目结构
 
@@ -84,9 +84,9 @@ movie-ticket-backend/
 ├── src/main/resources/
 │   ├── application.yml                # 配置文件
 │   ├── db/
-│   │   ├── schema.sql                 # 数据库表结构
+│   │   ├── schema.sql                 # 创建空数据库的引导脚本
 │   │   ├── data.sql                   # 初始数据
-│   │   └── migration_v3_schema_alignment.sql # 已有数据库结构对齐
+│   │   └── flyway/                    # Flyway 版本化结构迁移
 │   └── mapper/                        # MyBatis XML
 └── pom.xml                            # Maven配置
 ```
@@ -96,7 +96,7 @@ movie-ticket-backend/
 ### 1. 环境准备
 
 确保已安装：
-- JDK 17
+- JDK 21
 - Maven 3.8+
 - MySQL 8.0
 - Redis 7.0
@@ -107,16 +107,19 @@ movie-ticket-backend/
 # 登录MySQL
 mysql -u root -p
 
-# 执行数据库脚本
+# 只创建空数据库
 source src/main/resources/db/schema.sql
-source src/main/resources/db/data.sql
 ```
 
-已有业务数据的数据库不要执行上述重建脚本。请先备份，再执行：
+随后启动后端，Flyway 会自动创建或升级业务表、索引、外键和检查约束。需要演示数据时，应在 Flyway 完成 V24 后停止后端，再执行：
 
 ```bash
-mysql -u root -p movie_ticket < src/main/resources/db/migration_v3_schema_alignment.sql
+mysql --default-character-set=utf8mb4 -u root -p --execute="SOURCE src/main/resources/db/data.sql;"
 ```
+
+导入后重新启动后端。演示排片覆盖北京时间执行当天至未来第 10 天（含首尾共 11 天），每天最多四场，自动校验影片、影厅归属并计算片长；影院管理员已绑定影院 1，普通用户已有新人券，兑换码为 `JINLI699`。
+
+已有业务数据的数据库不要执行 `data.sql`。请先完整备份，再直接启动后端；首次接管时 Flyway 将现有库标记为版本 6，并执行 V7 及后续迁移至 V24。V8 会归档可再生成的孤立推荐行为，但发现核心业务孤儿数据或非法状态时会中止升级，需修复数据后重试。V24 会预检并统一旧库非空字段、排序规则和取票码唯一约束。
 
 ### 3. 修改配置
 
@@ -138,15 +141,14 @@ spring:
 
 ### 4. 启动项目
 
-先在操作系统或 IDE 的运行配置中注入阿里云百炼 API Key。不要把真实密钥写入 `application.yml` 或提交到 Git：
+先在操作系统或 IDE 的运行配置中注入 DeepSeek API Key，或使用项目根目录已忽略的 `.local/assistant.properties`。不要把真实密钥写入 `application.yml` 或提交到 Git：
 
 ```powershell
 # Windows PowerShell：写入当前用户环境变量，重启终端/IDE 后生效
-[Environment]::SetEnvironmentVariable("DASHSCOPE_API_KEY", "<你的新密钥>", "User")
+[Environment]::SetEnvironmentVariable("DEEPSEEK_API_KEY", "<你的密钥>", "User")
 ```
 
-电影小助手默认通过中国内地 OpenAI 兼容地址调用 `qwen3.8-flash`。如使用国际站，设置
-`AI_ASSISTANT_BASE_URL=https://dashscope-intl.aliyuncs.com/compatible-mode/v1`，并使用同地域的 API Key。
+电影小助手默认通过 `https://api.deepseek.com` 调用 `deepseek-v4-flash`。模型可通过 `AI_ASSISTANT_MODEL` 覆盖。独立页面、系统提示词、只读工具和流式协议见 [电影小助手说明](../docs/MOVIE_ASSISTANT.md)。
 
 ```bash
 # 使用Maven启动
@@ -158,6 +160,17 @@ java -jar target/movie-ticket-backend-1.0.0.jar
 ```
 
 服务将在 `http://localhost:8080/api` 启动
+
+如果 IDE 启动出现 `NoClassDefFoundError: com/movie/ticket/entity/User`，先确认编译已经完成。若 `User.java` 存在，这类错误通常来自未完成或不一致的 `target/classes`，不需要修改实体或 Mapper 注入。停止本项目后端后，在后端目录顺序执行：
+
+```powershell
+.\mvnw.cmd clean package
+if ($LASTEXITCODE -eq 0) {
+    java -jar target/movie-ticket-backend-1.0.0.jar
+}
+```
+
+上述构建只清理后端 `target` 产物，并运行测试；只有构建成功才启动。构建期间不要同时使用 IDE 编译相同的输出目录。使用打包 JAR 运行时，后续 IDE 增量编译不会替换运行中的业务类。
 
 ## API文档
 
@@ -330,9 +343,10 @@ public Result<?> getUsers() {
 ## 当前验证与后续工作
 
 - [x] 退票、评价、个人中心与 AI 电影助手接口
-- [x] 推荐、选座、排片与统计服务单元测试（当前 12 项）
+- [x] 后端快速测试，覆盖核心服务、完整购票接口、权限与并发防超卖
+- [x] MySQL/Redis Testcontainers 真实依赖集成测试
+- [x] 用户端与管理端 Playwright 浏览器 E2E
 - [ ] 改签接口
-- [ ] 数据库集成测试与完整 API 回归
 - [ ] 操作审计日志、健康检查与生产部署配置
 
-项目级完成度与验收方法见 [PROJECT_STATUS.md](../docs/PROJECT_STATUS.md) 和 [GETTING_STARTED.md](../docs/GETTING_STARTED.md)。
+项目级验收方法见 [GETTING_STARTED.md](../docs/GETTING_STARTED.md) 和 [TESTING.md](../docs/TESTING.md)。

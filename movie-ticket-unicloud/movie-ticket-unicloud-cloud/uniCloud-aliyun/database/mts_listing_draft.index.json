@@ -1,0 +1,62 @@
+[
+  {
+    "IndexName": "id_unique",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "id",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "ownerId_updatedAt_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "ownerId",
+          "Direction": "1"
+        },
+        {
+          "Name": "updatedAt",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "status_updatedAt_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "status",
+          "Direction": "1"
+        },
+        {
+          "Name": "updatedAt",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "batchId_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "batchId",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  }
+]

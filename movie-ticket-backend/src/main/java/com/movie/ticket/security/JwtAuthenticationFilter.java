@@ -1,6 +1,8 @@
 package com.movie.ticket.security;
 
 import com.movie.ticket.utils.JwtUtil;
+import com.movie.ticket.entity.User;
+import com.movie.ticket.mapper.UserMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,11 +17,13 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 
+/** 解析请求 JWT 并重新读取用户状态、角色与影院归属，使权限变更在后续请求生效。 */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
+    private final UserMapper userMapper;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -28,11 +32,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = getTokenFromRequest(request);
 
         if (StringUtils.hasText(token) && jwtUtil.validateToken(token)) {
-            String username = jwtUtil.getUsernameFromToken(token);
             Long userId = jwtUtil.getUserIdFromToken(token);
-            String role = jwtUtil.getRoleFromToken(token);
-
-            UserDetailsImpl userDetails = new UserDetailsImpl(userId, username, role);
+            // Resolve role and assignment from the database on every request: changes revoke old access immediately.
+            User user = userMapper.selectById(userId);
+            if (user == null || !Integer.valueOf(1).equals(user.getStatus())) {
+                SecurityContextHolder.clearContext();
+                filterChain.doFilter(request, response);
+                return;
+            }
+            UserDetailsImpl userDetails = new UserDetailsImpl(userId, user.getUsername(), user.getRole(), user.getCinemaId());
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
             authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

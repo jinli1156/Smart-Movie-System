@@ -1,0 +1,54 @@
+[
+  {
+    "IndexName": "id_unique",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "id",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "status_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "status",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "title_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "title",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "releaseDate_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "releaseDate",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  }
+]

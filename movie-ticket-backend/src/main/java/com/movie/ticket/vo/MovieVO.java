@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+/** 影片详情与列表展示数据。 */
 @Data
 public class MovieVO {
 

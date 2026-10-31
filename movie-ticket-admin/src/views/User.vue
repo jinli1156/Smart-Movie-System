@@ -53,7 +53,7 @@
       </div>
 
       <!-- 用户列表 -->
-      <el-table :data="userList" v-loading="loading" style="margin-top: 20px;">
+      <ManagementTable :data="userList" v-loading="loading" style="margin-top: 20px;">
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column label="头像" width="80">
           <template #default="{ row }">
@@ -82,6 +82,11 @@
           <template #default="{ row }">
             <el-tag v-if="row.status === 1" type="success">正常</el-tag>
             <el-tag v-else type="danger">禁用</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="所属影院" min-width="180">
+          <template #default="{ row }">
+            {{ row.role === 'CINEMA_ADMIN' ? cinemaName(row.cinemaId) : '—' }}
           </template>
         </el-table-column>
         <el-table-column label="注册时间" width="170">
@@ -113,7 +118,7 @@
             </el-button>
           </template>
         </el-table-column>
-      </el-table>
+      </ManagementTable>
 
       <!-- 分页 -->
       <el-pagination
@@ -121,6 +126,7 @@
         v-model:page-size="pagination.size"
         :total="pagination.total"
         :page-sizes="[10, 20, 50, 100]"
+        :pager-count="5"
         layout="total, sizes, prev, pager, next, jumper"
         style="margin-top: 20px; justify-content: flex-end;"
         @size-change="loadUsers"
@@ -165,6 +171,12 @@
             <el-radio :value="1">正常</el-radio>
             <el-radio :value="0">禁用</el-radio>
           </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="formData.role === 'CINEMA_ADMIN'" label="所属影院" prop="cinemaId"
+          :rules="[{ required: true, message: '请分配所属影院', trigger: 'change' }]">
+          <el-select v-model="formData.cinemaId" filterable placeholder="选择该管理员可管理的影院" style="width: 100%">
+            <el-option v-for="cinema in cinemas" :key="cinema.id" :label="cinema.name" :value="cinema.id!" />
+          </el-select>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -216,13 +228,27 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 用户管理：维护账号状态、角色及影院分配，并提供密码重置。
+ */
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { useListPageState } from '@/composables/usePageState'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+import type { FormInstance, FormRules } from 'element-plus'
 import { Search, Refresh, Edit, Delete, Switch, Key } from '@element-plus/icons-vue'
 import { userApi } from '@/api/user'
+import { cinemaApi } from '@/api/cinema'
+import type { Cinema } from '@/types'
 import type { User } from '@/types'
 
 const loading = ref(false)
+const cinemas = ref<Cinema[]>([])
+const cinemaName = (id?: number | null) => id ? cinemas.value.find(c => c.id === id)?.name || `影院 #${id}` : '未分配（禁止管理）'
+onMounted(async () => {
+  try { cinemas.value = (await cinemaApi.getPage({ page: 1, size: 1000 })).records }
+  catch { ElMessage.error('影院列表加载失败，请刷新后重试') }
+})
 const submitting = ref(false)
 const dialogVisible = ref(false)
 const passwordDialogVisible = ref(false)
@@ -238,6 +264,7 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
+useListPageState('user', searchForm, pagination)
 
 const userList = ref<User[]>([])
 const formRef = ref<FormInstance>()
@@ -292,6 +319,7 @@ const formatDateTime = (val?: string) => {
   return val.replace('T', ' ').slice(0, 19)
 }
 
+/** 按筛选条件分页读取用户及其角色、影院归属。 */
 const loadUsers = async () => {
   loading.value = true
   try {
@@ -312,11 +340,13 @@ const loadUsers = async () => {
   }
 }
 
+/** 应用筛选条件并从第一页重新查询。 */
 const handleSearch = () => {
   pagination.page = 1
   loadUsers()
 }
 
+/** 清空筛选条件并重新加载列表。 */
 const handleReset = () => {
   searchForm.keyword = ''
   searchForm.role = ''
@@ -325,11 +355,13 @@ const handleReset = () => {
   loadUsers()
 }
 
+/** 将选中记录填入编辑表单。 */
 const handleEdit = (row: User) => {
-  Object.assign(formData, row)
+  Object.assign(formData, row, { cinemaId: row.cinemaId ?? undefined })
   dialogVisible.value = true
 }
 
+/** 提交启用或停用操作，并同步最新状态。 */
 const handleToggleStatus = async (row: User) => {
   const action = row.status === 1 ? '禁用' : '启用'
   try {
@@ -354,6 +386,7 @@ const handleResetPassword = (row: User) => {
   passwordDialogVisible.value = true
 }
 
+/** 校验新密码并提交管理员重置请求。 */
 const handleResetPasswordSubmit = async () => {
   if (!passwordFormRef.value) return
   await passwordFormRef.value.validate(async (valid) => {
@@ -371,6 +404,7 @@ const handleResetPasswordSubmit = async () => {
   })
 }
 
+/** 确认后提交删除请求，成功后刷新列表。 */
 const handleDelete = async (row: User) => {
   try {
     await ElMessageBox.confirm(
@@ -388,6 +422,7 @@ const handleDelete = async (row: User) => {
   }
 }
 
+/** 校验当前表单并提交保存，成功后更新页面数据。 */
 const handleSubmit = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {
@@ -399,6 +434,7 @@ const handleSubmit = async () => {
         phone: formData.phone,
         email: formData.email,
         role: formData.role,
+        cinemaId: formData.role === 'CINEMA_ADMIN' ? formData.cinemaId : null,
         status: formData.status,
         avatar: formData.avatar
       })

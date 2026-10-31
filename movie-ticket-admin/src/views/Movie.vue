@@ -4,6 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>电影管理</span>
+          <router-link to="/listing?kind=MOVIE"><el-button>AI 辅助上架</el-button></router-link>
           <el-button type="primary" @click="handleAdd">
             <el-icon><Plus /></el-icon>
             添加电影
@@ -32,9 +33,9 @@
           @change="handleSearch"
         >
           <el-option label="全部" :value="undefined" />
-          <el-option label="即将上映" :value="0" />
+          <el-option label="即将上映" :value="2" />
           <el-option label="正在热映" :value="1" />
-          <el-option label="已下架" :value="2" />
+          <el-option label="已下架" :value="0" />
         </el-select>
         <el-button type="primary" @click="handleSearch">
           <el-icon><Search /></el-icon>
@@ -47,7 +48,10 @@
       </div>
 
       <!-- 电影列表 -->
-      <el-table :data="movieList" v-loading="loading" style="margin-top: 20px;">
+      <BatchActions :rows="selectedRows" :disabled="loading" :api="movieApi" :statuses="[{ label: '批量设为即将上映', value: 2 }, { label: '批量设为热映', value: 1 }, { label: '批量下架', value: 0 }]"
+        @clear="batchTable?.clearSelection()" @busy="batchBusy = $event" @completed="handleBatchCompleted" />
+      <ManagementTable ref="batchTable" row-key="id" @selection-change="selectedRows = $event" :data="movieList" v-loading="loading || batchBusy" style="margin-top: 20px;">
+        <el-table-column type="selection" width="48" :selectable="() => !loading && !batchBusy" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column label="海报" width="100">
           <template #default="{ row }">
@@ -55,9 +59,14 @@
               v-if="row.poster"
               :src="row.poster"
               :preview-src-list="[row.poster]"
+              lazy
               fit="cover"
               style="width: 60px; height: 80px; border-radius: 4px;"
-            />
+            >
+              <template #error>
+                <div class="image-error"><el-icon><Picture /></el-icon><span>加载失败</span></div>
+              </template>
+            </el-image>
             <span v-else style="color: #999;">暂无海报</span>
           </template>
         </el-table-column>
@@ -86,9 +95,9 @@
         </el-table-column>
         <el-table-column prop="status" label="状态" width="120">
           <template #default="{ row }">
-            <el-tag v-if="row.status === 0" type="info">即将上映</el-tag>
+            <el-tag v-if="row.status === 2" type="info">即将上映</el-tag>
             <el-tag v-else-if="row.status === 1" type="success">正在热映</el-tag>
-            <el-tag v-else-if="row.status === 2" type="danger">已下架</el-tag>
+            <el-tag v-else-if="row.status === 0" type="danger">已下架</el-tag>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="280" fixed="right">
@@ -109,9 +118,9 @@
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item :command="0" :disabled="row.status === 0">即将上映</el-dropdown-item>
+                  <el-dropdown-item :command="2" :disabled="row.status === 2">即将上映</el-dropdown-item>
                   <el-dropdown-item :command="1" :disabled="row.status === 1">正在热映</el-dropdown-item>
-                  <el-dropdown-item :command="2" :disabled="row.status === 2">已下架</el-dropdown-item>
+                  <el-dropdown-item :command="0" :disabled="row.status === 0">已下架</el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
@@ -122,7 +131,7 @@
             </div>
           </template>
         </el-table-column>
-      </el-table>
+      </ManagementTable>
 
       <!-- 分页 -->
       <el-pagination
@@ -130,6 +139,7 @@
         v-model:page-size="pagination.size"
         :total="pagination.total"
         :page-sizes="[10, 20, 50, 100]"
+        :pager-count="5"
         layout="total, sizes, prev, pager, next, jumper"
         style="margin-top: 20px; justify-content: flex-end;"
         @size-change="loadMovies"
@@ -285,7 +295,7 @@
                 </template>
               </el-input>
               <div style="margin-top: 8px; font-size: 12px; color: #999;">
-                支持上传图片或输入URL，建议尺寸：600x800，格式：jpg/png/webp，大小不超过5MB
+                支持上传图片或输入URL；原图不超过15MB，上传前会自动压缩为 WebP（最长边不超过1600px）
               </div>
             </div>
           </div>
@@ -306,9 +316,9 @@
 
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="formData.status">
-            <el-radio :value="0">即将上映</el-radio>
+            <el-radio :value="2">即将上映</el-radio>
             <el-radio :value="1">正在热映</el-radio>
-            <el-radio :value="2">已下架</el-radio>
+            <el-radio :value="0">已下架</el-radio>
           </el-radio-group>
         </el-form-item>
       </el-form>
@@ -330,9 +340,9 @@
       <el-descriptions :column="2" border v-if="currentMovie">
         <el-descriptions-item label="电影ID">{{ currentMovie.id }}</el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag v-if="currentMovie.status === 0" type="info">即将上映</el-tag>
+          <el-tag v-if="currentMovie.status === 2" type="info">即将上映</el-tag>
           <el-tag v-else-if="currentMovie.status === 1" type="success">正在热映</el-tag>
-          <el-tag v-else-if="currentMovie.status === 2" type="danger">已下架</el-tag>
+          <el-tag v-else-if="currentMovie.status === 0" type="danger">已下架</el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="电影名称">{{ currentMovie.title }}</el-descriptions-item>
         <el-descriptions-item label="英文名称">{{ currentMovie.englishTitle || '-' }}</el-descriptions-item>
@@ -380,15 +390,32 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 影片管理：按条件查询电影，维护资料、展示状态与海报。
+ */
+import BatchActions from '@/components/BatchActions.vue'
+import { useListPageState } from '@/composables/usePageState'
 import { ref, reactive, onMounted, computed } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+import type { FormInstance, FormRules } from 'element-plus'
 import { Plus, Search, Refresh, View, Edit, Switch, Delete, Picture, Loading } from '@element-plus/icons-vue'
 import type { UploadProps } from 'element-plus'
 import { movieApi } from '@/api/movie'
 import { useUserStore } from '@/stores/user'
 import type { Movie } from '@/types'
+import { compressImage } from '@/utils/image'
 
 const userStore = useUserStore()
+
+const batchTable = ref<{ clearSelection: () => void }>()
+const selectedRows = ref<Movie[]>([])
+const batchBusy = ref(false)
+/** 接收批量操作结果，清理选择并刷新当前列表。 */
+const handleBatchCompleted = async (deleted: number) => {
+  if (deleted > 0 && deleted >= movieList.value.length && pagination.page > 1) pagination.page--
+  await loadMovies()
+}
 
 const loading = ref(false)
 const uploading = ref(false)
@@ -409,6 +436,7 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
+useListPageState('movie', searchForm, pagination)
 
 const movieList = ref<Movie[]>([])
 const formRef = ref<FormInstance>()
@@ -442,7 +470,10 @@ const formRules: FormRules = {
   ]
 }
 
+/** 按当前筛选条件分页加载影片管理列表。 */
 const loadMovies = async () => {
+  batchTable.value?.clearSelection()
+  selectedRows.value = []
   loading.value = true
   try {
     const res = await movieApi.getPage({
@@ -461,11 +492,13 @@ const loadMovies = async () => {
   }
 }
 
+/** 应用筛选条件并从第一页重新查询。 */
 const handleSearch = () => {
   pagination.page = 1
   loadMovies()
 }
 
+/** 清空筛选条件并重新加载列表。 */
 const handleReset = () => {
   searchForm.keyword = ''
   searchForm.status = undefined
@@ -473,6 +506,7 @@ const handleReset = () => {
   loadMovies()
 }
 
+/** 初始化新增表单并打开编辑入口。 */
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '添加电影'
@@ -480,6 +514,7 @@ const handleAdd = () => {
   dialogVisible.value = true
 }
 
+/** 将选中记录填入编辑表单。 */
 const handleEdit = (row: Movie) => {
   isEdit.value = true
   dialogTitle.value = '编辑电影'
@@ -492,6 +527,7 @@ const handleView = (row: Movie) => {
   viewDialogVisible.value = true
 }
 
+/** 确认后提交删除请求，成功后刷新列表。 */
 const handleDelete = async (row: Movie) => {
   try {
     await ElMessageBox.confirm(
@@ -514,6 +550,7 @@ const handleDelete = async (row: Movie) => {
   }
 }
 
+/** 提交影片状态变更并刷新列表。 */
 const handleStatusChange = async (row: Movie, status: number) => {
   try {
     await movieApi.updateStatus(row.id!, status)
@@ -525,6 +562,7 @@ const handleStatusChange = async (row: Movie, status: number) => {
   }
 }
 
+/** 校验当前表单并提交保存，成功后更新页面数据。 */
 const handleSubmit = async () => {
   if (!formRef.value) return
 
@@ -577,20 +615,33 @@ const uploadHeaders = computed(() => ({
   Authorization: `Bearer ${userStore.token}`
 }))
 
-const beforePosterUpload: UploadProps['beforeUpload'] = (rawFile) => {
+const beforePosterUpload: UploadProps['beforeUpload'] = async (rawFile) => {
   const isImage = rawFile.type.startsWith('image/')
-  const isLt5M = rawFile.size / 1024 / 1024 < 5
+  const isLt15M = rawFile.size / 1024 / 1024 < 15
 
   if (!isImage) {
     ElMessage.error('只能上传图片文件!')
     return false
   }
-  if (!isLt5M) {
-    ElMessage.error('图片大小不能超过 5MB!')
+  if (!isLt15M) {
+    ElMessage.error('原始图片大小不能超过 15MB!')
     return false
   }
   uploading.value = true
-  return true
+  try {
+    const optimizedFile = await compressImage(rawFile)
+    if (optimizedFile.size >= 5 * 1024 * 1024) {
+      uploading.value = false
+      ElMessage.error('压缩后图片仍超过 5MB，请选择更小的图片')
+      return false
+    }
+    return optimizedFile
+  } catch (error) {
+    uploading.value = false
+    console.error('图片压缩失败:', error)
+    ElMessage.error('图片处理失败，请重试')
+    return false
+  }
 }
 
 const handlePosterSuccess: UploadProps['onSuccess'] = (response) => {

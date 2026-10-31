@@ -4,10 +4,10 @@
     <aside class="sidebar">
       <div class="logo-block" @click="router.push('/home')">
         <div class="logo-mark">
-          <img class="brand-logo-image" src="/cinema-logo.png" alt="CINEMA+" />
+          <img class="brand-logo-image" src="/xiangzhi-ticket.png" alt="响指电影" />
         </div>
         <div class="logo-text">
-          <span class="brand">CINEMA+</span>
+          <span class="brand brand-wordmark" role="img" aria-label="响指电影"></span>
           <span class="brand-sub">premium booking</span>
         </div>
       </div>
@@ -31,7 +31,7 @@
         <div class="avatar" @click="router.push('/profile')">{{ avatarChar }}</div>
         <div class="user-info" @click="router.push('/profile')">
           <span class="user-name">{{ userStore.userInfo?.nickname || '用户' }}</span>
-          <span class="user-tier">GOLD · 1280 积分</span>
+          <span class="user-tier">GOLD · {{ Number(userStore.userInfo?.points || 0).toLocaleString() }} 积分</span>
         </div>
       </div>
       <div v-else class="sidebar-footer guest">
@@ -64,9 +64,7 @@
             <MaterialIcon class="msr" name="arrow_back" />
             <span>返回</span>
           </button>
-          <button class="tb-icon" @click="tip('帮助')">
-            <MaterialIcon class="msr" name="help_outline" />
-          </button>
+
         </div>
       </div>
 
@@ -82,7 +80,7 @@
         <!-- ============ MOVIE HEADER ============ -->
         <section class="movie-header" v-if="showtime">
           <div class="mh-poster" :style="{ background: posterGradient }">
-            <img v-if="showtime.moviePoster" :src="showtime.moviePoster" :alt="showtime.movieTitle" />
+            <img v-if="showtime.moviePoster" v-poster :src="showtime.moviePoster" :alt="showtime.movieTitle" />
             <span v-else class="mh-poster-label">{{ posterLabel }}</span>
           </div>
           <div class="mh-info">
@@ -114,38 +112,6 @@
           </div>
         </section>
 
-        <!-- ============ SELECTORS ============ -->
-        <section class="selectors" v-if="showtime">
-          <div class="sel-pill">
-            <MaterialIcon class="msr sel-pill-ico primary" name="theaters" />
-            <div class="sel-pill-text">
-              <span class="sel-pill-label">影厅</span>
-              <span class="sel-pill-value">{{ showtime.hallName }}</span>
-            </div>
-            <MaterialIcon class="msr sel-pill-caret" name="keyboard_arrow_down" />
-          </div>
-          <div class="sel-pill">
-            <MaterialIcon class="msr sel-pill-ico" name="view_compact" />
-            <div class="sel-pill-text">
-              <span class="sel-pill-label">视图</span>
-              <span class="sel-pill-value">标准布局</span>
-            </div>
-          </div>
-          <div class="sel-divider"></div>
-          <div class="time-chips">
-            <button
-              v-for="(c, i) in timeChips"
-              :key="i"
-              class="time-chip"
-              :class="{ active: i === activeTimeIdx }"
-              @click="activeTimeIdx = i"
-            >
-              <span class="tc-time">{{ c.time }}</span>
-              <span class="tc-meta">{{ c.meta }}</span>
-            </button>
-          </div>
-        </section>
-
         <!-- ============ SEAT BOARD ============ -->
         <section class="seat-board">
           <!-- Screen -->
@@ -164,9 +130,12 @@
             <!-- Seat rows -->
             <div class="seat-grid">
               <div v-for="r in totalRows" :key="`row-${r}`" class="seat-row">
+                <span v-if="hallLayout.aisleAfterCols.includes(0)" class="aisle" aria-label="最左侧过道">过道</span>
                 <template v-for="c in totalCols" :key="`s-${r}-${c}`">
                   <div
                     class="seat"
+                    :aria-label="seatName(r, c)"
+                    :aria-disabled="!isSeatEnabled(r, c) || occupiedSet.has(seatName(r, c))"
                     :class="seatClass(r, c)"
                     @click="toggleSeat(r, c)"
                     @mouseenter="onSeatHover(r, c, $event)"
@@ -174,7 +143,7 @@
                   >
                     <MaterialIcon v-if="isRecommended(r, c)" class="msr seat-glow" name="stars" />
                   </div>
-                  <span v-if="c === Math.floor(totalCols / 2)" class="aisle"></span>
+                  <span v-if="hallLayout.aisleAfterCols.includes(c)" class="aisle" :aria-label="c === totalCols ? '最右侧过道' : `第 ${c} 列后过道`">过道</span>
                 </template>
               </div>
             </div>
@@ -201,6 +170,8 @@
           <!-- Bottom legend + shortcuts -->
           <div class="board-bottom">
             <div class="legend">
+              <div class="legend-item"><span class="legend-box aisle-legend"></span><span>过道</span></div>
+              <div class="legend-item"><span class="legend-box occupied"></span><span>停用</span></div>
               <div class="legend-item">
                 <span class="legend-box available"></span>
                 <span>可选</span>
@@ -265,7 +236,7 @@
             </div>
             <div class="ai-title-block">
               <span class="ai-title">AI 智能选座助手</span>
-              <span class="ai-sub">{{ analysisSource === 'model' ? `${modelName || 'Qwen'} 实时分析` : '座位算法 · 实时推荐' }}</span>
+              <span class="ai-sub">{{ analysisSource === 'model' ? `${modelName || '大模型'} 实时分析` : '座位算法 · 实时推荐' }}</span>
             </div>
             <span class="ai-tag">NEW</span>
           </div>
@@ -376,7 +347,7 @@
               </div>
               <div class="reason-source" :class="rec.reasonSource">
                 <MaterialIcon class="msr" :name="rec.reasonSource === 'model' ? 'auto_awesome' : 'functions'" />
-                <span>{{ rec.reasonSource === 'model' ? 'Qwen 分析理由' : '评分算法理由' }}</span>
+                <span>{{ rec.reasonSource === 'model' ? '大模型分析理由' : '评分算法理由' }}</span>
               </div>
               <p class="rec-reason">{{ rec.modelReason || rec.reason }}</p>
               <div class="score-grid">
@@ -395,7 +366,7 @@
               </button>
             </div>
             <div v-if="!recommendationLoading && recommendations.length === 0" class="rec-empty">
-              暂无满足 {{ partySize }} 人连座的座位块
+              暂无满足 {{ partySize }} 人同排且不跨过道的连座，请调整人数或场次
             </div>
           </div>
         </div>
@@ -433,6 +404,53 @@
       </aside>
     </main>
 
+    <el-dialog
+      v-model="showRefundPolicy"
+      width="520px"
+      class="refund-policy-dialog"
+      :show-close="false"
+      :close-on-click-modal="false"
+      align-center
+    >
+      <template #header>
+        <div class="policy-title">
+          <span class="policy-title-icon"><MaterialIcon class="msr" name="warning" /></span>
+          <div>
+            <h3>重要提示</h3>
+            <p>购票前请仔细阅读退票规则</p>
+          </div>
+        </div>
+      </template>
+
+      <div class="policy-list">
+        <div class="policy-item policy-ok">
+          <MaterialIcon class="msr" name="check_circle" />
+          <div><strong>开场前 24 小时外</strong><span>可免费退票，全额退款</span></div>
+        </div>
+        <div class="policy-item policy-warn">
+          <MaterialIcon class="msr" name="bolt" />
+          <div><strong>开场前 24 小时内</strong><span>可退票，但需扣除 10% 手续费</span></div>
+        </div>
+        <div class="policy-item policy-danger">
+          <MaterialIcon class="msr" name="cancel" />
+          <div><strong>开场前 30 分钟内</strong><span>不可退票，不可改签</span></div>
+        </div>
+      </div>
+
+      <div class="policy-note">
+        <strong>退款说明</strong>
+        <span>退款将原路退回支付账户，预计 1–7 个工作日到账；退票成功后座位立即释放。</span>
+      </div>
+
+      <template #footer>
+        <button class="policy-cancel" @click="cancelRefundPolicy">取消</button>
+        <button class="policy-confirm" @click="proceedToOrderConfirm">
+          <MaterialIcon class="msr" name="check" />
+          我已阅读并同意
+        </button>
+      </template>
+    </el-dialog>
+
     <!-- ============ BOTTOM CHECKOUT BAR ============ -->
     <div class="checkout-bar" v-if="selectedSeats.length > 0 && !loading">
       <div class="cb-left">
@@ -459,12 +477,16 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 选座页：展示真实布局与占座状态，支持人工选座和智能连座推荐，确认后进入下单。
+ */
 import { ref, computed, onMounted, onUnmounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { showtimeApi } from '@/api/showtime'
+import { parseHallSeatLayout } from '@/utils/seatLayout'
 import { useUserStore } from '@/stores/user'
 import type { SeatPreference, SeatRecommendation, Showtime, SeatStatus } from '@/types'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 const route = useRoute()
 const router = useRouter()
@@ -475,10 +497,11 @@ const showtime = ref<Showtime | null>(null)
 const seatStatus = ref<SeatStatus | null>(null)
 const selectedSeats = ref<string[]>([])
 const activeNav = ref('movies')
-const activeTimeIdx = ref(2)
 const activeRecIdx = ref(0)
+const showRefundPolicy = ref(false)
 const manualMode = ref(false)
-const partySize = ref(2)
+const requestedPeople = Number(route.query.people)
+const partySize = ref(Number.isInteger(requestedPeople) && requestedPeople >= 1 && requestedPeople <= 5 ? requestedPeople : 2)
 const seatPreference = ref<SeatPreference>('CENTER')
 const recommendations = ref<SeatRecommendation[]>([])
 const recommendationLoading = ref(false)
@@ -512,14 +535,14 @@ const navItems = [
   { key: 'movies', label: '影片', icon: 'movie', route: '/movies' },
   { key: 'cinemas', label: '影院', icon: 'theaters', route: '/cinemas' },
   { key: 'profile', label: '个人中心', icon: 'person', route: '/profile' },
-  { key: 'events', label: '演出', icon: 'event' },
   { key: 'orders', label: '订单', icon: 'receipt_long', route: '/orders' },
   { key: 'favorites', label: '想看', icon: 'favorite', route: '/favorites' },
-  { key: 'settings', label: '设置', icon: 'settings' }
 ]
 
 const totalRows = computed(() => seatStatus.value?.totalRows || 10)
 const totalCols = computed(() => seatStatus.value?.totalCols || 15)
+const hallLayout = computed(() => parseHallSeatLayout(seatStatus.value?.seatLayout, totalRows.value, totalCols.value))
+const isSeatEnabled = (r: number, c: number) => hallLayout.value.valid && hallLayout.value.seats[r - 1]?.[c - 1] === 1
 const totalCount = computed(() => seatStatus.value?.totalSeats || totalRows.value * totalCols.value)
 const availableCount = computed(() => {
   if (!seatStatus.value) return 0
@@ -564,19 +587,6 @@ const hallFormatBadge = computed(() => {
   return 'IMAX'
 })
 
-const timeChips = computed(() => {
-  if (!showtime.value) return []
-  const startDate = new Date(showtime.value.startTime)
-  const startHour = startDate.getHours()
-  return [
-    { time: '14:30', meta: '¥45' },
-    { time: '16:45', meta: '¥48' },
-    { time: `${String(startHour).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`, meta: `¥${showtime.value.basePrice}` },
-    { time: '21:30', meta: '¥55' },
-    { time: '22:25', meta: '¥50' }
-  ]
-})
-
 const rowLetter = (idx: number) => {
   return String.fromCharCode(65 + idx)
 }
@@ -584,6 +594,7 @@ const rowLetter = (idx: number) => {
 const seatName = (r: number, c: number) => `${r}排${c}座`
 
 const seatClass = (r: number, c: number) => {
+  if (!isSeatEnabled(r, c)) return 'disabled'
   const name = seatName(r, c)
   if (occupiedSet.value.has(name)) return 'occupied'
   if (selectedSet.value.has(name)) return 'selected'
@@ -595,6 +606,41 @@ const seatClass = (r: number, c: number) => {
 const parseSeatCoordinate = (seat: string) => {
   const match = seat.match(/^(\d+)排(\d+)座$/)
   return match ? { row: Number(match[1]), col: Number(match[2]) } : null
+}
+
+/** 根据行列位置与过道判断座位是否为同排连续组合。 */
+const isContinuousGroup = (seats: string[]) => {
+  const coordinates = seats.map(parseSeatCoordinate)
+  if (!coordinates.length || coordinates.some(c => !c || !isSeatEnabled(c.row, c.col))) return false
+  const ordered = coordinates.filter((c): c is { row: number; col: number } => c !== null).sort((a, b) => a.col - b.col)
+  return ordered.every((c, i) => c.row === ordered[0].row && (i === 0 ||
+    (c.col === ordered[i - 1].col + 1 && !hallLayout.value.aisleAfterCols.includes(ordered[i - 1].col))))
+}
+
+// URL proposals are untrusted: only apply a complete group after fresh layout/occupancy checks.
+const applyAssistantSeats = () => {
+  const raw = route.query.assistantSeats
+  if (typeof raw !== 'string' || !seatStatus.value || !showtime.value) return
+  const seats = raw.split(',')
+  const valid = isContinuousGroup(seats) && showtime.value.status === 0 &&
+    new Date(showtime.value.startTime).getTime() >= Date.now() + 15 * 60_000 &&
+    seats.length > 0 && seats.length <= 5 && new Set(seats).size === seats.length && seats.every(seat => {
+      const coordinate = parseSeatCoordinate(seat)
+      if (!coordinate || coordinate.row < 1 || coordinate.row > totalRows.value || coordinate.col < 1 || coordinate.col > totalCols.value) return false
+      if (occupiedSet.value.has(seat)) return false
+      return isSeatEnabled(coordinate.row, coordinate.col)
+    })
+  if (valid) {
+    selectedSeats.value = seats
+    partySize.value = seats.length
+    ElMessage.success('已预选助手推荐座位，尚未锁座，请确认后提交')
+  } else {
+    selectedSeats.value = []
+    ElMessage.warning('助手方案已失效或包含不可选座位，请重新选择')
+  }
+  const query = { ...route.query }
+  delete query.assistantSeats
+  void router.replace({ path: route.path, query })
 }
 
 const isPreviewSeat = (rec: SeatRecommendation, previewRow: number, previewCol: number) => {
@@ -645,7 +691,10 @@ const onSeatHover = (r: number, c: number, e: MouseEvent) => {
   const name = seatName(r, c)
   let status = '可选'
   let statusClass = 'ok'
-  if (occupiedSet.value.has(name)) {
+  if (!isSeatEnabled(r, c)) {
+    status = '停用'
+    statusClass = 'sold'
+  } else if (occupiedSet.value.has(name)) {
     status = '已售'
     statusClass = 'sold'
   } else if (selectedSet.value.has(name)) {
@@ -670,8 +719,10 @@ const onSeatLeave = () => {
   hoverTooltip.show = false
 }
 
+/** 切换座位选择或可售状态，并执行当前页面的座位限制检查。 */
 const toggleSeat = (r: number, c: number) => {
   if (!seatStatus.value) return
+  if (!isSeatEnabled(r, c)) return
   const name = seatName(r, c)
   if (occupiedSet.value.has(name)) {
     ElMessage.warning('该座位已售')
@@ -694,10 +745,13 @@ const removeSeat = (seat: string) => {
   if (idx > -1) selectedSeats.value.splice(idx, 1)
 }
 
+let recommendationRequestId = 0
+/** 按当前偏好和场景加载推荐结果，更新加载状态。 */
 const loadRecommendations = async (showLoading = true) => {
   const id = Number(route.params.id)
   if (!id) return
-  if (showLoading) recommendationLoading.value = true
+  const requestId = ++recommendationRequestId
+  recommendationLoading.value = true
   try {
     const result = await showtimeApi.getSmartSeatRecommendations(id, {
       people: partySize.value,
@@ -705,7 +759,8 @@ const loadRecommendations = async (showLoading = true) => {
       naturalLanguage: naturalPreference.value.trim() || undefined,
       limit: 3
     })
-    recommendations.value = result.recommendations
+    if (requestId !== recommendationRequestId) return
+    recommendations.value = result.recommendations.filter(rec => rec.seats.length === partySize.value && isContinuousGroup(rec.seats))
     seatPreference.value = result.interpretedPreference
     preferenceSummary.value = result.preferenceSummary
     analysisSource.value = result.analysisSource
@@ -714,10 +769,11 @@ const loadRecommendations = async (showLoading = true) => {
     lastGeneratedAt.value = result.generatedAt ? new Date(result.generatedAt) : new Date()
     if (activeRecIdx.value >= recommendations.value.length) activeRecIdx.value = 0
   } catch (error) {
+    if (requestId !== recommendationRequestId) return
     console.error('加载智能选座推荐失败:', error)
     if (showLoading) ElMessage.error('智能选座推荐加载失败')
   } finally {
-    if (showLoading) recommendationLoading.value = false
+    if (requestId === recommendationRequestId) recommendationLoading.value = false
   }
 }
 
@@ -738,6 +794,7 @@ const changePreference = async (preference: SeatPreference) => {
   await loadRecommendations()
 }
 
+/** 提交自然语言偏好，获取结构化分析及座位推荐。 */
 const submitNaturalPreference = async () => {
   if (!naturalPreference.value.trim()) return
   activeRecIdx.value = 0
@@ -749,12 +806,13 @@ const applyNaturalExample = async (example: string) => {
   await submitNaturalPreference()
 }
 
+/** 将选中的推荐组合应用为当前已选座位。 */
 const applyRecommendation = async (i: number) => {
   activeRecIdx.value = i
   const rec = recommendations.value[i]
   if (!rec) return
   const available = rec.seats.filter(s => !occupiedSet.value.has(s))
-  if (available.length !== rec.seats.length) {
+  if (available.length !== rec.seats.length || !isContinuousGroup(rec.seats)) {
     await refreshSeatRecommendations(true)
     return
   }
@@ -762,6 +820,7 @@ const applyRecommendation = async (i: number) => {
   ElMessage.success(`已为你选择 ${rec.title}`)
 }
 
+/** 根据人数和偏好刷新智能选座方案。 */
 const refreshSeatRecommendations = async (notifyOnReplacement = false) => {
   if (loading.value || recommendationLoading.value || realtimeRefreshing.value) return
   const id = Number(route.params.id)
@@ -772,13 +831,13 @@ const refreshSeatRecommendations = async (notifyOnReplacement = false) => {
   try {
     const latestStatus = await showtimeApi.getSeatStatus(id)
     const latestOccupied = new Set(latestStatus.occupiedSeats)
-    const becameUnavailable = !!previousActive && previousActive.seats.some(seat => latestOccupied.has(seat))
     seatStatus.value = latestStatus
+    const becameUnavailable = !!previousActive && (previousActive.seats.some(seat => latestOccupied.has(seat)) || !isContinuousGroup(previousActive.seats))
     if (becameUnavailable) {
       activeRecIdx.value = 0
       await loadRecommendations(false)
       recommendations.value = recommendations.value.filter(rec =>
-        rec.seats.every(seat => !latestOccupied.has(seat))
+        isContinuousGroup(rec.seats) && rec.seats.every(seat => !latestOccupied.has(seat))
       )
       if (wasApplied) {
         const replacement = recommendations.value[0]
@@ -820,89 +879,37 @@ const avatarChar = computed(() => {
   return n.charAt(0).toUpperCase()
 })
 
-const tip = (label: string) => {
-  ElMessage.info(`${label} 功能敬请期待`)
-}
 
+/** 检查已选座位和购票规则，再进入订单确认流程。 */
 const confirmOrder = async () => {
   if (selectedSeats.value.length === 0) {
     ElMessage.warning('请至少选择一个座位')
     return
   }
+  showRefundPolicy.value = true
+}
 
-  // 显示退改签规则确认对话框
+const cancelRefundPolicy = () => {
+  showRefundPolicy.value = false
+  ElMessage.info('已取消下单')
+}
+
+/** 携带场次及已选座位跳转订单确认页。 */
+const proceedToOrderConfirm = async () => {
+  showRefundPolicy.value = false
   try {
-    await ElMessageBox({
-      title: '退改签规则',
-      message: `
-        <div style="padding: 16px 0;">
-          <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; padding: 16px; background: #FFF9E6; border-radius: 8px; border: 1px solid #FFB84D;">
-            <span style="font-size: 24px; color: #FF8400;">⚠️</span>
-            <div style="flex: 1;">
-              <div style="font-weight: 700; font-size: 15px; color: #333; margin-bottom: 8px;">重要提示</div>
-              <div style="font-size: 14px; color: #666; line-height: 1.6;">
-                购票前请仔细阅读退改签规则，购票即视为同意以下条款
-              </div>
-            </div>
-          </div>
-
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <div style="display: flex; align-items: flex-start; gap: 10px;">
-              <span style="font-size: 20px; color: #16a34a;">✓</span>
-              <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 14px; color: #333; margin-bottom: 4px;">开场前 24 小时外</div>
-                <div style="font-size: 13px; color: #666;">可免费退票，全额退款</div>
-              </div>
-            </div>
-
-            <div style="display: flex; align-items: flex-start; gap: 10px;">
-              <span style="font-size: 20px; color: #f59e0b;">⚡</span>
-              <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 14px; color: #333; margin-bottom: 4px;">开场前 24 小时内</div>
-                <div style="font-size: 13px; color: #666;">可退票，但需扣除 10% 手续费</div>
-              </div>
-            </div>
-
-            <div style="display: flex; align-items: flex-start; gap: 10px;">
-              <span style="font-size: 20px; color: #dc2626;">✕</span>
-              <div style="flex: 1;">
-                <div style="font-weight: 600; font-size: 14px; color: #333; margin-bottom: 4px;">开场前 30 分钟内</div>
-                <div style="font-size: 13px; color: #666;">不可退票，不可改签</div>
-              </div>
-            </div>
-          </div>
-
-          <div style="margin-top: 16px; padding: 12px; background: #f3f4f6; border-radius: 6px; font-size: 12px; color: #666; line-height: 1.6;">
-            <div style="font-weight: 600; margin-bottom: 4px;">退款说明：</div>
-            <div>• 退款将原路退回至支付账户</div>
-            <div>• 预计 1-7 个工作日到账</div>
-            <div>• 退票成功后座位将立即释放</div>
-          </div>
-        </div>
-      `,
-      dangerouslyUseHTMLString: true,
-      confirmButtonText: '我已阅读并同意',
-      cancelButtonText: '取消',
-      type: 'warning',
-      customClass: 'refund-policy-dialog',
-      showClose: false,
-      closeOnClickModal: false
-    })
-
-    // 用户同意规则后进入订单确认页，确认页提交时才创建订单。
     await router.push({
       name: 'OrderConfirm',
       query: {
         showtimeId: String(route.params.id),
+        pricingPoints: route.query.pricingPoints,
+        pricingCoupons: route.query.pricingCoupons,
         seats: selectedSeats.value.join(',')
       }
     })
-  } catch (error: any) {
-    if (error === 'cancel') {
-      ElMessage.info('已取消下单')
-    } else {
-      console.error('进入订单确认页失败:', error)
-    }
+  } catch (error) {
+    console.error('进入订单确认页失败:', error)
+    ElMessage.error('进入订单确认页失败，请重试')
   }
 }
 
@@ -939,6 +946,7 @@ const handleKey = (e: KeyboardEvent) => {
   }
 }
 
+/** 加载当前场次、影厅布局与占座状态，再恢复选择及推荐。 */
 const loadData = async () => {
   loading.value = true
   try {
@@ -951,6 +959,7 @@ const loadData = async () => {
     seatStatus.value = ssData
     cursor.row = Math.ceil(ssData.totalRows / 2)
     cursor.col = Math.ceil(ssData.totalCols / 2)
+    applyAssistantSeats()
     await loadRecommendations(false)
   } catch (error) {
     console.error('加载数据失败:', error)
@@ -973,8 +982,6 @@ onUnmounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .app {
   --primary: #FF8400;
@@ -1318,68 +1325,6 @@ onUnmounted(() => {
 }
 .mh-stats-sub { font-size: 11px; color: var(--muted); }
 
-/* ============ SELECTORS ============ */
-.selectors { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.sel-pill {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.sel-pill:hover { border-color: var(--primary); }
-.sel-pill-ico { font-size: 16px; color: var(--fg); }
-.sel-pill-ico.primary { color: var(--primary); }
-.sel-pill-text { display: flex; flex-direction: column; gap: 1px; }
-.sel-pill-label {
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: 1px;
-}
-.sel-pill-value { font-size: 13px; font-weight: 600; color: var(--fg); }
-.sel-pill-caret { font-size: 14px; color: var(--muted); }
-
-.sel-divider { width: 1px; height: 32px; background: var(--border); margin: 0 4px; }
-
-.time-chips { display: flex; gap: 6px; }
-.time-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 8px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--card);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.time-chip:hover { border-color: var(--primary); }
-.time-chip.active {
-  background: var(--fg);
-  border-color: var(--fg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-.time-chip.active .tc-time,
-.time-chip.active .tc-meta { color: #fff; }
-.tc-time {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--fg);
-}
-.tc-meta {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--muted);
-}
-
 /* ============ SEAT BOARD ============ */
 .seat-board {
   position: relative;
@@ -1479,6 +1424,11 @@ onUnmounted(() => {
   border-color: rgba(255, 255, 255, 0.05);
   cursor: not-allowed;
 }
+.seat.disabled {
+  opacity: 0.25;
+  cursor: not-allowed;
+  background: repeating-linear-gradient(45deg, transparent, transparent 4px, #aaa 5px, transparent 6px);
+}
 .seat.recommended {
   background: rgba(168, 85, 247, 0.3);
   border-color: rgba(168, 85, 247, 0.8);
@@ -1497,10 +1447,17 @@ onUnmounted(() => {
   color: #fff;
 }
 .aisle {
-  display: inline-block;
-  width: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
   flex-shrink: 0;
+  height: 24px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  border-inline: 1px dashed rgba(255, 255, 255, 0.2);
 }
+.aisle-legend { border-inline: 1px dashed rgba(255, 255, 255, 0.6); }
 
 .seat-tooltip {
   position: absolute;
@@ -2038,6 +1995,64 @@ onUnmounted(() => {
 }
 .switch-manual:hover { color: var(--primary); }
 .switch-manual .msr { font-size: 14px; }
+
+/* ============ REFUND POLICY DIALOG ============ */
+:global(.refund-policy-dialog) {
+  --el-dialog-border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid #CBCCC9;
+  box-shadow: 0 24px 70px rgba(17, 17, 17, 0.2);
+}
+:global(.refund-policy-dialog .el-dialog__header) { margin: 0; padding: 22px 24px 16px; }
+:global(.refund-policy-dialog .el-dialog__body) { padding: 0 24px 20px; }
+:global(.refund-policy-dialog .el-dialog__footer) { padding: 16px 24px 22px; border-top: 1px solid #E7E8E5; }
+.policy-title { display: flex; align-items: center; gap: 12px; }
+.policy-title-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  color: #B85F00;
+  background: rgba(255, 132, 0, 0.12);
+}
+.policy-title-icon .msr { font-size: 23px; }
+.policy-title h3 { margin: 0 0 3px; color: #111; font-size: 18px; }
+.policy-title p { margin: 0; color: #666; font-size: 12px; }
+.policy-list { display: flex; flex-direction: column; gap: 10px; }
+.policy-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  border: 1px solid #E7E8E5;
+  border-radius: 11px;
+  background: #F8F9F6;
+}
+.policy-item > .msr { margin-top: 1px; font-size: 19px; }
+.policy-item > div { display: flex; flex-direction: column; gap: 3px; }
+.policy-item strong { color: #111; font-size: 13px; }
+.policy-item span { color: #666; font-size: 12px; }
+.policy-ok > .msr { color: #16A34A; }
+.policy-warn > .msr { color: #D97706; }
+.policy-danger > .msr { color: #DC2626; }
+.policy-note {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #F2F3F0;
+}
+.policy-note strong { color: #111; font-size: 12px; }
+.policy-note span { color: #666; font-size: 11px; line-height: 1.6; }
+.policy-cancel,
+.policy-confirm { padding: 10px 17px; border-radius: 9px; font: 700 13px/1 var(--font-sans); cursor: pointer; }
+.policy-cancel { margin-right: 8px; border: 1px solid #CBCCC9; background: #FFF; color: #333; }
+.policy-confirm { display: inline-flex; align-items: center; gap: 6px; border: 1px solid #FF8400; background: #FF8400; color: #111; }
+.policy-confirm .msr { font-size: 16px; }
+.policy-confirm:hover { box-shadow: 0 6px 16px rgba(255, 132, 0, 0.22); }
 
 /* ============ CHECKOUT BAR ============ */
 .checkout-bar {

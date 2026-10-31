@@ -7,6 +7,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/** 影片经营洞察，封装票房、场次、上座率与趋势指标。 */
 @Data
 @Builder
 public class MovieInsightVO {

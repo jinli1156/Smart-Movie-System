@@ -1,0 +1,25 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_ai_quota",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "ownerId": {
+      "bsonType": "number"
+    },
+    "kind": {
+      "bsonType": "string"
+    },
+    "day": {
+      "bsonType": "string"
+    },
+    "used": {
+      "bsonType": "number"
+    }
+  }
+}

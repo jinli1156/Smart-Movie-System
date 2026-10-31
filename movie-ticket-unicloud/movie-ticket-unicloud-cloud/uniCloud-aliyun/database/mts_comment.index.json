@@ -1,0 +1,58 @@
+[
+  {
+    "IndexName": "id_unique",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "id",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "userId_movieId_unique",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "userId",
+          "Direction": "1"
+        },
+        {
+          "Name": "movieId",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": true,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "movieId_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "movieId",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  },
+  {
+    "IndexName": "orderId_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "orderId",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  }
+]

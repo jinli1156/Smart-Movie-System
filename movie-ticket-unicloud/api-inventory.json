@@ -1,0 +1,552 @@
+[
+  {
+    "method": "GET",
+    "path": "/api/admin/coupon-codes",
+    "source": "AdminCouponController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/admin/coupon-codes/redemptions",
+    "source": "AdminCouponController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/admin/coupon-codes",
+    "source": "AdminCouponController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/admin/coupon-codes/{id}",
+    "source": "AdminCouponController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/admin/coupon-codes/{id}/status",
+    "source": "AdminCouponController.java"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/admin/coupon-codes/{id}",
+    "source": "AdminCouponController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/assistant/checkout/prepare",
+    "source": "AssistantCheckoutController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/assistant/checkout/{id}/confirm",
+    "source": "AssistantCheckoutController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/assistant/capabilities",
+    "source": "AssistantController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/assistant/chat",
+    "source": "AssistantController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/assistant/chat/stream",
+    "source": "AssistantController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/assistant/conversations",
+    "source": "AssistantConversationController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/assistant/conversations/{id}",
+    "source": "AssistantConversationController.java"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/assistant/conversations/{id}",
+    "source": "AssistantConversationController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/assistant/preferences",
+    "source": "AssistantPreferenceController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/assistant/preferences",
+    "source": "AssistantPreferenceController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/auth/captcha",
+    "source": "AuthController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/login",
+    "source": "AuthController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/auth/register",
+    "source": "AuthController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/cinema/page",
+    "source": "CinemaController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/cinema/all",
+    "source": "CinemaController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/cinema/{id}",
+    "source": "CinemaController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/cinema",
+    "source": "CinemaController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/cinema/{id}",
+    "source": "CinemaController.java"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/cinema/{id}",
+    "source": "CinemaController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/cinema/{id}/status",
+    "source": "CinemaController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/comment",
+    "source": "CommentController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/comment/{id}",
+    "source": "CommentController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/comment/movie/{movieId}",
+    "source": "CommentController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/comment/eligibility",
+    "source": "CommentController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/coupon/my",
+    "source": "CouponController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/coupon/redeem",
+    "source": "CouponController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/upload/image",
+    "source": "FileUploadController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/hall/page",
+    "source": "HallController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/hall/cinema/{cinemaId}",
+    "source": "HallController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/hall/{id}",
+    "source": "HallController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/hall",
+    "source": "HallController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/hall/{id}",
+    "source": "HallController.java"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/hall/{id}",
+    "source": "HallController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/hall/{id}/status",
+    "source": "HallController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/uploads/{filename}",
+    "source": "ImageServeController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/movie/page",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/movie/now-showing",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/movie/coming-soon",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/movie/box-office/history",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/movie/box-office/today",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/movie/{id}",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/movie/{id}/insight",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/movie",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/movie/{id}",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/movie/{id}",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/movie/{id}/status",
+    "source": "MovieController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/order",
+    "source": "OrderController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/order/my",
+    "source": "OrderController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/order/history",
+    "source": "OrderController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/order/page",
+    "source": "OrderController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/order/{orderNo}",
+    "source": "OrderController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/order/{orderNo}/pay",
+    "source": "OrderController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/order/{orderNo}/cancel",
+    "source": "OrderController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/order/{orderNo}/refund",
+    "source": "OrderController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/order/pick",
+    "source": "OrderController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/pricing/compare",
+    "source": "PricingController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/pricing/orders/{orderNo}/quote",
+    "source": "PricingController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/recommend/hot",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/recommend/personal",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/recommend/profile",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/recommend/profile/radar",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/recommend/cold-start",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/recommend/behavior/view/{movieId}",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/recommend/behavior/favorite/{movieId}",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/recommend/behavior/favorite/{movieId}",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/recommend/favorites",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/recommend/behavior/favorite/{movieId}",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/recommend/evaluation",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/recommend/similar/{movieId}",
+    "source": "RecommendController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/statistics/scheduling/saved-drafts",
+    "source": "SchedulingSavedDraftController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/statistics/scheduling/saved-drafts/{id}",
+    "source": "SchedulingSavedDraftController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/statistics/scheduling/saved-drafts",
+    "source": "SchedulingSavedDraftController.java"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/statistics/scheduling/saved-drafts/{id}",
+    "source": "SchedulingSavedDraftController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/showtime/page",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/showtime/list",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/showtime/{id}",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/showtime",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/showtime/{id}",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/showtime/{id}",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/showtime/{id}/status",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/showtime/{id}/seats",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/showtime/{id}/seat-recommendation",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/showtime/{id}/seat-recommendation",
+    "source": "ShowtimeController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/statistics/scheduling/workspace",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/statistics/scheduling/check",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/statistics/scheduling/apply",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/statistics/dashboard",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/statistics/box-office",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/statistics/showtime/{id}",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/statistics/revenue",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/statistics/scheduling-insights",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/statistics/scheduling/predict",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/statistics/scheduling/simulate",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/statistics/scheduling/optimize",
+    "source": "StatisticsController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/user/me",
+    "source": "UserController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/user/points",
+    "source": "UserController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/user/profile",
+    "source": "UserController.java"
+  },
+  {
+    "method": "POST",
+    "path": "/api/user/change-password",
+    "source": "UserController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/user/page",
+    "source": "UserController.java"
+  },
+  {
+    "method": "GET",
+    "path": "/api/user/{id}",
+    "source": "UserController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/user/{id}",
+    "source": "UserController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/user/{id}/status",
+    "source": "UserController.java"
+  },
+  {
+    "method": "PUT",
+    "path": "/api/user/{id}/reset-password",
+    "source": "UserController.java"
+  },
+  {
+    "method": "DELETE",
+    "path": "/api/user/{id}",
+    "source": "UserController.java"
+  }
+]

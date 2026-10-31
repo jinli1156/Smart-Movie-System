@@ -9,6 +9,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/** 用户对影片的浏览与想看行为记录，供推荐特征与偏好画像使用。 */
 @Data
 @TableName("user_movie_behavior")
 public class UserMovieBehavior {

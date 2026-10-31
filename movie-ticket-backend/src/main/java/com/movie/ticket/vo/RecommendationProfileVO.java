@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.util.List;
 
+/** 推荐偏好画像，向用户解释类型倾向、行为特征与推荐依据。 */
 @Data
 @Builder
 public class RecommendationProfileVO {
@@ -14,4 +15,7 @@ public class RecommendationProfileVO {
     private int favoriteCount;
     private int purchasedCount;
     private int ratedCount;
+    private String summary;
+    private String analysisSource;
+    private String model;
 }

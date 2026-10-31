@@ -1,3 +1,6 @@
+/**
+ * 共享业务类型，约束影片、影院、场次、订单与分页响应的数据结构。
+ */
 export interface Cinema {
   id?: number
   name: string
@@ -76,6 +79,9 @@ export interface PageResult<T> {
 }
 
 export interface Order {
+  isPicked?: number
+  pickTime?: string
+  ticketCode?: string
   id?: number
   orderNo: string
   userId?: number
@@ -98,6 +104,7 @@ export interface Order {
 }
 
 export interface User {
+  cinemaId?: number | null
   id?: number
   username: string
   password?: string
@@ -109,4 +116,34 @@ export interface User {
   status?: number
   createTime?: string
   updateTime?: string
+}
+
+export interface CouponCode {
+  id?: number
+  code: string
+  name: string
+  amount: number
+  minSpend: number
+  validDays: number
+  maxRedemptions: number
+  redeemedCount?: number
+  validFrom: string
+  expireTime: string
+  status: number
+  createTime?: string
+  updateTime?: string
+}
+
+export interface CouponRedemption {
+  id: number
+  couponCodeId: number
+  code: string
+  couponName: string
+  userId: number
+  username: string
+  nickname?: string
+  userCouponId: number
+  couponStatus: number
+  redeemTime: string
+  useTime?: string
 }

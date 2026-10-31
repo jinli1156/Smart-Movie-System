@@ -3,10 +3,10 @@
     <el-aside width="248px" class="sidebar">
       <div class="logo">
         <div class="logo-mark">
-          <img class="brand-logo-image" src="/cinema-logo.png" alt="CINEMA+" />
+          <img class="brand-logo-image" src="/xiangzhi-ticket.png" alt="响指电影" />
         </div>
         <div class="logo-copy">
-          <strong>CINEMA+</strong>
+          <strong class="brand-wordmark" role="img" aria-label="响指电影"></strong>
           <span>ADMIN CONSOLE</span>
         </div>
       </div>
@@ -29,9 +29,13 @@
           <span>影厅管理</span>
         </el-menu-item>
 
-        <el-menu-item index="/movie">
+        <el-menu-item index="/movie" v-if="userStore.userInfo?.role === 'ADMIN'">
           <el-icon><Film /></el-icon>
           <span>电影管理</span>
+        </el-menu-item>
+
+        <el-menu-item index="/listing">
+          <el-icon><MagicStick /></el-icon><span>AI 辅助上架</span>
         </el-menu-item>
 
         <el-menu-item index="/showtime">
@@ -41,17 +45,28 @@
 
         <el-menu-item index="/smart-scheduling">
           <el-icon><TrendCharts /></el-icon>
-          <span>智能排片建议</span>
+          <span>智能排片工作台</span>
         </el-menu-item>
 
+        <el-menu-item index="/marketing/studio">
+          <el-icon><Picture /></el-icon><span>营销工作台</span>
+        </el-menu-item>
         <el-menu-item index="/order">
           <el-icon><Tickets /></el-icon>
           <span>订单管理</span>
         </el-menu-item>
 
+        <el-menu-item index="/coupon-code" v-if="userStore.userInfo?.role === 'ADMIN'">
+          <el-icon><Discount /></el-icon>
+          <span>兑换码管理</span>
+        </el-menu-item>
+
         <el-menu-item index="/user" v-if="userStore.userInfo?.role === 'ADMIN'">
           <el-icon><User /></el-icon>
           <span>用户管理</span>
+        </el-menu-item>
+        <el-menu-item index="/recommendation-evaluation" v-if="userStore.userInfo?.role === 'ADMIN'">
+          <el-icon><DataAnalysis /></el-icon><span>推荐算法评估</span>
         </el-menu-item>
       </el-menu>
     </el-aside>
@@ -68,7 +83,7 @@
           </div>
 
           <div class="user-info">
-            <div class="admin-badge">管理员视图</div>
+            <div class="admin-badge">{{ userStore.userInfo?.role === 'CINEMA_ADMIN' ? '所属影院管理' : '平台管理' }}</div>
             <el-dropdown trigger="click">
               <div class="user-menu">
                 <span class="user-avatar">{{ avatarChar }}</span>
@@ -86,6 +101,8 @@
       </el-header>
 
       <el-main class="main">
+        <el-alert v-if="userStore.userInfo?.role === 'CINEMA_ADMIN' && !userStore.userInfo?.cinemaId"
+          title="尚未分配影院，请联系平台管理员在用户管理中设置所属影院，设置后重新登录。" type="warning" :closable="false" show-icon />
         <router-view />
       </el-main>
     </el-container>
@@ -93,41 +110,165 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+/**
+ * 后台布局：按角色展示功能菜单，提供页面导航和退出登录入口。
+ */
+import { computed, h } from 'vue'
+import '@/styles/management-layout.css'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+import 'element-plus/es/components/message-box/style/css'
+import {
+  ArrowDown,
+  Calendar,
+  DataAnalysis,
+  Discount,
+  Film,
+  MagicStick,
+  Grid,
+  OfficeBuilding,
+  SwitchButton,
+  Tickets,
+  TrendCharts,
+  Picture,
+  User
+} from '@element-plus/icons-vue'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
-const activeMenu = computed(() => route.path)
+const activeMenu = computed(() => route.path.startsWith('/marketing/') ? '/marketing/studio' : route.path)
 
 const breadcrumbMap: Record<string, string> = {
   '/dashboard': '数据统计',
   '/cinema': '影院管理',
   '/hall': '影厅管理',
   '/movie': '电影管理',
+  '/listing': 'AI 辅助上架',
   '/showtime': '排片管理',
-  '/smart-scheduling': '智能排片建议',
+  '/smart-scheduling': '智能排片工作台',
+  '/marketing/studio': '营销创作工作台',
+  '/marketing/tasks': '任务与素材中心',
+  '/marketing/review': '审核与发布',
   '/order': '订单管理',
-  '/user': '用户管理'
+  '/coupon-code': '兑换码管理',
+  '/user': '用户管理',
+  '/recommendation-evaluation': '推荐算法评估'
 }
 
 const breadcrumb = computed(() => breadcrumbMap[route.path])
 const avatarChar = computed(() => (userStore.userInfo?.nickname || '管').charAt(0).toUpperCase())
 
+/** 清理当前会话并跳转登录页面。 */
 const handleLogout = async () => {
-  await ElMessageBox.confirm('确定要退出登录吗？', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  })
+  try {
+    await ElMessageBox.confirm(
+      h('div', { class: 'logout-confirm-content' }, [
+        h('div', { class: 'logout-confirm-icon', 'aria-hidden': 'true' }, [h(SwitchButton)]),
+        h('p', { class: 'logout-confirm-heading' }, '准备离开管理后台？'),
+        h('p', { class: 'logout-confirm-description' }, '退出后需重新登录才能继续管理，请确认当前编辑内容已保存。')
+      ]),
+      '退出登录',
+      {
+        customClass: 'admin-logout-confirm',
+        confirmButtonText: '确认退出',
+        cancelButtonText: '继续工作',
+        closeOnClickModal: false,
+        autofocus: false,
+        distinguishCancelAndClose: true
+      }
+    )
+  } catch (action) {
+    if (action === 'cancel' || action === 'close') return
+    throw action
+  }
   userStore.logout()
   router.push('/login')
 }
 </script>
+
+<style>
+.el-message-box.admin-logout-confirm {
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  padding: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.65) !important;
+  border-radius: 24px !important;
+  box-shadow: 0 24px 80px rgba(35, 43, 36, 0.22) !important;
+}
+
+.admin-logout-confirm .el-message-box__header {
+  padding: 0 28px 12px 0;
+}
+
+.admin-logout-confirm .el-message-box__title {
+  color: var(--admin-muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.admin-logout-confirm .el-message-box__headerbtn {
+  top: 20px;
+  right: 20px;
+}
+
+.admin-logout-confirm .el-message-box__content {
+  padding: 8px 0 24px;
+}
+
+.logout-confirm-content {
+  text-align: center;
+}
+
+.logout-confirm-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  border-radius: 20px;
+  color: #a95600;
+  background: #f0d1a8;
+  box-shadow: inset 2px 2px 5px #d8bc97, inset -2px -2px 5px #ffe6c7;
+}
+
+.logout-confirm-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.logout-confirm-heading {
+  margin: 0 0 10px;
+  color: var(--admin-text);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.logout-confirm-description {
+  max-width: 310px;
+  margin: 0 auto;
+  color: var(--admin-muted);
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.admin-logout-confirm .el-message-box__btns {
+  display: flex;
+  gap: 12px;
+  padding: 0;
+}
+
+.admin-logout-confirm .el-message-box__btns .el-button {
+  flex: 1;
+  height: 44px;
+  margin: 0;
+  border-radius: 12px;
+  font-size: 14px;
+}
+</style>
 
 <style scoped>
 .layout-container {

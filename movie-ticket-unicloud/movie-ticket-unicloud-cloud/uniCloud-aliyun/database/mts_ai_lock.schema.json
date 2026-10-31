@@ -1,0 +1,19 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_ai_lock",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "token": {
+      "bsonType": "string"
+    },
+    "expiresAt": {
+      "bsonType": "number"
+    }
+  }
+}

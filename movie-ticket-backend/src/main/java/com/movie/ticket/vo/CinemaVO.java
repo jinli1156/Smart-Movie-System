@@ -5,6 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/** 影院展示数据，向页面提供影院资料与位置等信息。 */
 @Data
 public class CinemaVO {
 

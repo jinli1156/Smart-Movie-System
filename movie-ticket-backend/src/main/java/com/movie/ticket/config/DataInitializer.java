@@ -8,6 +8,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/** 应用启动时检查默认演示账号，只为尚不存在的账号初始化资料和加密密码。 */
 @Component
 @RequiredArgsConstructor
 public class DataInitializer implements CommandLineRunner {

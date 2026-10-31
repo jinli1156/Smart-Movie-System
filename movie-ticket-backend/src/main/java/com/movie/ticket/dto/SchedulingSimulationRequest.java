@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/** 排片模拟参数，用于比较调整方案与已有场次的预计经营表现。 */
 @Data
 public class SchedulingSimulationRequest {
 

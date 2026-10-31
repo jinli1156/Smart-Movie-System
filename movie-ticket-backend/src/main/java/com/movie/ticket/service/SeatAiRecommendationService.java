@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+/** 调用模型解析自然语言选座偏好；模型分析结果交由座位推荐服务继续校验。 */
 @Slf4j
 @Service
 public class SeatAiRecommendationService {
@@ -27,14 +28,11 @@ public class SeatAiRecommendationService {
     @Value("${assistant.api-key:}")
     private String apiKey;
 
-    @Value("${assistant.base-url:https://dashscope.aliyuncs.com/compatible-mode/v1}")
+    @Value("${assistant.base-url:https://api.deepseek.com}")
     private String baseUrl;
 
-    @Value("${assistant.model:qwen3.8-flash}")
+    @Value("${assistant.model:deepseek-v4-flash}")
     private String model;
-
-    @Value("${assistant.reasoning-effort:low}")
-    private String reasoningEffort;
 
     @Value("${assistant.connect-timeout-ms:5000}")
     private int connectTimeoutMs;
@@ -61,7 +59,7 @@ public class SeatAiRecommendationService {
         try {
             SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
             requestFactory.setConnectTimeout(connectTimeoutMs);
-            requestFactory.setReadTimeout(readTimeoutMs);
+            requestFactory.setReadTimeout(Math.min(readTimeoutMs, 20000));
             RestClient client = RestClient.builder()
                     .baseUrl(baseUrl)
                     .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
@@ -94,8 +92,9 @@ public class SeatAiRecommendationService {
                     Map.of("role", "system", "content", systemPrompt),
                     Map.of("role", "user", "content", userPrompt)));
             body.put("temperature", 0.2);
+            body.put("response_format", Map.of("type", "json_object"));
             body.put("max_tokens", 1200);
-            body.put("reasoning_effort", reasoningEffort);
+            body.put("thinking", Map.of("type", "disabled"));
 
             @SuppressWarnings("unchecked")
             Map<String, Object> response = client.post().uri("/chat/completions").body(body)
@@ -103,7 +102,7 @@ public class SeatAiRecommendationService {
             String content = responseContent(response);
             return Optional.ofNullable(parseAnalysis(content));
         } catch (RestClientResponseException exception) {
-            log.warn("智能选座调用千问失败（HTTP {}），使用算法解释", exception.getStatusCode().value());
+            log.warn("智能选座调用 DeepSeek 失败（HTTP {}），使用算法解释", exception.getStatusCode().value());
         } catch (RuntimeException exception) {
             log.warn("智能选座模型分析失败（{}），使用算法解释", exception.getClass().getSimpleName());
         }

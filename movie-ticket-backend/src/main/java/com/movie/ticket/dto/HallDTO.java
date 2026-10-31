@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+/** 影厅编辑参数，限定所属影院、行列数量、容量及座位布局。 */
 @Data
 public class HallDTO {
 

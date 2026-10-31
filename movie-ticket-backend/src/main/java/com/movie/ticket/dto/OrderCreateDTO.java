@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.util.List;
 
+/** 下单参数，只提交场次、座位和备注；票价、用户身份及订单状态由服务端确定。 */
 @Data
 public class OrderCreateDTO {
 

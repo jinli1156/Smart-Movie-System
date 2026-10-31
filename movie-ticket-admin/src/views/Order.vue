@@ -43,8 +43,14 @@
         </el-button>
       </div>
 
+      <div class="search-bar" aria-label="取票核销">
+        <el-input v-model="ticketCode" placeholder="输入取票码" maxlength="32" clearable style="width: 260px" @keyup.enter="handlePick" />
+        <el-button type="success" :loading="picking" :disabled="!ticketCode.trim()" @click="handlePick">确认核销</el-button>
+        <span>仅可核销有权限管理的已支付订单</span>
+      </div>
+
       <!-- 订单列表 -->
-      <el-table :data="orderList" v-loading="loading" style="margin-top: 20px;">
+      <ManagementTable :data="orderList" v-loading="loading" style="margin-top: 20px;">
         <el-table-column prop="orderNo" label="订单号" min-width="180" show-overflow-tooltip />
         <el-table-column label="电影" min-width="200">
           <template #default="{ row }">
@@ -52,6 +58,7 @@
               <el-image
                 v-if="row.moviePoster"
                 :src="row.moviePoster"
+                lazy
                 fit="cover"
                 style="width: 40px; height: 56px; border-radius: 2px;"
               />
@@ -93,6 +100,9 @@
             {{ formatDateTime(row.createTime) }}
           </template>
         </el-table-column>
+        <el-table-column label="核销状态" width="110">
+          <template #default="{ row }">{{ row.isPicked === 1 ? '已核销' : '未核销' }}</template>
+        </el-table-column>
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" @click="handleView(row)">
@@ -111,7 +121,7 @@
             <el-button
               link
               type="danger"
-              v-if="row.status === 1"
+              v-if="row.status === 1 && row.isPicked !== 1"
               @click="handleRefund(row)"
             >
               <el-icon><RefreshRight /></el-icon>
@@ -119,7 +129,7 @@
             </el-button>
           </template>
         </el-table-column>
-      </el-table>
+      </ManagementTable>
 
       <!-- 分页 -->
       <el-pagination
@@ -127,6 +137,7 @@
         v-model:page-size="pagination.size"
         :total="pagination.total"
         :page-sizes="[10, 20, 50, 100]"
+        :pager-count="5"
         layout="total, sizes, prev, pager, next, jumper"
         style="margin-top: 20px; justify-content: flex-end;"
         @size-change="loadOrders"
@@ -168,19 +179,44 @@
         <el-descriptions-item label="备注" :span="2">
           {{ currentOrder.remark || '-' }}
         </el-descriptions-item>
+        <el-descriptions-item label="核销状态">{{ currentOrder.isPicked === 1 ? '已核销' : '未核销' }}</el-descriptions-item>
+        <el-descriptions-item label="核销时间">{{ formatDateTime(currentOrder.pickTime) }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * 订单管理：按权限查询订单，查看详情并执行取消、退票与取票核销。
+ */
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import { Search, Refresh, View, Close, RefreshRight } from '@element-plus/icons-vue'
 import { orderApi } from '@/api/order'
+import { useListPageState } from '@/composables/usePageState'
 import type { Order } from '@/types'
 
 const loading = ref(false)
+const ticketCode = ref('')
+const picking = ref(false)
+/** 输入或核对取票码，提交订单取票核销。 */
+const handlePick = async () => {
+  const code = ticketCode.value.trim()
+  if (!code || picking.value) return
+  picking.value = true
+  try {
+    try { await ElMessageBox.confirm(`确认核销取票码 ${code}？核销后订单不能退票。`, '取票核销', { type: 'warning', confirmButtonText: '确认核销', cancelButtonText: '取消' }) }
+    catch { return }
+    const picked = await orderApi.pick(code)
+    ElMessage.success(`订单 ${picked.orderNo} 核销成功`)
+    ticketCode.value = ''
+    await loadOrders()
+  } catch {
+    // The request interceptor displays the server error; retain the code for correction or retry.
+  } finally { picking.value = false }
+}
 const viewDialogVisible = ref(false)
 const currentOrder = ref<Order | null>(null)
 
@@ -194,6 +230,7 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
+useListPageState('order', searchForm, pagination)
 
 const orderList = ref<Order[]>([])
 
@@ -202,6 +239,7 @@ const formatDateTime = (val?: string) => {
   return val.replace('T', ' ').slice(0, 19)
 }
 
+/** 按当前状态和页码加载订单列表。 */
 const loadOrders = async () => {
   loading.value = true
   try {
@@ -221,11 +259,13 @@ const loadOrders = async () => {
   }
 }
 
+/** 应用筛选条件并从第一页重新查询。 */
 const handleSearch = () => {
   pagination.page = 1
   loadOrders()
 }
 
+/** 清空筛选条件并重新加载列表。 */
 const handleReset = () => {
   searchForm.orderNo = ''
   searchForm.status = undefined
@@ -242,6 +282,7 @@ const handleView = async (row: Order) => {
   }
 }
 
+/** 确认后提交取消请求，并刷新订单或场次状态。 */
 const handleCancel = async (row: Order) => {
   try {
     await ElMessageBox.confirm(
@@ -259,6 +300,7 @@ const handleCancel = async (row: Order) => {
   }
 }
 
+/** 展示退票确认，提交成功后刷新订单及返还信息。 */
 const handleRefund = async (row: Order) => {
   try {
     await ElMessageBox.confirm(
@@ -292,6 +334,8 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 10px;
 }
+
+.search-bar + .search-bar { margin-top: 16px; }
 
 .movie-cell {
   display: flex;

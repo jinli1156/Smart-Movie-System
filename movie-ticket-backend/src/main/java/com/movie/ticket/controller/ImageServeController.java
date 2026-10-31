@@ -14,6 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+/** 本地图片访问接口入口：接收请求参数并返回统一响应，具体业务处理交给服务层。 */
 @Slf4j
 @RestController
 @RequestMapping("/uploads")
@@ -22,6 +23,7 @@ public class ImageServeController {
 
     private final FileUploadConfig fileUploadConfig;
 
+    /** 根据受限文件路径返回本地图片资源。 */
     @GetMapping("/{filename}")
     public ResponseEntity<Resource> serveImage(@PathVariable String filename) {
         try {

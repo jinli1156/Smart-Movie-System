@@ -31,7 +31,7 @@
       </div>
 
       <div v-loading="loading" class="content-area">
-        <div v-if="orders.length > 0" class="order-list">
+        <div v-if="orders.length > 0" ref="orderListRef" class="order-list">
           <article
             v-for="order in orders"
             :key="order.id"
@@ -58,7 +58,7 @@
             <!-- CARD CONTENT -->
             <div class="card-content">
               <div class="movie-poster">
-                <img :src="order.moviePoster || '/placeholder.jpg'" :alt="order.movieTitle" />
+                <img v-poster :src="order.moviePoster || '/poster-placeholder.svg'" :alt="order.movieTitle" />
                 <div class="poster-overlay">
                   <MaterialIcon class="msr" name="movie" />
                 </div>
@@ -96,6 +96,9 @@
 
             <!-- CARD ACTIONS -->
             <div class="card-actions">
+              <button v-if="order.status === 1" class="action-btn secondary" @click.stop="router.push({ path: `/order/${order.orderNo}`, query: { souvenir: '1' } })">
+                <MaterialIcon class="msr" name="auto_awesome" /><span>AI 观影纪念票</span>
+              </button>
               <button
                 v-if="order.status === 1"
                 class="action-btn primary"
@@ -173,23 +176,31 @@
     </main>
 
     <!-- 取票码对话框 -->
-    <TicketQRCode v-model="showQRCodeDialog" :order="selectedOrder" />
+    <TicketQRCode v-if="showQRCodeDialog" v-model="showQRCodeDialog" :order="selectedOrder" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
+/**
+ * 本人订单列表：按状态分页，显示支付倒计时并提供支付、取消、退票和取票码。
+ */
+import { scrollToListStart } from '@/utils/scrollToListStart'
+import { ref, nextTick, defineAsyncComponent, onMounted, onBeforeUnmount } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { orderApi } from '@/api/order'
+import { confirmRefund } from '@/utils/confirmRefund'
 import type { Order } from '@/types'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import TicketQRCode from '@/components/TicketQRCode.vue'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 import AppSidebar from '@/components/AppSidebar.vue'
 
+const TicketQRCode = defineAsyncComponent(() => import('@/components/TicketQRCode.vue'))
+
 const router = useRouter()
+const route = useRoute()
 
 const loading = ref(false)
-const activeTab = ref('all')
+const activeTab = ref(['0', '1', '2', '3'].includes(String(route.query.status)) ? String(route.query.status) : 'all')
 const orders = ref<Order[]>([])
 const page = ref(1)
 const size = ref(10)
@@ -207,6 +218,7 @@ const tabs: Array<{ value: string; label: string; icon: string; badge?: number |
   { value: '3', label: '已退款', icon: 'receipt_long' }
 ]
 
+/** 按当前状态和页码加载订单列表。 */
 const loadOrders = async () => {
   loading.value = true
   try {
@@ -214,8 +226,10 @@ const loadOrders = async () => {
     const res = await orderApi.getMyOrders({ page: page.value, size: size.value, status })
     orders.value = res.records
     total.value = res.total
+    return true
   } catch (error) {
     console.error('加载订单失败:', error)
+    return false
   } finally {
     loading.value = false
   }
@@ -224,12 +238,24 @@ const loadOrders = async () => {
 const handleTabChange = (tab: string) => {
   activeTab.value = tab
   page.value = 1
+  const query = { ...route.query }
+  if (tab === 'all') delete query.status
+  else query.status = tab
+  void router.replace({ query })
   loadOrders()
 }
 
-const changePage = (newPage: number) => {
+const orderListRef = ref<HTMLElement | null>(null)
+const changePage = async (newPage: number) => {
+  if (loading.value || newPage === page.value) return
+  const previousPage = page.value
   page.value = newPage
-  loadOrders()
+  if (!await loadOrders()) {
+    page.value = previousPage
+    return
+  }
+  await nextTick()
+  scrollToListStart(orderListRef.value)
 }
 
 const showQRCode = (order: Order) => {
@@ -251,16 +277,19 @@ const goToDetail = (orderNo: string) => {
   router.push(`/order/${orderNo}`)
 }
 
+/** 发起当前订单的支付操作，具体支付资格由服务端核验。 */
 const handlePay = (orderNo: string) => {
   router.push(`/order/pay/${orderNo}`)
 }
 
+/** 确认后提交取消请求，并刷新订单或场次状态。 */
 const handleCancel = async (orderNo: string) => {
   try {
-    await ElMessageBox.confirm('确定要取消该订单吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+    await ElMessageBox.confirm('取消后将释放已选座位，订单无法恢复。', '取消订单', {
+      confirmButtonText: '确认取消',
+      cancelButtonText: '保留订单',
+      customClass: 'order-cancel-dialog',
+      closeOnClickModal: false
     })
 
     await orderApi.cancel(orderNo)
@@ -273,6 +302,7 @@ const handleCancel = async (orderNo: string) => {
   }
 }
 
+/** 展示退票确认，提交成功后刷新订单及返还信息。 */
 const handleRefund = async (orderNo: string) => {
   try {
     // 先获取订单详情以计算退款信息
@@ -307,57 +337,7 @@ const handleRefund = async (orderNo: string) => {
       return
     }
 
-    let message = `
-      <div style="padding: 16px 0;">
-        <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; padding: 16px; background: #FFF9E6; border-radius: 8px; border: 1px solid #FFB84D;">
-          <span style="font-size: 24px;">⚠️</span>
-          <div style="flex: 1;">
-            <div style="font-weight: 700; font-size: 15px; color: #333; margin-bottom: 8px;">退票确认</div>
-            <div style="font-size: 14px; color: #666; line-height: 1.6;">
-              确认申请退票吗？退票成功后座位将立即释放。
-            </div>
-          </div>
-        </div>
-
-        <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #666;">订单金额</span>
-            <span style="font-weight: 600;">¥${totalPrice.toFixed(2)}</span>
-          </div>
-    `
-
-    if (fee > 0) {
-      message += `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #666;">手续费 (${feeRate}%)</span>
-            <span style="color: #f59e0b; font-weight: 600;">-¥${fee.toFixed(2)}</span>
-          </div>
-      `
-    }
-
-    message += `
-          <div style="height: 1px; background: #e5e7eb; margin: 12px 0;"></div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="font-weight: 700; font-size: 16px;">退款金额</span>
-            <span style="font-weight: 800; font-size: 20px; color: #16a34a;">¥${refundAmount.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div style="font-size: 13px; color: #666; line-height: 1.6;">
-          <div style="margin-bottom: 4px;">• 退款将原路退回至支付账户</div>
-          <div style="margin-bottom: 4px;">• 预计 1-7 个工作日到账</div>
-          <div>• 退票成功后将收到通知</div>
-        </div>
-      </div>
-    `
-
-    await ElMessageBox.confirm(message, '申请退票', {
-      confirmButtonText: '确认退票',
-      cancelButtonText: '取消',
-      type: 'warning',
-      dangerouslyUseHTMLString: true,
-      customClass: 'refund-confirm-dialog'
-    })
+    await confirmRefund({ totalPrice, refundAmount, fee, feeRate })
 
     await orderApi.refund(orderNo)
     ElMessage.success('退票成功，退款将在1-7个工作日内到账')
@@ -421,8 +401,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
 
 .msr {
   font-family: 'Material Symbols Rounded';

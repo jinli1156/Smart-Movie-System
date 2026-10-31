@@ -6,6 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 
+/** 单组座位推荐方案，包含推荐座位、评分及理由。 */
 @Data
 @Builder
 public class SeatRecommendationVO {

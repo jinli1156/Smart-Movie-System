@@ -1,7 +1,22 @@
+/**
+ * 路由配置与访问守卫：组织功能页面，处理登录状态及页面访问权限。
+ */
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 
 const routes: RouteRecordRaw[] = [
+  {
+    path: '/posters',
+    name: 'PosterStudio',
+    component: () => import('@/views/PosterStudio.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/assistant',
+    name: 'MovieAssistant',
+    component: () => import('@/views/Assistant.vue'),
+    meta: { requiresAuth: false }
+  },
   {
     path: '/',
     redirect: '/home'
@@ -94,14 +109,20 @@ const routes: RouteRecordRaw[] = [
 
 const router = createRouter({
   history: createWebHistory(),
-  routes
+  routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) return savedPosition
+    // Updating filters/date in the query string is not a page change.
+    if (to.path === from.path) return false
+    return { top: 0, left: 0 }
+  }
 })
 
 router.beforeEach((to, _from, next) => {
   const userStore = useUserStore()
 
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
-    next('/login')
+    next({ path: '/login', query: { redirect: to.fullPath } })
   } else if ((to.path === '/login' || to.path === '/register') && userStore.isLoggedIn) {
     next('/home')
   } else {

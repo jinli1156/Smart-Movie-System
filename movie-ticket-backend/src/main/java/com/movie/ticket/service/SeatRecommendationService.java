@@ -1,6 +1,5 @@
 package com.movie.ticket.service;
 
-import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.movie.ticket.dto.SeatPreference;
 import com.movie.ticket.dto.SeatRecommendationRequest;
@@ -28,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+/** 结合实时占座、影厅布局与人数生成连座方案，协调规则评分和可选的模型分析。 */
 @Service
 @RequiredArgsConstructor
 public class SeatRecommendationService {
@@ -38,6 +38,7 @@ public class SeatRecommendationService {
     private final SeatAiRecommendationService seatAiRecommendationService;
     private final SeatRecommendationEngine engine = new SeatRecommendationEngine();
 
+    /** 根据实时座位状态、人数与偏好筛选可用座位组合。 */
     public List<SeatRecommendationVO> recommend(Long showtimeId,
                                                 int people,
                                                 String preferenceValue,
@@ -58,35 +59,36 @@ public class SeatRecommendationService {
         }
 
         Set<String> occupied = loadOccupiedSeats(showtimeId);
-        boolean[][] enabled = parseLayout(hall);
-        return engine.recommend(hall.getTotalRows(), hall.getTotalCols(), enabled, occupied, people,
-                SeatPreference.from(preferenceValue), limit, showtime.getBasePrice());
+        HallSeatLayout layout = parseLayout(hall);
+        return engine.recommend(hall.getTotalRows(), hall.getTotalCols(), layout.enabled(), occupied, people,
+                SeatPreference.from(preferenceValue), limit, showtime.getBasePrice(), layout.aisleAfterCols());
     }
 
+    /** 根据自然语言分析和规则评分生成可解释的座位方案。 */
     public SeatRecommendationResultVO recommendSmart(Long showtimeId, SeatRecommendationRequest request) {
         validate(request.getPeople(), request.getLimit());
         Showtime showtime = requireShowtime(showtimeId);
         Hall hall = requireHall(showtime.getHallId());
-        boolean[][] enabled = parseLayout(hall);
+        HallSeatLayout layout = parseLayout(hall);
         Set<String> occupied = loadOccupiedSeats(showtimeId);
         SeatPreference inferred = inferPreference(request.getNaturalLanguage(), request.getPreference());
         boolean naturalLanguageMode = request.getNaturalLanguage() != null
                 && !request.getNaturalLanguage().isBlank();
 
-        List<SeatRecommendationVO> candidates = naturalLanguageMode
-                ? candidatePool(hall, enabled, occupied, request.getPeople(), inferred, showtime)
-                : engine.recommend(hall.getTotalRows(), hall.getTotalCols(), enabled, occupied,
-                        request.getPeople(), inferred, request.getLimit(), showtime.getBasePrice());
+        List<SeatRecommendationVO> candidates = candidatePool(hall, layout, occupied,
+                request.getPeople(), inferred, showtime);
         candidates.forEach(candidate -> candidate.setReasonSource("algorithm"));
 
         String source = "algorithm";
         String summary = preferenceLabel(inferred);
         String model = null;
         List<SeatRecommendationVO> ranked = new ArrayList<>(candidates);
-        if (naturalLanguageMode) {
-            var analysis = seatAiRecommendationService.analyze(request.getNaturalLanguage(), request.getPeople(),
+        if (!candidates.isEmpty()) {
+            String preferenceText = naturalLanguageMode ? request.getNaturalLanguage() : preferenceLabel(inferred);
+            var analysis = seatAiRecommendationService.analyze(preferenceText, request.getPeople(),
                     hall.getTotalRows(), hall.getTotalCols(), candidates);
-            if (analysis.isPresent()) {
+            if (analysis.isPresent() && analysis.get().ranking().stream().anyMatch(item ->
+                    candidates.stream().anyMatch(candidate -> candidate.getSeatLabel().equals(item.seatLabel())))) {
                 SeatAiRecommendationService.SeatAiAnalysis value = analysis.get();
                 inferred = value.preference();
                 summary = value.summary().isBlank() ? preferenceLabel(inferred) : value.summary();
@@ -94,7 +96,7 @@ public class SeatRecommendationService {
                 source = "model";
                 model = seatAiRecommendationService.modelName();
             } else {
-                summary = "已按“" + compact(request.getNaturalLanguage(), 32) + "”匹配为" + preferenceLabel(inferred);
+                summary = "模型暂不可用，已按“" + compact(preferenceText, 32) + "”提供实时座位推荐";
             }
         }
 
@@ -104,11 +106,15 @@ public class SeatRecommendationService {
         Set<String> latestOccupied = loadOccupiedSeats(showtimeId);
         if (!latestOccupied.equals(occupied)) {
             ranked.removeIf(item -> item.getSeats().stream().anyMatch(latestOccupied::contains));
-            List<SeatRecommendationVO> fresh = engine.recommend(hall.getTotalRows(), hall.getTotalCols(), enabled,
-                    latestOccupied, request.getPeople(), inferred, 5, showtime.getBasePrice());
+            List<SeatRecommendationVO> fresh = engine.recommend(hall.getTotalRows(), hall.getTotalCols(), layout.enabled(),
+                    latestOccupied, request.getPeople(), inferred, 5, showtime.getBasePrice(), layout.aisleAfterCols());
             appendDistinct(ranked, fresh, request.getLimit());
         }
 
+        if (ranked.stream().noneMatch(item -> "model".equals(item.getReasonSource()))) {
+            source = "algorithm";
+            model = null;
+        }
         return SeatRecommendationResultVO.builder()
                 .recommendations(ranked.stream().limit(request.getLimit()).toList())
                 .interpretedPreference(inferred.name())
@@ -132,7 +138,7 @@ public class SeatRecommendationService {
     }
 
     private List<SeatRecommendationVO> candidatePool(Hall hall,
-                                                      boolean[][] enabled,
+                                                      HallSeatLayout layout,
                                                       Set<String> occupied,
                                                       int people,
                                                       SeatPreference primary,
@@ -142,8 +148,8 @@ public class SeatRecommendationService {
         preferences.addFirst(primary);
         Map<String, SeatRecommendationVO> unique = new LinkedHashMap<>();
         for (SeatPreference preference : preferences) {
-            List<SeatRecommendationVO> items = engine.recommend(hall.getTotalRows(), hall.getTotalCols(), enabled,
-                    occupied, people, preference, 3, showtime.getBasePrice());
+            List<SeatRecommendationVO> items = engine.recommend(hall.getTotalRows(), hall.getTotalCols(), layout.enabled(),
+                    occupied, people, preference, 3, showtime.getBasePrice(), layout.aisleAfterCols());
             for (SeatRecommendationVO item : items) {
                 unique.putIfAbsent(String.join("|", item.getSeats()), item);
             }
@@ -238,26 +244,7 @@ public class SeatRecommendationService {
         return occupied;
     }
 
-    private boolean[][] parseLayout(Hall hall) {
-        int rows = hall.getTotalRows();
-        int cols = hall.getTotalCols();
-        boolean[][] result = new boolean[rows][cols];
-        for (boolean[] row : result) Arrays.fill(row, true);
-        if (hall.getSeatLayout() == null || hall.getSeatLayout().isBlank()) {
-            return result;
-        }
-        try {
-            int[][] layout = JSON.parseObject(hall.getSeatLayout(), int[][].class);
-            if (layout.length != rows) return result;
-            for (int row = 0; row < rows; row++) {
-                if (layout[row].length != cols) return result;
-                for (int col = 0; col < cols; col++) {
-                    result[row][col] = layout[row][col] != 0;
-                }
-            }
-        } catch (RuntimeException ignored) {
-            // Older halls may not have a valid layout; retain the rectangular fallback.
-        }
-        return result;
+    private HallSeatLayout parseLayout(Hall hall) {
+        return HallSeatLayout.parse(hall.getSeatLayout(), hall.getTotalRows(), hall.getTotalCols());
     }
 }

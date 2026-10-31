@@ -1,0 +1,44 @@
+[
+  {
+    "id": "assistant-checkout",
+    "title": "影票观确认下单",
+    "source": "AssistantCheckoutService / OrderService.createOrder",
+    "keywords": "助手 影票观 下单 购买 确认 买票 支付",
+    "content": "登录后可告诉影票观确定的场次和人数，让助手推荐座位并准备订单确认卡。卡片展示电影、影院、时间、座位及预计实付，5分钟内有效。核对后点击确认下单并去支付，或回复确认下单，后端重新校验场次、座位及优惠报价，创建待支付订单并进入支付页。支付由用户完成，确认下单不扣积分、不消耗优惠券。重复提交同一确认卡返回同一订单；座位被抢、报价变化或卡片过期时需要重新准备。订单创建后10分钟内完成支付。"
+  },
+  {
+    "id": "booking",
+    "title": "选座与购票",
+    "source": "OrderService.createOrder / ShowtimeService.getSeatStatus",
+    "keywords": "购票 选座 座位 余票 排片 开场 锁座 支付",
+    "content": "在影片或影院页面选择场次后选座并提交订单。已开始、已停售或距离开场不足15分钟的场次不可购票。未支付及已支付订单均占用座位；座位冲突由提交订单时后端校验。查询余票不等于锁定座位。"
+  },
+  {
+    "id": "timeout",
+    "title": "待支付订单与超时",
+    "source": "OrderTimeoutTask / OrderTimeoutService / OrderService.cancelOrder",
+    "keywords": "订单 超时 支付 取消 多少分钟 付款",
+    "content": "待支付订单超过10分钟后由每分钟运行的任务自动取消并释放座位，任务运行可能有短暂延迟。用户也可在订单页面取消待支付订单。最终状态请重新查询订单。"
+  },
+  {
+    "id": "refund",
+    "title": "本项目退票规则",
+    "source": "OrderService.refundOrder",
+    "keywords": "退款 退票 手续费 取消 30分钟 24小时",
+    "content": "只能退已支付且未取票的订单；距离开场不足30分钟不可退票。开场前24小时内退票扣除实付金额10%的手续费，24小时外全额退款。助手只能解释规则，实际申请必须到订单页面提交并以后端校验为准。"
+  },
+  {
+    "id": "recommendation",
+    "title": "个性化推荐与想看",
+    "source": "RecommendService / RecommendationProfileVO",
+    "keywords": "推荐 偏好 想看 收藏 冷启动 画像 口味",
+    "content": "登录后，系统结合类型偏好、浏览、想看、购票、评分等信号进行推荐。首次使用可在偏好设置中选择喜欢的类型。访客可看热门推荐；没有足够行为时，不应声称已经准确了解用户。"
+  },
+  {
+    "id": "payment",
+    "title": "订单支付与优惠",
+    "source": "OrderService.payOrder / TicketPriceCalculator / AssistantBookingService / CouponService",
+    "keywords": "支付 付款 优惠券 券码 积分 兑换 钱包",
+    "content": "助手可以针对已选场次和人数，或当前账号未超时的待支付订单，试算可用优惠券与积分组合。每单最多使用一张达到门槛且在有效期内的未使用券，券后按100积分抵1元计算，使用积分保留1位小数，金额保留2位小数；可要求不使用积分。最优指当前最低现金实付。试算不会占券、扣积分、下单或支付，支付时重新校验。券码通过兑换入口兑换；系统不再提供钱包充值。"
+  }
+]

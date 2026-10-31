@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import java.util.Collection;
 import java.util.Collections;
 
+/** Spring Security 用户身份适配，封装用户 ID、角色、影院归属和授权信息。 */
 public class UserDetailsImpl implements UserDetails {
 
     @Getter
@@ -15,11 +16,18 @@ public class UserDetailsImpl implements UserDetails {
     private final String username;
     @Getter
     private final String role;
+    @Getter
+    private final Long cinemaId;
 
     public UserDetailsImpl(Long id, String username, String role) {
+        this(id, username, role, null);
+    }
+
+    public UserDetailsImpl(Long id, String username, String role, Long cinemaId) {
         this.id = id;
         this.username = username;
         this.role = role;
+        this.cinemaId = cinemaId;
     }
 
     @Override

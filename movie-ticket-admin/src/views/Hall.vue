@@ -4,6 +4,7 @@
       <template #header>
         <div class="card-header">
           <span>影厅管理</span>
+          <router-link to="/listing?kind=HALL"><el-button>AI 辅助上架</el-button></router-link>
           <el-button type="primary" @click="handleAdd">
             <el-icon><Plus /></el-icon>
             新增影厅
@@ -23,7 +24,10 @@
         </el-form-item>
       </el-form>
 
-      <el-table :data="tableData" border stripe v-loading="loading">
+      <BatchActions :rows="selectedRows" :disabled="loading" :api="hallApi" :statuses="[{ label: '批量启用', value: 1 }, { label: '批量停用', value: 0 }]"
+        @clear="batchTable?.clearSelection()" @busy="batchBusy = $event" @completed="handleBatchCompleted" />
+      <ManagementTable ref="batchTable" row-key="id" @selection-change="selectedRows = $event" :data="tableData" border stripe v-loading="loading || batchBusy">
+        <el-table-column type="selection" width="48" :selectable="() => !loading && !batchBusy" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="cinemaName" label="所属影院" min-width="150" />
         <el-table-column prop="name" label="影厅名称" min-width="120" />
@@ -58,13 +62,14 @@
             </div>
           </template>
         </el-table-column>
-      </el-table>
+      </ManagementTable>
 
       <el-pagination
         v-model:current-page="pagination.page"
         v-model:page-size="pagination.size"
         :total="pagination.total"
         :page-sizes="[10, 20, 50, 100]"
+        :pager-count="5"
         layout="total, sizes, prev, pager, next, jumper"
         @size-change="loadData"
         @current-change="loadData"
@@ -126,6 +131,15 @@
           </el-col>
         </el-row>
 
+        <el-form-item label="添加过道">
+          <el-select v-model="aisleAfterCols" multiple clearable placeholder="选择过道位置" style="width: 100%" aria-label="添加过道">
+            <el-option label="最左侧" :value="0" />
+            <el-option v-for="col in Math.max(0, formData.totalCols - 1)" :key="col" :label="`第 ${col} 列后`" :value="col" />
+            <el-option label="最右侧" :value="formData.totalCols" />
+          </el-select>
+          <div class="form-tip">可在最左侧、最右侧或座位列之间添加多条过道，清空表示无过道。过道不占座位编号，智能推荐不会跨过道连座。</div>
+        </el-form-item>
+
         <el-form-item label="座位布局">
           <div class="seat-editor-wrapper">
             <div class="seat-toolbar">
@@ -139,13 +153,15 @@
             <div class="seat-grid" v-if="formData.totalRows > 0 && formData.totalCols > 0">
               <div v-for="(row, ri) in seatGrid" :key="ri" class="seat-row">
                 <span class="row-label">{{ ri + 1 }}</span>
+                <span v-if="aisleAfterCols.includes(0)" class="hall-aisle" title="最左侧过道">过道</span>
+                <template v-for="(cell, ci) in row" :key="ci">
                 <span
-                  v-for="(cell, ci) in row"
-                  :key="ci"
                   class="seat-cell"
                   :class="{ disabled: cell === 0 }"
                   @click="toggleSeat(ri, ci)"
                 />
+                <span v-if="aisleAfterCols.includes(ci + 1)" class="hall-aisle" :title="ci + 1 === formData.totalCols ? '最右侧过道' : `第 ${ci + 1} 列后过道`">过道</span>
+                </template>
               </div>
             </div>
             <el-empty v-else description="请先设置行数和列数" :image-size="60" />
@@ -192,12 +208,14 @@
       <div class="seat-grid preview-grid" v-if="previewRows > 0 && previewCols > 0">
         <div v-for="(row, ri) in previewGrid" :key="ri" class="seat-row">
           <span class="row-label">{{ ri + 1 }}</span>
+          <span v-if="previewAisles.includes(0)" class="hall-aisle" title="最左侧过道">过道</span>
+          <template v-for="(cell, ci) in row" :key="ci">
           <span
-            v-for="(cell, ci) in row"
-            :key="ci"
             class="seat-cell"
             :class="{ disabled: cell === 0 }"
           />
+          <span v-if="previewAisles.includes(ci + 1)" class="hall-aisle" :title="ci + 1 === previewCols ? '最右侧过道' : `第 ${ci + 1} 列后过道`">过道</span>
+          </template>
         </div>
       </div>
       <div class="preview-legend">
@@ -209,12 +227,28 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 影厅管理：维护影厅资料，编辑有效座位矩阵及过道，预览可售布局。
+ */
+import BatchActions from '@/components/BatchActions.vue'
+import { useListPageState } from '@/composables/usePageState'
 import { ref, reactive, watch, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+import type { FormInstance, FormRules } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
 import { hallApi } from '@/api/hall'
 import { cinemaApi } from '@/api/cinema'
 import type { Hall, Cinema } from '@/types'
+
+const batchTable = ref<{ clearSelection: () => void }>()
+const selectedRows = ref<Hall[]>([])
+const batchBusy = ref(false)
+/** 接收批量操作结果，清理选择并刷新当前列表。 */
+const handleBatchCompleted = async (deleted: number) => {
+  if (deleted > 0 && deleted >= tableData.value.length && pagination.page > 1) pagination.page--
+  await loadData()
+}
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -231,6 +265,8 @@ const previewHallName = ref('')
 const previewRows = ref(0)
 const previewCols = ref(0)
 const previewGrid = ref<number[][]>([])
+const previewAisles = ref<number[]>([])
+const aisleAfterCols = ref<number[]>([])
 
 const searchForm = reactive({
   cinemaId: undefined as number | undefined
@@ -241,6 +277,7 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
+useListPageState('hall', searchForm, pagination)
 
 const formData = reactive<Hall>({
   id: undefined,
@@ -282,14 +319,25 @@ const parseSeatLayout = (layout: string): number[][] => {
   try {
     const parsed = JSON.parse(layout)
     if (Array.isArray(parsed)) return parsed
+    if (Array.isArray(parsed?.seats)) return parsed.seats
   } catch {}
   return []
 }
 
 // 生成 seatLayout JSON
 const generateSeatLayout = (grid: number[][]) => {
-  formData.seatLayout = JSON.stringify(grid)
+  formData.seatLayout = JSON.stringify({ seats: grid, aisleAfterCols: [...aisleAfterCols.value].sort((a, b) => a - b) })
 }
+
+const parseAisles = (layout: string, cols: number): number[] => {
+  try {
+    const parsed = JSON.parse(layout)
+    if (!Array.isArray(parsed) && Array.isArray(parsed?.aisleAfterCols)) return parsed.aisleAfterCols
+  } catch {}
+  return cols > 1 ? [Math.floor(cols / 2)] : []
+}
+
+watch(aisleAfterCols, () => generateSeatLayout(seatGrid.value), { deep: true })
 
 // 初始化/重置座位网格
 const initSeatGrid = () => {
@@ -318,6 +366,7 @@ const resetSeatLayout = () => {
   generateSeatLayout(seatGrid.value)
 }
 
+/** 切换座位选择或可售状态，并执行当前页面的座位限制检查。 */
 const toggleSeat = (row: number, col: number) => {
   seatGrid.value[row][col] = seatGrid.value[row][col] === 1 ? 0 : 1
   generateSeatLayout(seatGrid.value)
@@ -326,14 +375,23 @@ const toggleSeat = (row: number, col: number) => {
 // 监听行列数变化，重建网格
 watch(
   () => [formData.totalRows, formData.totalCols],
-  () => {
+  (_, previous) => {
     if (dialogVisible.value) {
+      // 调整列数时，最右侧过道随边缘移动；打开另一影厅则沿用该厅配置。
+      const existing = parseSeatLayout(formData.seatLayout)
+      const resized = existing[0]?.length !== formData.totalCols
+      aisleAfterCols.value = [...new Set(aisleAfterCols.value
+        .map(col => resized && col === previous[1] ? formData.totalCols : col)
+        .filter(col => col >= 0 && col <= formData.totalCols))]
       initSeatGrid()
     }
   }
 )
 
+/** 加载当前页面所需数据，并同步加载与失败状态。 */
 const loadData = async () => {
+  batchTable.value?.clearSelection()
+  selectedRows.value = []
   loading.value = true
   try {
     const res = await hallApi.getPage({
@@ -351,6 +409,7 @@ const loadData = async () => {
   }
 }
 
+/** 加载影院列表，供影院选择或地图展示。 */
 const loadCinemas = async () => {
   try {
     cinemaList.value = await cinemaApi.getAll()
@@ -359,11 +418,13 @@ const loadCinemas = async () => {
   }
 }
 
+/** 应用筛选条件并从第一页重新查询。 */
 const handleSearch = () => {
   pagination.page = 1
   loadData()
 }
 
+/** 清空筛选条件并重新加载列表。 */
 const handleReset = () => {
   searchForm.cinemaId = undefined
   handleSearch()
@@ -379,15 +440,18 @@ const resetFormData = () => {
   formData.status = 1
 }
 
+/** 初始化新增表单并打开编辑入口。 */
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增影厅'
   resetFormData()
+  aisleAfterCols.value = []
   initSeatGrid()
   dialogVisible.value = true
   formRef.value?.clearValidate()
 }
 
+/** 将选中记录填入编辑表单。 */
 const handleEdit = (row: Hall) => {
   isEdit.value = true
   dialogTitle.value = '编辑影厅'
@@ -400,19 +464,24 @@ const handleEdit = (row: Hall) => {
     seatLayout: row.seatLayout,
     status: row.status
   })
+  aisleAfterCols.value = parseAisles(row.seatLayout, row.totalCols)
   initSeatGrid()
   dialogVisible.value = true
   formRef.value?.clearValidate()
 }
 
+/** 打开影厅座位预览，核对实际可售布局。 */
 const handlePreviewLayout = (row: Hall) => {
   previewHallName.value = `${row.cinemaName} - ${row.name}`
   previewRows.value = row.totalRows
   previewCols.value = row.totalCols
   previewGrid.value = parseSeatLayout(row.seatLayout)
+  if (!previewGrid.value.length) previewGrid.value = Array.from({ length: row.totalRows }, () => Array(row.totalCols).fill(1))
+  previewAisles.value = parseAisles(row.seatLayout, row.totalCols)
   previewVisible.value = true
 }
 
+/** 校验当前表单并提交保存，成功后更新页面数据。 */
 const handleSubmit = async () => {
   if (!formRef.value) return
 
@@ -451,6 +520,7 @@ const handleSubmit = async () => {
   }
 }
 
+/** 提交启用或停用操作，并同步最新状态。 */
 const handleToggleStatus = async (row: Hall) => {
   const newStatus = row.status === 1 ? 0 : 1
   const action = newStatus === 1 ? '启用' : '停用'
@@ -473,6 +543,7 @@ const handleToggleStatus = async (row: Hall) => {
   }
 }
 
+/** 确认后提交删除请求，成功后刷新列表。 */
 const handleDelete = async (row: Hall) => {
   try {
     await ElMessageBox.confirm(
@@ -577,12 +648,22 @@ onMounted(() => {
 .hall-dialog .seat-cell {
   display: inline-block;
   width: 24px;
+  flex-shrink: 0;
   height: 24px;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s;
   background: var(--admin-primary);
   border: 1px solid #d96f00;
+}
+
+.hall-dialog .hall-aisle {
+  width: 28px;
+  flex-shrink: 0;
+  color: #8a8f98;
+  font-size: 10px;
+  text-align: center;
+  border-inline: 1px dashed #a5a9af;
 }
 
 .hall-dialog .seat-cell:hover {

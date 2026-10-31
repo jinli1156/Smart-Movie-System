@@ -4,6 +4,7 @@ import com.movie.ticket.entity.Movie;
 import com.movie.ticket.entity.Comment;
 import com.movie.ticket.entity.User;
 import com.movie.ticket.entity.UserMovieBehavior;
+import com.movie.ticket.entity.Showtime;
 import com.movie.ticket.mapper.MovieMapper;
 import com.movie.ticket.mapper.ShowtimeMapper;
 import com.movie.ticket.mapper.TicketOrderMapper;
@@ -13,6 +14,7 @@ import com.movie.ticket.mapper.UserMovieBehaviorMapper;
 import com.movie.ticket.mapper.CinemaMapper;
 import com.movie.ticket.vo.MovieVO;
 import com.movie.ticket.vo.FavoriteMovieVO;
+import com.movie.ticket.vo.RecommendationEvaluationVO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -62,7 +64,8 @@ class RecommendServiceTest {
     void hotMoviesFallBackToDatabaseWhenRedisIsUnavailable() {
         RecommendService service = new RecommendService(
                 movieMapper, orderMapper, showtimeMapper, redisTemplate,
-                userMapper, commentMapper, behaviorMapper, cinemaMapper);
+                userMapper, commentMapper, behaviorMapper, cinemaMapper,
+                new MovieRecommendationAiService(new DeepSeekClient(new com.fasterxml.jackson.databind.ObjectMapper())));
 
         when(redisTemplate.opsForList())
                 .thenThrow(new RedisConnectionFailureException("Redis unavailable"));
@@ -80,7 +83,8 @@ class RecommendServiceTest {
     void personalRecommendationUsesExplicitGenreFiveStarDirectorAndDiversity() {
         RecommendService service = new RecommendService(
                 movieMapper, orderMapper, showtimeMapper, redisTemplate,
-                userMapper, commentMapper, behaviorMapper, cinemaMapper);
+                userMapper, commentMapper, behaviorMapper, cinemaMapper,
+                new MovieRecommendationAiService(new DeepSeekClient(new com.fasterxml.jackson.databind.ObjectMapper())));
         Movie source = movie(1L, "诺兰科幻A", "9.0");
         source.setGenre("科幻");
         source.setDirector("诺兰");
@@ -139,7 +143,8 @@ class RecommendServiceTest {
     void favoritesKeepBehaviorOrderAndFavoriteTime() {
         RecommendService service = new RecommendService(
                 movieMapper, orderMapper, showtimeMapper, redisTemplate,
-                userMapper, commentMapper, behaviorMapper, cinemaMapper);
+                userMapper, commentMapper, behaviorMapper, cinemaMapper,
+                new MovieRecommendationAiService(new DeepSeekClient(new com.fasterxml.jackson.databind.ObjectMapper())));
         LocalDateTime newestTime = LocalDateTime.now();
         UserMovieBehavior newest = favorite(9L, 2L, newestTime);
         UserMovieBehavior older = favorite(9L, 1L, newestTime.minusDays(2));
@@ -153,6 +158,53 @@ class RecommendServiceTest {
         assertEquals(List.of(2L, 1L), result.stream().map(FavoriteMovieVO::getId).toList());
         assertEquals(newestTime, result.getFirst().getFavoriteTime());
         assertEquals("正在上映", result.getFirst().getStatusText());
+    }
+
+    @Test
+    void evaluationUsesChronologicalCutoffBaselinesAndAblations() {
+        RecommendService service = new RecommendService(
+                movieMapper, orderMapper, showtimeMapper, redisTemplate,
+                userMapper, commentMapper, behaviorMapper, cinemaMapper,
+                new MovieRecommendationAiService(new DeepSeekClient(new com.fasterxml.jackson.databind.ObjectMapper())));
+        LocalDateTime cutoff = LocalDateTime.now().minusDays(5);
+        Movie trainingMovie = movie(1L, "历史剧情片", "8.0");
+        trainingMovie.setGenre("剧情");
+        Movie heldOutMovie = movie(2L, "留出科幻片", "1.0");
+        heldOutMovie.setGenre("科幻");
+        Movie alternative = movie(3L, "候选剧情片", "9.5");
+        alternative.setGenre("剧情");
+        UserMovieBehavior olderFavorite = favorite(7L, 1L, cutoff.minusDays(3));
+        UserMovieBehavior heldOut = favorite(7L, 2L, cutoff);
+        UserMovieBehavior futureView = new UserMovieBehavior();
+        futureView.setUserId(7L);
+        futureView.setMovieId(2L);
+        futureView.setBehaviorType("VIEW");
+        futureView.setBehaviorCount(20);
+        futureView.setActive(1);
+        futureView.setLastOccurredAt(cutoff.plusDays(1));
+        Showtime heldOutShowtime = availableShowtime(20L, 2L, cutoff.plusDays(1));
+        Showtime alternativeShowtime = availableShowtime(30L, 3L, cutoff.plusDays(2));
+        User user = new User();
+        user.setId(7L);
+        user.setFavoriteGenres(List.of("科幻"));
+
+        when(behaviorMapper.selectList(any())).thenReturn(List.of(olderFavorite, heldOut),
+                List.of(olderFavorite, heldOut, futureView));
+        when(showtimeMapper.selectList(any())).thenReturn(List.of(heldOutShowtime, alternativeShowtime));
+        when(movieMapper.selectBatchIds(any())).thenReturn(List.of(heldOutMovie, alternative));
+        when(movieMapper.selectById(1L)).thenReturn(trainingMovie);
+        when(userMapper.selectById(7L)).thenReturn(user);
+        when(orderMapper.selectList(any())).thenReturn(List.of());
+        when(commentMapper.selectList(any())).thenReturn(List.of());
+
+        RecommendationEvaluationVO result = service.evaluate(1);
+
+        assertEquals(1, result.getEvaluatedUsers());
+        assertEquals(0, result.getSkippedUsers());
+        assertEquals(0, result.getRecallAtK());
+        assertEquals(2, result.getBaselines().size());
+        assertEquals(3, result.getAblations().size());
+        assertTrue(result.getProtocol().contains("严格时间"));
     }
 
     private UserMovieBehavior favorite(Long userId, Long movieId, LocalDateTime time) {
@@ -173,5 +225,19 @@ class RecommendServiceTest {
         movie.setReleaseDate(LocalDate.now().minusDays(1));
         movie.setStatus(1);
         return movie;
+    }
+
+    private Showtime availableShowtime(Long id, Long movieId, LocalDateTime startTime) {
+        Showtime showtime = new Showtime();
+        showtime.setId(id);
+        showtime.setMovieId(movieId);
+        showtime.setCinemaId(1L);
+        showtime.setHallId(1L);
+        showtime.setStartTime(startTime);
+        showtime.setEndTime(startTime.plusHours(2));
+        showtime.setCreateTime(startTime.minusDays(2));
+        showtime.setBasePrice(new BigDecimal("45"));
+        showtime.setStatus(0);
+        return showtime;
     }
 }

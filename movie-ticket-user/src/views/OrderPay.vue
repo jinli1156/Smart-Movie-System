@@ -7,9 +7,9 @@
           <MaterialIcon class="msr" name="arrow_back" />
         </button>
         <div class="brand-block">
-          <div class="brand-mark"><MaterialIcon class="msr" name="movie" /></div>
+          <div class="brand-mark"><img class="brand-logo-image" src="/xiangzhi-ticket.png" alt="响指电影" /></div>
           <div class="brand-text">
-            <span class="brand">CINEMA+</span>
+            <span class="brand brand-wordmark" role="img" aria-label="响指电影"></span>
             <span class="brand-sub">premium booking</span>
           </div>
         </div>
@@ -52,7 +52,7 @@
             <span>CHECKOUT · 2026</span>
           </div>
           <h1 class="ph-title">即将完成支付,享受沉浸观影</h1>
-          <p class="ph-sub">订单已锁定,请在倒计时结束前完成支付。我们已为你启用 AI 比价,优惠自动叠加。</p>
+          <p class="ph-sub">请在倒计时结束前完成支付。可比较同片场次，并确认优惠券与积分方案。</p>
         </div>
         <div class="ph-right">
           <div class="ph-stat">
@@ -101,7 +101,7 @@
 
             <div class="oc-body">
               <div class="movie-poster">
-                <img v-if="order.moviePoster" :src="order.moviePoster" :alt="order.movieTitle" />
+                <img v-if="order.moviePoster" v-poster :src="order.moviePoster" :alt="order.movieTitle" />
                 <MaterialIcon v-else class="msr poster-fallback" name="movie" />
                 <div class="poster-rating">
                   <MaterialIcon class="msr" name="star" />
@@ -123,7 +123,7 @@
                     <MaterialIcon class="msr mi-ico" name="store" />
                     <div>
                       <span class="mi-label">影院</span>
-                      <span class="mi-val">{{ order.cinemaName || 'CINEMA+ 浦东陆家嘴店' }}</span>
+                      <span class="mi-val">{{ order.cinemaName || '响指电影 浦东陆家嘴店' }}</span>
                     </div>
                   </div>
                   <div class="mi-item">
@@ -152,187 +152,13 @@
             </div>
           </article>
 
-          <!-- ============ AI PRICE OPTIMIZATION ============ -->
-          <article class="ai-pricing">
-            <div class="aip-head">
-              <div class="aip-head-left">
-                <div class="aip-icon-wrap">
-                  <MaterialIcon class="msr" name="bolt" />
-                </div>
-                <div class="aip-head-text">
-                  <div class="aip-title-row">
-                    <h3 class="aip-title">智能定价已为你优化</h3>
-                    <span class="aip-pill"><MaterialIcon class="msr" name="auto_awesome" />AI</span>
-                  </div>
-                  <p class="aip-sub">AI 实时分析全网价格 · 为你匹配最优价格组合方案</p>
-                </div>
-              </div>
-              <div class="aip-lock">
-                <MaterialIcon class="msr" name="lock" />
-                <span>AI 智能锁价</span>
-                <span class="lock-time">{{ countdownText }}</span>
-              </div>
-            </div>
-
-            <div class="aip-grid">
-              <!-- Savings Panel -->
-              <div class="saved-panel">
-                <div class="saved-head">
-                  <MaterialIcon class="msr" name="savings" />
-                  <span>AI 为你节省了</span>
-                </div>
-                <div class="saved-amount">
-                  <span class="amt-cur">¥</span>
-                  <span class="amt-num">{{ savedAmount }}</span>
-                  <div class="amt-aside">
-                    <span class="amt-orig">vs 原价 ¥{{ originalPrice }}</span>
-                    <span class="amt-pct">节省 {{ savedPercent }}%</span>
-                  </div>
-                </div>
-                <div class="saved-list">
-                  <div class="saved-item">
-                    <span class="si-ico"><MaterialIcon class="msr" name="auto_awesome_motion" /></span>
-                    <div class="si-body">
-                      <span class="si-title">跨场次智能比价</span>
-                      <span class="si-sub">扫描 12 个同片场次 · 锁定最低价格</span>
-                    </div>
-                  </div>
-                  <div class="saved-item">
-                    <span class="si-ico"><MaterialIcon class="msr" name="my_location" /></span>
-                    <div class="si-body">
-                      <span class="si-title">个性化优惠匹配</span>
-                      <span class="si-sub">基于你的观影习惯推荐最佳券包</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Breakdown Panel -->
-              <div class="break-panel">
-                <div class="break-head">
-                  <span class="break-head-left">
-                    <MaterialIcon class="msr" name="receipt_long" />
-                    <span>AI 优化拆解</span>
-                  </span>
-                  <span class="break-badge"><MaterialIcon class="msr" name="verified" />已验证</span>
-                </div>
-                <div class="break-row">
-                  <span>原价</span>
-                  <span class="break-value">¥{{ originalPrice }}.00</span>
-                </div>
-                <div class="break-row current">
-                  <span class="cur-label">
-                    <span>当前优惠后</span>
-                    <MaterialIcon class="msr cur-arrow" name="trending_down" />
-                  </span>
-                  <span class="break-now">
-                    <span class="now-cur">¥</span>
-                    <span class="now-num">{{ Math.floor(finalPrice) }}</span>
-                    <span class="now-dec">.{{ String((finalPrice % 1).toFixed(2)).slice(2) }}</span>
-                  </span>
-                </div>
-                <div class="break-divider"></div>
-                <div v-if="priceDiscount.ai" class="break-line">
-                  <span class="bl-tag bl-tag-ai">AI 比价</span>
-                  <span class="bl-text">同电影最低价场次匹配</span>
-                  <span class="bl-amt">-¥{{ priceDiscount.ai }}</span>
-                </div>
-                <div v-if="priceDiscount.member" class="break-line">
-                  <span class="bl-tag bl-tag-member">会员</span>
-                  <span class="bl-text">VIP 会员等级折扣</span>
-                  <span class="bl-amt">-¥{{ priceDiscount.member }}</span>
-                </div>
-                <div v-if="priceDiscount.coupon" class="break-line">
-                  <span class="bl-tag bl-tag-coupon">推荐券</span>
-                  <span class="bl-text">{{ selectedCoupon?.title || '优惠券' }}</span>
-                  <span class="bl-amt">-¥{{ priceDiscount.coupon }}</span>
-                </div>
-                <div v-if="priceDiscount.time" class="break-line">
-                  <span class="bl-tag bl-tag-time">时段</span>
-                  <span class="bl-text">智能时段定价 · 周中夜场</span>
-                  <span class="bl-amt">-¥{{ priceDiscount.time }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Alt showtimes -->
-            <div class="alt-head">
-              <div class="alt-head-left">
-                <MaterialIcon class="msr" name="bolt" />
-                <span class="alt-title">AI 也为你找到这些选择</span>
-                <span class="alt-sub">· 同电影同影院</span>
-              </div>
-              <span class="alt-all">查看全部 →</span>
-            </div>
-            <div class="alt-grid">
-              <div
-                v-for="alt in altShowtimes"
-                :key="alt.id"
-                class="alt-card"
-                @click="switchShowtime(alt)"
-              >
-                <div class="alt-top">
-                  <div class="alt-time">
-                    <span class="time-h">{{ alt.time }}</span>
-                    <span class="time-tag">{{ alt.tag }}</span>
-                  </div>
-                  <span class="alt-pill"><MaterialIcon class="msr" name="auto_awesome" />AI 建议</span>
-                </div>
-                <div class="alt-meta">{{ alt.hall }} · {{ alt.seat }}</div>
-                <div class="alt-bar">
-                  <div class="bar-track">
-                    <div class="bar-fill" :style="{ width: alt.match + '%' }"></div>
-                  </div>
-                  <span class="bar-pct">{{ alt.match }}%</span>
-                </div>
-                <div class="alt-foot">
-                  <div class="alt-price-block">
-                    <span class="ap-cur">¥</span>
-                    <span class="ap-num">{{ alt.price }}</span>
-                    <span class="ap-save">省 ¥{{ alt.saved }}</span>
-                  </div>
-                  <button class="alt-switch" @click.stop="switchShowtime(alt)">
-                    <span>切换</span>
-                    <MaterialIcon class="msr" name="arrow_forward" />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div class="aip-foot">
-              <div class="aip-foot-item">
-                <span class="ff-ico"><MaterialIcon class="msr" name="groups" /></span>
-                <div>
-                  <span class="ff-num">12,348 <span class="ff-mute">节省 ¥45,200</span></span>
-                  <span class="ff-label">位用户已节省</span>
-                </div>
-              </div>
-              <span class="aip-foot-sep"></span>
-              <div class="aip-foot-item">
-                <span class="ff-ico"><MaterialIcon class="msr" name="smart_toy" /></span>
-                <div>
-                  <span class="ff-num">智能定价系统</span>
-                  <span class="ff-label">v3.2 · 实时算法</span>
-                </div>
-              </div>
-              <span class="aip-foot-sep"></span>
-              <div class="aip-foot-item">
-                <span class="ff-ico"><MaterialIcon class="msr" name="verified_user" /></span>
-                <div>
-                  <span class="ff-num">价格透明承诺</span>
-                  <span class="ff-label">无隐藏费用 · 全网比价</span>
-                </div>
-              </div>
-            </div>
-          </article>
-
           <!-- ============ COUPONS ============ -->
           <article class="coupon-card">
             <div class="cc-head">
               <div class="cc-title-row">
                 <MaterialIcon class="msr cc-ico" name="confirmation_number" />
                 <h3 class="cc-title">优惠券与积分</h3>
-                <span class="cc-tag">已自动应用最优</span>
+                <span class="cc-tag">可自行调整</span>
               </div>
               <span class="cc-all" @click="router.push('/profile')">管理券包 →</span>
             </div>
@@ -372,13 +198,13 @@
                 <MaterialIcon class="msr pt-ico" name="stars" />
                 <div>
                   <span class="pt-title">积分抵扣</span>
-                  <span class="pt-sub">可用 1,280 积分 · 100 积分抵 ¥1</span>
+                <span class="pt-sub">可用 {{ pointsBalance.toLocaleString() }} 积分 · 100 积分抵 ¥1 · 每单最多抵 ¥1 · 消费 ¥1 得 0.5 积分</span>
                 </div>
               </div>
               <div class="pt-right">
-                <span class="pt-amt">-¥{{ pointsDeduct }}</span>
+                <span class="pt-amt">-¥{{ pointsDeduct.toFixed(2) }}</span>
                 <label class="switch">
-                  <input type="checkbox" v-model="usePoints" />
+                  <input type="checkbox" v-model="usePoints" :disabled="pointsBalance <= 0 || priceBeforePoints <= 0" />
                   <span class="slider"></span>
                 </label>
               </div>
@@ -408,7 +234,7 @@
               </div>
               <div v-if="priceDiscount.coupon" class="sum-row">
                 <span>优惠券</span>
-                <span class="text-pri">-¥{{ priceDiscount.coupon }}.00</span>
+                <span class="text-pri">-¥{{ priceDiscount.coupon.toFixed(2) }}</span>
               </div>
               <div v-if="priceDiscount.time" class="sum-row">
                 <span>时段优惠</span>
@@ -416,7 +242,7 @@
               </div>
               <div class="sum-row" v-if="usePoints">
                 <span>积分抵扣</span>
-                <span class="text-pri">-¥{{ pointsDeduct }}.00</span>
+                <span class="text-pri">-¥{{ pointsDeduct.toFixed(2) }}</span>
               </div>
               <div v-if="serviceFee" class="sum-row">
                 <span>服务费</span>
@@ -427,7 +253,7 @@
             <div class="sum-total">
               <div class="sum-total-left">
                 <span class="st-label">应付总额</span>
-                <span class="st-orig">原价 ¥{{ originalPrice }}.00</span>
+                <span class="st-orig">原价 ¥{{ originalPrice.toFixed(2) }}</span>
               </div>
               <div class="sum-total-right">
                 <span class="st-cur">¥</span>
@@ -451,7 +277,7 @@
             <div class="cancel-row">
               <span @click="handleCancelOrder">取消订单</span>
               <span class="dot"></span>
-              <span @click="tip('订单帮助')">订单帮助</span>
+
             </div>
 
             <div class="trust-row">
@@ -476,20 +302,20 @@
               <span>温馨提示</span>
             </div>
             <ul class="notice-list">
-              <li>订单生成后请在 <strong>15 分钟</strong>内完成支付,超时将自动取消。</li>
+              <li>订单生成后请在 <strong>10 分钟</strong>内完成支付,超时将自动取消。</li>
               <li>电子票将通过短信发送,请保持手机畅通。</li>
-              <li>开场前 30 分钟可申请退改签,具体规则以影院为准。</li>
+              <li>开场前 30 分钟以外可按退票规则申请退票，暂不支持改签。</li>
             </ul>
           </div>
         </aside>
       </div>
 
       <footer class="page-foot">
-        <span>© 2026 CINEMA+ · 沪ICP 备 2024XXXXX 号</span>
+        <span>© 2026 响指电影 · 沪ICP 备 2024XXXXX 号</span>
         <div class="foot-links">
-          <span @click="tip('帮助中心')">帮助中心</span>
-          <span @click="tip('隐私政策')">隐私政策</span>
-          <span @click="tip('用户协议')">用户协议</span>
+
+
+
         </div>
       </footer>
     </div>
@@ -498,6 +324,8 @@
     <el-dialog
       v-model="showPayMethodDialog"
       title="选择支付方式"
+      class="consumer-dialog"
+      align-center
       width="600px"
       :close-on-click-modal="false"
     >
@@ -551,13 +379,19 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 订单支付：展示支付倒计时，试算优惠券与积分组合，并由服务端完成最终支付校验。
+ */
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { orderApi } from '@/api/order'
 import { showtimeApi } from '@/api/showtime'
 import { couponApi } from '@/api/coupon'
+import { userApi } from '@/api/user'
+import { pricingApi } from '@/api/pricing'
 import type { Coupon, Order } from '@/types'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
 
 const route = useRoute()
 const router = useRouter()
@@ -568,7 +402,8 @@ const order = ref<Order | null>(null)
 const pendingShowtimeId = ref<number | null>(null)
 const pendingSeats = ref<string[]>([])
 
-const usePoints = ref(false)
+const usePoints = ref(route.query.pricingPoints === 'true')
+const pointsBalance = ref(0)
 const payMethod = ref<'wechat' | 'alipay' | 'union' | 'card' | 'wallet'>('wechat')
 const showPayMethodDialog = ref(false)
 
@@ -618,7 +453,18 @@ const priceDiscount = computed(() => ({
 
 const serviceFee = computed(() => 0)
 
-const pointsDeduct = computed(() => 0)
+const priceBeforePoints = computed(() => {
+  const d = priceDiscount.value
+  return Math.max(originalPrice.value - d.ai - d.member - d.coupon - d.time + serviceFee.value, 0)
+})
+
+// 100 积分抵 1 元，每单最多抵 1 元且不超过应付金额；余额支持 0.5 积分。
+const pointsToUse = computed(() => {
+  if (!usePoints.value || pointsBalance.value <= 0) return 0
+  const points = Math.floor(Math.min(pointsBalance.value, priceBeforePoints.value * 100, 100) * 10 + 1e-8) / 10
+  return Math.round(points) > 0 ? points : 0
+})
+const pointsDeduct = computed(() => Math.round(pointsToUse.value) / 100)
 
 const finalPrice = computed(() => {
   const d = priceDiscount.value
@@ -651,10 +497,12 @@ type PayCoupon = Coupon & {
 
 const coupons = ref<PayCoupon[]>([])
 
+/** 读取本人优惠券，更新页面可用优惠信息。 */
 const loadCoupons = async () => {
   try {
     const data = await couponApi.getMine()
-    const available = data.filter(coupon => coupon.available)
+    const now = Date.now()
+    const available = data.filter(coupon => coupon.available && new Date(coupon.validFrom).getTime() <= now && new Date(coupon.expireTime).getTime() >= now)
     const bestId = available
       .filter(coupon => Number(coupon.minSpend) <= originalPrice.value)
       .sort((a, b) => Number(b.amount) - Number(a.amount))[0]?.id
@@ -663,9 +511,9 @@ const loadCoupons = async () => {
       amount: Number(coupon.amount),
       minSpend: Number(coupon.minSpend),
       title: coupon.name,
-      sub: 'CINEMA+ 新人专享',
+      sub: '响指电影 新人专享',
       condition: Number(coupon.minSpend) > 0 ? `满 ¥${coupon.minSpend} 可用` : '无门槛使用',
-      selected: coupon.id === bestId,
+      selected: route.query.pricingCoupons !== 'false' && coupon.id === (route.query.pricingCouponId ? Number(route.query.pricingCouponId) : bestId) && Number(coupon.minSpend) <= originalPrice.value,
       disabled: Number(coupon.minSpend) > originalPrice.value,
       aiRecommended: coupon.id === bestId
     }))
@@ -675,6 +523,18 @@ const loadCoupons = async () => {
   }
 }
 
+/** 读取本人积分余额，供支付优惠试算使用。 */
+const loadPoints = async () => {
+  try {
+    const points = await userApi.getPoints()
+    pointsBalance.value = Math.max(Number(points || 0), 0)
+  } catch (error) {
+    console.error('加载积分余额失败:', error)
+    pointsBalance.value = 0
+  }
+}
+
+/** 切换当前优惠券选择，并更新展示金额。 */
 const toggleCoupon = (c: PayCoupon) => {
   coupons.value.forEach((x) => {
     if (x.id === c.id) x.selected = !x.selected
@@ -682,20 +542,40 @@ const toggleCoupon = (c: PayCoupon) => {
   })
 }
 
-const altShowtimes = [
-  { id: 1, time: '21:00', tag: '夜场', hall: '标准厅', seat: '4 排 7 座', match: 92, price: 120, saved: 16 },
-  { id: 2, time: '14:30', tag: '早场', hall: 'IMAX 厅', seat: '5 排 8 座', match: 96, price: 98, saved: 38 },
-  { id: 3, time: '23:30', tag: '午夜场', hall: '杜比厅', seat: '6 排 9 座', match: 89, price: 88, saved: 48 }
-]
+const quoteBusy = ref(false)
+/** 根据已取得的试算结果选择当前最优优惠组合。 */
+const applyBestOffer = async () => {
+  if (!order.value?.orderNo || quoteBusy.value) return
+  quoteBusy.value = true
+  const requestedOrder = order.value.orderNo
+  const requestedPoints = usePoints.value
+  const previousCoupon = selectedCoupon.value?.id
+  try {
+    const quote = await pricingApi.quote(order.value.orderNo, usePoints.value)
+    if (order.value?.orderNo !== requestedOrder || usePoints.value !== requestedPoints || selectedCoupon.value?.id !== previousCoupon) {
+      throw new Error('优惠选择已变化，请重新试算')
+    }
+    const plan = quote.bestPlan
+    if (plan.couponId && !coupons.value.some(c => c.id === plan.couponId)) {
+      await loadCoupons()
+    }
+    if (plan.couponId && !coupons.value.some(c => c.id === plan.couponId && !c.disabled)) throw new Error('券包状态已变化，请刷新后重试')
+    coupons.value.forEach(c => { c.selected = c.id === plan.couponId; c.aiRecommended = c.selected })
+    pointsBalance.value = Number(quote.availablePoints)
+    usePoints.value = Number(plan.pointsUsed) > 0
+  } catch (error: any) { ElMessage.warning(error.response?.data?.message || error.message || '优惠试算失败，请重试') }
+  finally { quoteBusy.value = false }
+}
 
 const payMethods = [
   { key: 'wechat' as const, name: '微信支付', desc: '使用微信钱包安全支付', icon: 'chat', color: '#1AAD19', discount: '随机立减' },
   { key: 'alipay' as const, name: '支付宝', desc: '推荐花呗分期 · 6 期免息', icon: 'account_balance_wallet', color: '#1677FF', discount: '6 期免息' },
   { key: 'union' as const, name: '云闪付', desc: '银联卡用户专享 95 折', icon: 'credit_card', color: '#E60012', discount: '95 折' },
   { key: 'card' as const, name: '银行卡', desc: '支持主流银行借记卡 / 信用卡', icon: 'payments', color: '#111111', discount: '' },
-  { key: 'wallet' as const, name: 'CINEMA+ 钱包', desc: '余额 ¥328.50 · 实时到账', icon: 'savings', color: '#FF8400', discount: '5% 返现' }
+  { key: 'wallet' as const, name: '响指电影 钱包', desc: '余额 ¥328.50 · 实时到账', icon: 'savings', color: '#FF8400', discount: '5% 返现' }
 ]
 
+/** 启动待支付订单倒计时，到期后同步页面可支付状态。 */
 const startCountdown = () => {
   countdownTimer = window.setInterval(() => {
     if (countdown.value > 0) {
@@ -709,13 +589,21 @@ const startCountdown = () => {
   }, 1000)
 }
 
+/** 加载订单详情，更新可执行操作和支付状态。 */
 const loadOrder = async () => {
   loading.value = true
   try {
     const orderNo = route.params.orderNo as string
     if (orderNo) {
       order.value = await orderApi.getByOrderNo(orderNo)
-      await loadCoupons()
+      if (order.value.status !== 0) {
+        showPayMethodDialog.value = false
+        ElMessage.info(`订单${order.value.statusText || '状态已变化'}，请查看订单详情`)
+        await router.replace(`/order/${orderNo}`)
+        return
+      }
+      await Promise.all([loadCoupons(), loadPoints()])
+      if (route.query.pricingCoupons === 'true') await applyBestOffer()
 
       // 根据订单创建时间计算真实的剩余时间
       if (order.value.createTime) {
@@ -764,6 +652,7 @@ const loadOrder = async () => {
       status: 0,
       statusText: '待支付'
     }
+    await Promise.all([loadCoupons(), loadPoints()])
   } catch (error) {
     console.error('加载订单失败:', error)
   } finally {
@@ -771,17 +660,14 @@ const loadOrder = async () => {
   }
 }
 
-const switchShowtime = (alt: { time: string }) => {
-  ElMessageBox.confirm(
-    `切换至 ${alt.time} 场次将重新生成订单,确定继续吗？`,
-    '切换场次',
-    { confirmButtonText: '切换', cancelButtonText: '取消', type: 'info' }
-  )
-    .then(() => ElMessage.success('演示模式:已切换至新场次'))
-    .catch(() => {})
-}
-
+/** 核对当前订单及优惠选择，打开支付确认。 */
 const showPaymentDialog = () => {
+  if (paying.value || loading.value) return
+  if (order.value && (order.value.status !== 0 || countdown.value <= 0)) {
+    ElMessage.warning('订单状态已变化或已超时，请查看订单详情')
+    if (order.value.orderNo) void router.replace(`/order/${order.value.orderNo}`)
+    return
+  }
   if (!order.value) {
     ElMessage.warning('订单未就绪')
     return
@@ -795,23 +681,36 @@ const showPaymentDialog = () => {
   showPayMethodDialog.value = true
 }
 
+/** 发起当前订单的支付操作，具体支付资格由服务端核验。 */
 const handlePay = async () => {
-  if (!order.value?.orderNo) return
+  if (!order.value?.orderNo || paying.value || loading.value) return
+  if (order.value.status !== 0 || countdown.value <= 0) {
+    showPayMethodDialog.value = false
+    ElMessage.warning('订单状态已变化或已超时，请查看订单详情')
+    await router.replace(`/order/${order.value.orderNo}`)
+    return
+  }
 
   showPayMethodDialog.value = false
 
   try {
     paying.value = true
-    await orderApi.pay(order.value.orderNo, selectedCoupon.value?.id)
+    await orderApi.pay(order.value.orderNo, selectedCoupon.value?.id, pointsToUse.value)
     ElMessage.success('支付成功')
     router.push(`/order/${order.value.orderNo}`)
   } catch (error: any) {
-    console.error('支付失败:', error)
+    if (error.response?.status === 409) {
+      // 全局请求拦截器显示服务端原因；同步状态和优惠，避免重复提交旧订单。
+      await loadOrder()
+    } else {
+      console.error('支付失败:', error)
+    }
   } finally {
     paying.value = false
   }
 }
 
+/** 确认取消待付款订单，成功后离开支付流程。 */
 const handleCancelOrder = async () => {
   if (!order.value?.orderNo) {
     ElMessage.info('订单不存在')
@@ -823,7 +722,8 @@ const handleCancelOrder = async () => {
     await ElMessageBox.confirm('确认取消订单吗？取消后无法恢复。', '取消订单', {
       confirmButtonText: '确认取消',
       cancelButtonText: '继续支付',
-      type: 'warning'
+      customClass: 'order-cancel-dialog',
+      closeOnClickModal: false
     })
 
     await orderApi.cancel(order.value.orderNo)
@@ -836,9 +736,6 @@ const handleCancelOrder = async () => {
   }
 }
 
-const tip = (label: string) => {
-  ElMessage.info(`${label} 功能敬请期待`)
-}
 
 onMounted(() => {
   loadOrder()
@@ -851,8 +748,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .pay-app {
   --primary: #FF8400;
@@ -1371,482 +1266,6 @@ onBeforeUnmount(() => {
 }
 
 /* ============ AI PRICING ============ */
-.ai-pricing {
-  background: linear-gradient(145deg, #FBF7FF 0%, #FAF3FF 45%, #FDF2F8 100%);
-  border: 1px solid #E9D5FF;
-  border-radius: var(--radius-l);
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-  position: relative;
-  overflow: hidden;
-}
-.ai-pricing::before {
-  content: '';
-  position: absolute;
-  top: -120px;
-  right: -120px;
-  width: 320px;
-  height: 320px;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, rgba(168, 85, 247, 0) 70%);
-  pointer-events: none;
-}
-
-.aip-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 16px;
-  position: relative;
-  z-index: 1;
-}
-.aip-head-left { display: flex; align-items: flex-start; gap: 14px; }
-.aip-icon-wrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--ai-1) 0%, var(--ai-2) 100%);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 12px 24px rgba(168, 85, 247, 0.35);
-}
-.aip-icon-wrap .msr { font-size: 24px; }
-.aip-head-text { display: flex; flex-direction: column; gap: 4px; }
-.aip-title-row { display: flex; align-items: center; gap: 10px; }
-.aip-title {
-  margin: 0;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: -0.3px;
-}
-.aip-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--ai-1) 0%, var(--ai-2) 100%);
-  color: #fff;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-.aip-pill .msr { font-size: 12px; }
-.aip-sub { margin: 0; font-size: 13px; color: var(--muted); }
-
-.aip-lock {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: rgba(168, 85, 247, 0.08);
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ai-3);
-}
-.aip-lock .msr { font-size: 14px; color: var(--ai-1); }
-.lock-time {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-/* AIP Grid */
-.aip-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  position: relative;
-  z-index: 1;
-}
-.saved-panel,
-.break-panel {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(4px);
-  border: 1px solid rgba(168, 85, 247, 0.18);
-  border-radius: 16px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-.saved-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--ai-3);
-}
-.saved-head .msr { font-size: 16px; }
-
-.saved-amount {
-  display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px dashed rgba(168, 85, 247, 0.25);
-}
-.amt-cur {
-  font-family: var(--font-mono);
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--ai-2);
-  margin-bottom: 12px;
-}
-.amt-num {
-  font-family: var(--font-mono);
-  font-size: 64px;
-  font-weight: 800;
-  letter-spacing: -2px;
-  background: linear-gradient(135deg, var(--ai-1) 0%, var(--ai-2) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  line-height: 1;
-}
-.amt-aside { display: flex; flex-direction: column; gap: 4px; padding-bottom: 8px; }
-.amt-orig {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--muted);
-  text-decoration: line-through;
-}
-.amt-pct {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ai-2);
-}
-
-.saved-list { display: flex; flex-direction: column; gap: 10px; }
-.saved-item { display: flex; align-items: flex-start; gap: 10px; }
-.si-ico {
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  background: rgba(168, 85, 247, 0.12);
-  color: var(--ai-3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.si-ico .msr { font-size: 16px; }
-.si-body { display: flex; flex-direction: column; gap: 2px; }
-.si-title { font-size: 13px; font-weight: 600; color: var(--fg); }
-.si-sub { font-size: 11px; color: var(--muted); }
-
-/* Break panel */
-.break-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.break-head-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--fg);
-}
-.break-head-left .msr { font-size: 16px; color: var(--ai-3); }
-.break-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
-  background: rgba(34, 197, 94, 0.1);
-  border: 1px solid rgba(34, 197, 94, 0.25);
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #16a34a;
-}
-.break-badge .msr { font-size: 12px; }
-
-.break-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
-  color: var(--fg);
-}
-.break-row.current { padding-top: 4px; }
-.cur-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-weight: 600;
-}
-.cur-arrow { font-size: 14px !important; color: var(--ai-2); }
-.break-value {
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--muted);
-  text-decoration: line-through;
-}
-.break-now { display: flex; align-items: baseline; }
-.now-cur {
-  font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ai-2);
-}
-.now-num {
-  font-family: var(--font-mono);
-  font-size: 36px;
-  font-weight: 800;
-  background: linear-gradient(135deg, var(--ai-1) 0%, var(--ai-2) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  letter-spacing: -1px;
-}
-.now-dec {
-  font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ai-2);
-}
-.break-divider {
-  height: 1px;
-  background: rgba(168, 85, 247, 0.15);
-  margin: 4px 0;
-}
-.break-line {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-}
-.bl-tag {
-  padding: 2px 7px;
-  border-radius: 5px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  flex-shrink: 0;
-}
-.bl-tag-ai { background: rgba(168, 85, 247, 0.12); color: var(--ai-3); }
-.bl-tag-member { background: rgba(34, 197, 94, 0.12); color: #15803d; }
-.bl-tag-coupon { background: rgba(236, 72, 153, 0.12); color: #be185d; }
-.bl-tag-time { background: rgba(14, 165, 233, 0.12); color: #0369a1; }
-.bl-text { flex: 1; color: var(--fg); font-weight: 500; }
-.bl-amt {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--ai-2);
-}
-
-/* Alt showtimes */
-.alt-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 4px;
-  position: relative;
-  z-index: 1;
-}
-.alt-head-left {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--fg);
-}
-.alt-head-left .msr { font-size: 16px; color: var(--ai-2); }
-.alt-title { font-weight: 700; }
-.alt-sub { font-size: 12px; font-weight: 500; color: var(--muted); }
-.alt-all {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ai-3);
-  cursor: pointer;
-  transition: color 0.15s;
-}
-.alt-all:hover { color: var(--ai-2); }
-
-.alt-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  position: relative;
-  z-index: 1;
-}
-.alt-card {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid rgba(168, 85, 247, 0.18);
-  border-radius: 14px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.alt-card:hover {
-  border-color: var(--ai-2);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(168, 85, 247, 0.18);
-}
-.alt-top { display: flex; justify-content: space-between; align-items: center; }
-.alt-time { display: flex; align-items: center; gap: 8px; }
-.time-h {
-  font-family: var(--font-mono);
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--fg);
-  letter-spacing: -0.5px;
-}
-.time-tag {
-  padding: 2px 8px;
-  background: var(--secondary);
-  border-radius: 4px;
-  font-size: 10px;
-  font-weight: 600;
-  color: var(--muted);
-}
-.alt-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--ai-1) 0%, var(--ai-2) 100%);
-  color: #fff;
-  font-size: 10px;
-  font-weight: 700;
-}
-.alt-pill .msr { font-size: 11px; }
-.alt-meta { font-size: 12px; color: var(--muted); font-weight: 500; }
-
-.alt-bar { display: flex; align-items: center; gap: 8px; }
-.bar-track {
-  flex: 1;
-  height: 4px;
-  background: rgba(168, 85, 247, 0.12);
-  border-radius: 999px;
-  overflow: hidden;
-}
-.bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, var(--ai-1) 0%, var(--ai-2) 100%);
-  border-radius: 999px;
-  transition: width 0.4s;
-}
-.bar-pct {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--ai-2);
-  min-width: 28px;
-  text-align: right;
-}
-
-.alt-foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 6px;
-}
-.alt-price-block { display: flex; align-items: baseline; gap: 6px; }
-.ap-cur {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--fg);
-}
-.ap-num {
-  font-family: var(--font-mono);
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--fg);
-  letter-spacing: -0.5px;
-}
-.ap-save {
-  padding: 2px 7px;
-  background: rgba(236, 72, 153, 0.1);
-  border-radius: 4px;
-  font-family: var(--font-mono);
-  font-size: 10px;
-  font-weight: 700;
-  color: #be185d;
-}
-.alt-switch {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid rgba(168, 85, 247, 0.3);
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--ai-3);
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-.alt-switch:hover {
-  background: linear-gradient(135deg, var(--ai-1) 0%, var(--ai-2) 100%);
-  color: #fff;
-  border-color: transparent;
-}
-.alt-switch .msr { font-size: 14px; }
-
-/* AIP Foot */
-.aip-foot {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-  padding: 14px 18px;
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(168, 85, 247, 0.15);
-  border-radius: 14px;
-  position: relative;
-  z-index: 1;
-}
-.aip-foot-item { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
-.ff-ico {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: rgba(168, 85, 247, 0.1);
-  color: var(--ai-3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.ff-ico .msr { font-size: 16px; }
-.aip-foot-item > div { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ff-num {
-  font-family: var(--font-mono);
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--fg);
-}
-.ff-mute { color: var(--muted); font-weight: 500; margin-left: 4px; }
-.ff-label { font-size: 11px; color: var(--muted); }
-.aip-foot-sep {
-  width: 1px;
-  height: 28px;
-  background: rgba(168, 85, 247, 0.18);
-}
-
 /* ============ COUPON CARD ============ */
 .coupon-card {
   background: var(--card);
@@ -2150,8 +1569,6 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 18px;
-  position: sticky;
-  top: 96px;
 }
 .sum-head { display: flex; align-items: center; gap: 8px; }
 .sum-head .msr { font-size: 20px; color: var(--primary); }
@@ -2485,13 +1902,11 @@ onBeforeUnmount(() => {
 /* ============ RESPONSIVE ============ */
 @media (max-width: 1180px) {
   .layout { grid-template-columns: 1fr; }
-  .summary { position: static; }
   .alt-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 900px) {
   .page-head { flex-direction: column; align-items: flex-start; }
   .ph-right { width: 100%; justify-content: space-around; }
-  .aip-grid { grid-template-columns: 1fr; }
   .alt-grid { grid-template-columns: 1fr; }
   .mi-grid { grid-template-columns: 1fr; }
   .pm-grid { grid-template-columns: 1fr; }
@@ -2504,13 +1919,10 @@ onBeforeUnmount(() => {
 @media (max-width: 520px) {
   .ph-title { font-size: 24px; }
   .order-card,
-  .ai-pricing,
   .coupon-card,
   .pay-method,
   .summary,
   .notice { padding: 18px; border-radius: 14px; }
-  .aip-foot { flex-direction: column; gap: 10px; }
-  .aip-foot-sep { display: none; }
   .coupon-item { grid-template-columns: auto 80px 1fr; gap: 10px; }
   .coupon-item .cp-right { grid-column: 1 / -1; justify-content: flex-end; }
   .crumbs { display: none; }

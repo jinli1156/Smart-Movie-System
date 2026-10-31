@@ -22,6 +22,9 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 可复用想看按钮，统一选中、加载和禁用状态，由父页面执行收藏请求。
+ */
 import { computed } from 'vue'
 
 const props = withDefaults(defineProps<{

@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/** 本人修改密码请求，携带用于校验的旧密码及待设置的新密码。 */
 @Data
 public class ChangePasswordRequest {
 

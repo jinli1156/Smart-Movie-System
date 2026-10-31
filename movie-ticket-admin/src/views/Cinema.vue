@@ -4,7 +4,8 @@
       <template #header>
         <div class="card-header">
           <span>影院管理</span>
-          <el-button type="primary" @click="handleAdd">
+          <router-link v-if="userStore.userInfo?.role === 'ADMIN'" to="/listing?kind=CINEMA"><el-button>AI 辅助上架</el-button></router-link>
+          <el-button v-if="userStore.userInfo?.role === 'ADMIN'" type="primary" @click="handleAdd">
             <el-icon><Plus /></el-icon>
             新增影院
           </el-button>
@@ -21,7 +22,10 @@
         </el-form-item>
       </el-form>
 
-      <el-table :data="tableData" border stripe v-loading="loading">
+      <BatchActions :allow-delete="userStore.userInfo?.role === 'ADMIN'" :rows="selectedRows" :disabled="loading" :api="cinemaApi" :statuses="[{ label: '批量启用', value: 1 }, { label: '批量停用', value: 0 }]"
+        @clear="batchTable?.clearSelection()" @busy="batchBusy = $event" @completed="handleBatchCompleted" />
+      <ManagementTable ref="batchTable" row-key="id" @selection-change="selectedRows = $event" :data="tableData" border stripe v-loading="loading || batchBusy">
+        <el-table-column type="selection" width="48" :selectable="() => !loading && !batchBusy" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="name" label="影院名称" min-width="150" />
         <el-table-column prop="address" label="地址" min-width="200" />
@@ -46,17 +50,18 @@
             >
               {{ row.status === 1 ? '停业' : '营业' }}
             </el-button>
-            <el-button type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
+            <el-button v-if="userStore.userInfo?.role === 'ADMIN'" type="danger" size="small" link @click="handleDelete(row)">删除</el-button>
             </div>
           </template>
         </el-table-column>
-      </el-table>
+      </ManagementTable>
 
       <el-pagination
         v-model:current-page="pagination.page"
         v-model:page-size="pagination.size"
         :total="pagination.total"
         :page-sizes="[10, 20, 50, 100]"
+        :pager-count="5"
         layout="total, sizes, prev, pager, next, jumper"
         @size-change="loadData"
         @current-change="loadData"
@@ -156,7 +161,7 @@
                 :key="index"
                 class="image-preview-item"
               >
-                <img :src="url" alt="影院图片" class="preview-img" />
+                <img :src="url" alt="影院图片" class="preview-img" loading="lazy" decoding="async" />
                 <div class="preview-overlay">
                   <el-icon class="preview-action" @click="handlePreview(url)"><ZoomIn /></el-icon>
                   <el-icon class="preview-action delete" @click="removeImage(index)"><Delete /></el-icon>
@@ -177,7 +182,7 @@
               </div>
             </el-upload>
           </div>
-          <div class="form-tip">最多上传5张图片，支持 jpg / png / gif / webp，单张不超过 5MB</div>
+          <div class="form-tip">最多上传5张图片，支持 jpg / png / gif / webp；上传前会自动压缩为适合网页展示的尺寸</div>
         </el-form-item>
 
         <el-form-item label="营业状态" prop="status">
@@ -206,14 +211,32 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 影院管理：维护影院资料和图片，通过地图选点及地址解析设置坐标。
+ */
+import BatchActions from '@/components/BatchActions.vue'
+import { useListPageState } from '@/composables/usePageState'
+import { useUserStore } from '@/stores/user'
 import { ref, reactive, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadFile } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+import type { FormInstance, FormRules, UploadFile } from 'element-plus'
 import { Plus, ZoomIn, Delete, Loading, Location, Aim } from '@element-plus/icons-vue'
 import { cinemaApi } from '@/api/cinema'
 import { uploadApi } from '@/api/upload'
 import type { Cinema } from '@/types'
-import AMapLoader from '@amap/amap-jsapi-loader'
+import { compressImage } from '@/utils/image'
 
+const batchTable = ref<{ clearSelection: () => void }>()
+const selectedRows = ref<Cinema[]>([])
+const batchBusy = ref(false)
+/** 接收批量操作结果，清理选择并刷新当前列表。 */
+const handleBatchCompleted = async (deleted: number) => {
+  if (deleted > 0 && deleted >= tableData.value.length && pagination.page > 1) pagination.page--
+  await loadData()
+}
+
+const userStore = useUserStore()
 const loading = ref(false)
 const submitting = ref(false)
 const tableData = ref<Cinema[]>([])
@@ -235,6 +258,7 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
+useListPageState('cinema', searchForm, pagination)
 
 const formData = reactive<Cinema>({
   id: undefined,
@@ -283,12 +307,13 @@ const imageList = computed(() => {
   return formData.images.split(',').filter(s => s.trim()).map(resolveImageUrl)
 })
 
+/** 处理选择的影院图片，压缩上传后同步展示地址。 */
 const handleFileSelected = async (uploadFile: UploadFile) => {
   const file = uploadFile.raw
   if (!file) return
 
-  if (file.size > 5 * 1024 * 1024) {
-    ElMessage.warning('文件大小不能超过5MB')
+  if (file.size > 15 * 1024 * 1024) {
+    ElMessage.warning('原始文件大小不能超过15MB')
     return
   }
 
@@ -299,7 +324,12 @@ const handleFileSelected = async (uploadFile: UploadFile) => {
 
   uploading.value = true
   try {
-    const res = await uploadApi.uploadImage(file)
+    const optimizedFile = await compressImage(file, { maxWidth: 1920, maxHeight: 1080 })
+    if (optimizedFile.size >= 5 * 1024 * 1024) {
+      ElMessage.warning('压缩后图片仍超过5MB，请选择更小的图片')
+      return
+    }
+    const res = await uploadApi.uploadImage(optimizedFile)
     const currentImages = formData.images ? formData.images.split(',').filter(s => s.trim()) : []
     currentImages.push(res.url)
     formData.images = currentImages.join(',')
@@ -323,12 +353,14 @@ const handlePreview = (url: string) => {
   previewVisible.value = true
 }
 
+/** 打开地图选点，供确认影院经纬度。 */
 const openCoordPicker = () => {
   window.open('https://lbs.amap.com/tools/picker', '_blank', 'noopener')
 }
 
 let AMapNS: any = null
 
+/** 将输入地址解析为地图坐标，辅助维护影院位置。 */
 const autoGeocode = async () => {
   if (!formData.address) {
     ElMessage.warning('请先输入影院地址')
@@ -337,6 +369,7 @@ const autoGeocode = async () => {
   geocoding.value = true
   try {
     if (!AMapNS) {
+      const { default: AMapLoader } = await import('@amap/amap-jsapi-loader')
       ;(window as any)._AMapSecurityConfig = {
         securityJsCode: import.meta.env.VITE_AMAP_SECURITY_CODE
       }
@@ -377,7 +410,10 @@ const resetFormData = () => {
   formData.status = 1
 }
 
+/** 加载当前页面所需数据，并同步加载与失败状态。 */
 const loadData = async () => {
+  batchTable.value?.clearSelection()
+  selectedRows.value = []
   loading.value = true
   try {
     const res = await cinemaApi.getPage({
@@ -395,16 +431,19 @@ const loadData = async () => {
   }
 }
 
+/** 应用筛选条件并从第一页重新查询。 */
 const handleSearch = () => {
   pagination.page = 1
   loadData()
 }
 
+/** 清空筛选条件并重新加载列表。 */
 const handleReset = () => {
   searchForm.keyword = ''
   handleSearch()
 }
 
+/** 初始化新增表单并打开编辑入口。 */
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '新增影院'
@@ -413,6 +452,7 @@ const handleAdd = () => {
   formRef.value?.clearValidate()
 }
 
+/** 将选中记录填入编辑表单。 */
 const handleEdit = (row: Cinema) => {
   isEdit.value = true
   dialogTitle.value = '编辑影院'
@@ -421,6 +461,7 @@ const handleEdit = (row: Cinema) => {
   formRef.value?.clearValidate()
 }
 
+/** 校验当前表单并提交保存，成功后更新页面数据。 */
 const handleSubmit = async () => {
   if (!formRef.value) return
 
@@ -450,6 +491,7 @@ const handleSubmit = async () => {
   }
 }
 
+/** 提交启用或停用操作，并同步最新状态。 */
 const handleToggleStatus = async (row: Cinema) => {
   const newStatus = row.status === 1 ? 0 : 1
   const action = newStatus === 1 ? '营业' : '停业'
@@ -472,6 +514,7 @@ const handleToggleStatus = async (row: Cinema) => {
   }
 }
 
+/** 确认后提交删除请求，成功后刷新列表。 */
 const handleDelete = async (row: Cinema) => {
   try {
     await ElMessageBox.confirm(

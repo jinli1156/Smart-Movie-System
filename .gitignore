@@ -21,6 +21,9 @@ dist/
 dist-ssr/
 .vite/
 coverage/
+playwright-report/
+test-results/
+blob-report/
 .eslintcache
 *.local
 
@@ -50,6 +53,7 @@ movie-ticket-backend/uploads/*
 movie-ticket-backend/movie_ticket.sql
 
 # Environment
+.local/
 .env
 .env.*
 !.env.example
@@ -81,3 +85,15 @@ __pycache__/
 .pytest_cache/
 .coverage
 .coverage.*
+
+# Local working artifacts, generated output and backups (not project source)
+/output/
+/outputs/
+/tmp/
+/template-backup-*/
+/.workbuddy/
+/附件2*
+
+# uniCloud local build/runtime leftovers
+movie-ticket-unicloud/frontend/unpackage/
+movie-ticket-unicloud/movie-ticket-unicloud-cloud/uniCloud-aliyun/*/common/*/node_modules/

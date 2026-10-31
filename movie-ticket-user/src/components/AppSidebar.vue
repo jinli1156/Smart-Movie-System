@@ -3,10 +3,10 @@
     <!-- Logo -->
     <div class="logo-block">
       <div class="logo-mark">
-        <img class="brand-logo-image" src="/cinema-logo.png" alt="CINEMA+" />
+        <img class="brand-logo-image" src="/xiangzhi-ticket.png" alt="响指电影" />
       </div>
       <div class="logo-text">
-        <span class="brand">CINEMA+</span>
+        <span class="brand brand-wordmark" role="img" aria-label="响指电影"></span>
         <span class="brand-sub">premium booking</span>
       </div>
     </div>
@@ -59,12 +59,7 @@
         <span class="qa-label">即将上映</span>
         <span class="qa-tag">NEW</span>
       </a>
-      <a class="qa-item" @click="tip('周末特惠')">
-        <MaterialIcon class="msr qa-ico" name="local_fire_department" />
-        <span class="qa-label">周末特惠</span>
-        <span class="qa-tag">-30%</span>
-      </a>
-      <a class="qa-item" @click="tip('兑换券码')">
+      <a class="qa-item" @click="openRedeemDialog">
         <MaterialIcon class="msr qa-ico" name="redeem" />
         <span class="qa-label">兑换券码</span>
         <span class="qa-tag">新</span>
@@ -78,7 +73,7 @@
       <div class="avatar" @click="router.push('/profile')">{{ avatarChar }}</div>
       <div class="user-info" @click="router.push('/profile')">
         <span class="user-name">{{ userStore.userInfo?.nickname || '用户' }}</span>
-        <span class="user-tier">GOLD · 1280 积分</span>
+        <span class="user-tier">GOLD · {{ Number(userStore.userInfo?.points || 0).toLocaleString() }} 积分</span>
       </div>
       <el-dropdown trigger="click">
         <MaterialIcon class="msr more-btn" name="more_horiz" />
@@ -102,13 +97,18 @@
       <button class="footer-login" @click="router.push('/login')">登录</button>
     </div>
   </aside>
+  <CouponRedeemDialog v-model="showRedeemDialog" />
 </template>
 
 <script setup lang="ts">
+/**
+ * 用户导航侧栏，统一搜索、功能跳转、兑换券和退出入口。
+ */
 import { computed, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { useUserStore } from '@/stores/user'
+import CouponRedeemDialog from '@/components/CouponRedeemDialog.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -116,23 +116,27 @@ const userStore = useUserStore()
 
 const sidebarKeyword = ref('')
 const searchFocused = ref(false)
+const showRedeemDialog = ref(false)
 
 withDefaults(defineProps<{ showQuickAccess?: boolean }>(), {
   showQuickAccess: true
 })
 
 const navItems = [
+  { key: 'posters', label: 'AI 海报', icon: 'auto_awesome', route: '/posters' },
+  { key: 'assistant', label: '影票观AI', icon: 'smart_toy', route: '/assistant' },
   { key: 'home', label: '首页', icon: 'home', route: '/home' },
   { key: 'movies', label: '影片', icon: 'movie', badge: 'NEW', badgeClass: 'badge-primary', route: '/movies' },
   { key: 'cinemas', label: '影院', icon: 'theaters', route: '/cinemas' },
   { key: 'profile', label: '个人中心', icon: 'person', route: '/profile' },
   { key: 'orders', label: '订单', icon: 'receipt_long', route: '/orders' },
   { key: 'favorites', label: '想看', icon: 'favorite', route: '/favorites' },
-  { key: 'settings', label: '设置', icon: 'settings' }
 ]
 
 const activeNav = computed(() => {
   const path = route.path
+  if (path.startsWith('/posters')) return 'posters'
+  if (path.startsWith('/assistant')) return 'assistant'
   if (path.startsWith('/home')) return 'home'
   if (path.startsWith('/movies') || path.startsWith('/movie/')) return 'movies'
   if (path.startsWith('/cinemas')) return 'cinemas'
@@ -165,8 +169,6 @@ const onNavClick = (item: { key: string; label: string; route?: string }) => {
     if (route.path !== item.route) {
       router.push(item.route)
     }
-  } else {
-    ElMessage.info(`${item.label} 模块敬请期待`)
   }
 }
 
@@ -185,10 +187,16 @@ const goToUpcoming = () => {
   router.push({ path: '/movies', query: { ranking: 'upcoming' } })
 }
 
-const tip = (label: string) => {
-  ElMessage.info(`${label} 功能敬请期待`)
+const openRedeemDialog = () => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录后兑换优惠券')
+    router.push('/login')
+    return
+  }
+  showRedeemDialog.value = true
 }
 
+/** 清理当前会话并跳转登录页面。 */
 const handleLogout = () => {
   userStore.logout()
   ElMessage.success('已退出登录')
@@ -196,8 +204,6 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .sidebar {
   --primary: #FF8400;

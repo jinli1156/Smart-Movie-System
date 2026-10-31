@@ -1,0 +1,86 @@
+/* 管理内容按页面宽度排布，保留完整文本及所有分页、查询入口。 */
+.layout-container > .el-container {
+  min-width: 0;
+}
+
+.layout-container .main > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.layout-container .el-pagination,
+.el-dialog .el-pagination,
+.el-drawer .el-pagination,
+.layout-container .search-form,
+.layout-container .search-bar,
+.layout-container .card-header {
+  flex-wrap: wrap;
+  row-gap: 12px;
+  height: auto;
+}
+
+.layout-container .search-form .el-form-item {
+  max-width: 100%;
+}
+
+.layout-container .search-form .el-form-item__content,
+.layout-container .search-bar > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.el-drawer .records-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.el-drawer .records-toolbar > * {
+  max-width: 100%;
+  margin-left: 0;
+}
+
+@media (max-width: 700px) {
+  .layout-container .search-bar .el-input,
+  .layout-container .search-bar .el-select,
+  .layout-container .search-bar .el-date-editor {
+    width: 100% !important;
+    margin-right: 0 !important;
+  }
+
+  .layout-container .search-bar .el-radio-group {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .layout-container .el-pagination,
+  .el-dialog .el-pagination,
+  .el-drawer .el-pagination {
+    justify-content: flex-start !important;
+  }
+
+  .layout-container .el-pagination .el-pager,
+  .el-dialog .el-pagination .el-pager,
+  .el-drawer .el-pagination .el-pager {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    max-width: 100%;
+  }
+
+  .layout-container .el-pagination .el-pager li,
+  .el-dialog .el-pagination .el-pager li,
+  .el-drawer .el-pagination .el-pager li {
+    min-width: 28px;
+  }
+
+  .layout-container .el-pagination__jump,
+  .layout-container .el-pagination__sizes,
+  .el-dialog .el-pagination__jump,
+  .el-dialog .el-pagination__sizes,
+  .el-drawer .el-pagination__jump,
+  .el-drawer .el-pagination__sizes {
+    margin-left: 0;
+    margin-right: 0;
+  }
+}

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 800" role="img" aria-labelledby="title desc">
+  <title id="title">海报加载失败</title>
+  <desc id="desc">电影海报占位图</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#252a27"/>
+      <stop offset="1" stop-color="#111311"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="800" fill="url(#bg)"/>
+  <g fill="none" stroke="#ff8400" stroke-width="18" stroke-linecap="round" stroke-linejoin="round" opacity=".9">
+    <rect x="180" y="230" width="240" height="190" rx="24"/>
+    <path d="m215 380 58-62 52 48 34-34 26 24"/>
+    <circle cx="350" cy="286" r="24"/>
+  </g>
+  <text x="300" y="505" fill="#f2f3f0" font-family="Arial, sans-serif" font-size="32" font-weight="700" text-anchor="middle">海报暂不可用</text>
+  <text x="300" y="550" fill="#9ca39e" font-family="Arial, sans-serif" font-size="21" text-anchor="middle">POSTER UNAVAILABLE</text>
+</svg>

@@ -1,6 +1,13 @@
+/**
+ * 统一 HTTP 请求入口，附加登录令牌、解包业务响应并处理登录失效及错误提示。
+ */
 import axios, { AxiosInstance, AxiosResponse } from 'axios'
-import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
+
+const showError = async (message: string) => {
+  const { ElMessage } = await import('element-plus/es/components/message/index')
+  ElMessage.error(message)
+}
 
 const request: AxiosInstance = axios.create({
   baseURL: '/api',
@@ -27,7 +34,7 @@ request.interceptors.response.use(
       return data
     } else {
       if (!response.config.silent) {
-        ElMessage.error(message || '请求失败')
+        void showError(message || '请求失败')
       }
       return Promise.reject(new Error(message))
     }
@@ -37,16 +44,16 @@ request.interceptors.response.use(
     if (!silent && error.response) {
       const { status } = error.response
       if (status === 401) {
-        ElMessage.error('未登录或登录已过期')
+        void showError('未登录或登录已过期')
         const userStore = useUserStore()
         userStore.logout()
       } else if (status === 403) {
-        ElMessage.error('权限不足')
+        void showError('权限不足')
       } else {
-        ElMessage.error(error.response.data?.message || '请求失败')
+        void showError(error.response.data?.message || '请求失败')
       }
     } else if (!silent) {
-      ElMessage.error('网络错误')
+      void showError('网络错误')
     }
     return Promise.reject(error)
   }

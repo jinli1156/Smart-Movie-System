@@ -169,9 +169,12 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 取票扫码组件：管理摄像头扫描及手动输入，核对订单后提交取票。
+ */
 import { ref, watch, onBeforeUnmount } from 'vue'
 import { Html5Qrcode } from 'html5-qrcode'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { orderApi } from '@/api/order'
 
 interface Props {
@@ -197,6 +200,7 @@ const manualCode = ref('')
 
 let html5QrCode: Html5Qrcode | null = null
 
+/** 启动摄像头及二维码识别，处理设备权限或初始化失败。 */
 const startScanning = async () => {
   try {
     isLoading.value = true
@@ -263,6 +267,7 @@ const startScanning = async () => {
   }
 }
 
+/** 停止识别并释放摄像头资源。 */
 const stopScanning = async () => {
   if (html5QrCode) {
     try {
@@ -339,6 +344,7 @@ const onScanFailure = (error: string) => {
   }
 }
 
+/** 根据扫描或输入的取票码查询并核验订单。 */
 const verifyTicket = async (orderNo: string, ticketCode: string) => {
   try {
     // 先验证订单状态，但不立即取票
@@ -418,6 +424,7 @@ const handleManualSubmit = async () => {
   }
 }
 
+/** 在用户核对后提交取票核销，并回传结果。 */
 const handleConfirmTicket = async () => {
   if (!ticketInfo.value) return
 
@@ -479,7 +486,6 @@ onBeforeUnmount(async () => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .msr {
   font-family: 'Material Symbols Rounded';

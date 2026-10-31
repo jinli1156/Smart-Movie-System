@@ -1,0 +1,23 @@
+[
+  {
+    "IndexName": "ownerId_kind_day_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        {
+          "Name": "ownerId",
+          "Direction": "1"
+        },
+        {
+          "Name": "kind",
+          "Direction": "1"
+        },
+        {
+          "Name": "day",
+          "Direction": "1"
+        }
+      ],
+      "MgoIsUnique": false,
+      "MgoIsSparse": false
+    }
+  }
+]

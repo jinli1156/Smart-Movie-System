@@ -1,0 +1,10 @@
+**/node_modules/
+**/dist/
+**/.env
+**/.env.*.local
+**/.hbuilderx/
+**/.local/
+**/secrets.json
+**/*.param.json
+movie-ticket-unicloud-cloud/uniCloud-aliyun/cloudfunctions/movie-ai-worker/runtime/
+movie-ticket-unicloud-cloud/uniCloud-aliyun/cloudfunctions/movie-api/vendor/

@@ -1,0 +1,627 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "prepare_ticket_order",
+      "description": "用户已确定场次并希望下单时，读取本次showtimeId、people和观影条件，重新校验场次、推荐座位、计算优惠，生成5分钟有效的订单确认卡。必须先update_watch_plan保存条件。本工具只准备确认卡，不锁座、不创建购票订单、不支付；用户在页面确认后才创建待支付订单。",
+      "parameters": {"type": "object", "properties": {}, "additionalProperties": false}
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "update_watch_plan",
+      "description": "增量更新本次观影条件。只提供用户新增或修改的字段，其余保留；null删除单项。先处理候选指代，再改时间或预算。此工具不查询库存、不购票、不保存长期偏好。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "movieId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "cinemaId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "date": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "YYYY-MM-DD，北京时间"
+          },
+          "maxPrice": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "票价上限，单位元，最多两位小数；实际基础票价，不假设优惠"
+          },
+          "priceExclusive": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "true为严格小于上限（低于/以下），false为小于等于（不超过/以内），默认false"
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 3
+          },
+          "genre": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "题材关键词，如科幻"
+          },
+          "minRating": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 10,
+            "description": "本系统评分下限，含边界"
+          },
+          "maxDuration": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "影片时长上限，分钟，含边界"
+          },
+          "startAfter": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "HH:mm，当天开场时间下限，含边界"
+          },
+          "startBefore": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "HH:mm，当天开场时间上限，不含边界；跨午夜分两天查询"
+          },
+          "hallKeyword": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "按影厅名称匹配，如IMAX、杜比。不是官方制式认证"
+          },
+          "cinemaKeyword": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "影院名称或地址关键词，如南宁，不代表定位或距离"
+          },
+          "people": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5
+          },
+          "showtimeId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "固定场次；换日期或寻找其他场次时清除此项"
+          },
+          "endBefore": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "HH:mm，当天结束时间上限，含边界，和开场时间不同"
+          },
+          "maxTotal": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "全部人数优惠后的总预算，不能换算成基础单价过滤"
+          },
+          "usePoints": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "useCoupons": {
+            "type": [
+              "boolean",
+              "null"
+            ]
+          },
+          "requireTogether": {
+            "type": [
+              "boolean",
+              "null"
+            ],
+            "description": "多人默认需要连座；只有用户接受分散座位才设false"
+          },
+          "preference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "CENTER",
+              "QUIET",
+              "EASY_ACCESS",
+              "COUPLE",
+              "ACCESSIBLE",
+              null
+            ]
+          },
+          "naturalLanguage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 200,
+            "description": "用户座位偏好原文，属于软偏好"
+          },
+          "excludedGenres": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "maxItems": 10,
+            "items": {
+              "type": "string",
+              "maxLength": 20
+            },
+            "description": "完整排除类型列表；新增时保留已有项，[]表示本次清除"
+          },
+          "excludedMovieIds": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "maxItems": 50,
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "已看过或不喜欢的真实影片ID；新增时保留已有项"
+          },
+          "scene": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "RELAXED",
+              "DATE",
+              "FAMILY",
+              "FRIENDS",
+              "SOLO",
+              null
+            ],
+            "description": "轻松、约会、家庭、朋友聚会、独自观影；软排序依据，不是内容分级"
+          },
+          "reset": {
+            "type": "boolean",
+            "description": "清空本次观影条件，只在用户要求重新开始时使用"
+          },
+          "selectOption": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6,
+            "description": "按本次上下文options的1起始编号选定影片或场次；不要猜ID"
+          },
+          "rejectOptions": {
+            "type": "boolean",
+            "description": "用户表示这批都看过或都不喜欢时，把历史候选的影片加入本次排除列表"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "plan_movie_outing",
+      "description": "根据已保存的本次观影条件查询完整方案：统一筛选日期/开场/结束时间/题材/排除/影院，核算优惠后总价，再验证真实连座。必须先update_watch_plan，人数未知先澄清。参数为空对象。",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "discover_movies",
+      "description": "按本次类型、评分、时长、排除项和场景筛选真实影片，返回场景匹配依据。仅找影片时无需人数；有购票预算或时间要求使用plan_movie_outing。参数为空对象。",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "compare_prices",
+      "description": "同一电影跨影院、跨场次智能比价。提供真实movieId或showtimeId（二选一）和人数；场次可自动识别电影及观影日期，电影默认今天。全量筛选当日可购场次后，按本人优惠券和积分后的总实付排序，返回前10项。访客仅比较原价。maxTotal是所有人的优惠后总预算，不能当作单张票价。只读、不支付、不占券、不扣积分、不保证连座。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "movieId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "showtimeId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "people": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "date": {
+            "type": "string",
+            "description": "YYYY-MM-DD，北京时间"
+          },
+          "usePoints": {
+            "type": "boolean",
+            "description": "默认true，保留积分时false"
+          },
+          "useCoupons": {
+            "type": "boolean",
+            "description": "默认true，保留优惠券时false"
+          },
+          "maxTotal": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          }
+        },
+        "required": [
+          "people"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_movies",
+      "description": "查询本系统真实电影，含上映状态。keyword 搜片名/导演/演员，genre 搜类型。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "keyword": {
+            "type": "string"
+          },
+          "genre": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [
+              1,
+              2
+            ]
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_cinemas",
+      "description": "按名称或地址关键词查询营业影院；未提供关键词返回营业影院列表。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "keyword": {
+            "type": "string"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_showtimes",
+      "description": "从全站可售场次统一筛选，所有条件在分页前同时满足。支持题材、评分下限、时长上限、日期内开场时段、影院地址关键词、影厅名称关键词、人数和单张基础票价预算。无需逐片查询。total=0时说明无匹配，不擅自放宽条件。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "movieId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "cinemaId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "date": {
+            "type": "string",
+            "description": "YYYY-MM-DD，北京时间"
+          },
+          "maxPrice": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000,
+            "description": "票价上限，单位元，最多两位小数；实际基础票价，不假设优惠"
+          },
+          "priceExclusive": {
+            "type": "boolean",
+            "description": "true为严格小于上限（低于/以下），false为小于等于（不超过/以内），默认false"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8,
+            "description": "返回场次数量，用户只要一部电影时传1"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "genre": {
+            "type": "string",
+            "description": "题材关键词，如科幻"
+          },
+          "minRating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "本系统评分下限，含边界"
+          },
+          "maxDuration": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1000,
+            "description": "影片时长上限，分钟，含边界"
+          },
+          "startAfter": {
+            "type": "string",
+            "description": "HH:mm，当天开场时间下限，含边界"
+          },
+          "startBefore": {
+            "type": "string",
+            "description": "HH:mm，当天开场时间上限，不含边界；跨午夜分两天查询"
+          },
+          "hallKeyword": {
+            "type": "string",
+            "description": "按影厅名称匹配，如IMAX、杜比。不是官方制式认证"
+          },
+          "cinemaKeyword": {
+            "type": "string",
+            "description": "影院名称或地址关键词，如南宁，不代表定位或距离"
+          },
+          "people": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "所需余票数，不保证连座；连座调用recommend_seats"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_seats",
+      "description": "查询真实场次的座位布局与占用情况，不锁座。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "showtimeId": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "showtimeId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_my_orders",
+      "description": "仅查询登录用户自己的订单，禁止提供userId。status 0待支付1已支付2已取消3已退款。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "orderNo": {
+            "type": "string"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2,
+              3
+            ]
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recommend_movies",
+      "description": "无票价约束时使用个性化推荐（访客为热门推荐）。有预算上限请先用search_showtimes直接筛选价格，不要先列片单再逐部查询。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8,
+            "description": "推荐数量；用户要一部传1，默认5"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "get_my_preferences",
+      "description": "查询登录用户类型偏好及行为数量摘要。",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "search_knowledge",
+      "description": "检索本项目购票、支付、退票、超时和推荐规则，返回可引用的知识片段与来源。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "recommend_seats",
+      "description": "复用智能选座算法，按指定真实场次、人数和自然语言偏好推荐可用连座。返回座位方案供用户点击进入选座页预选，不锁座不下单。无候选时明确无合适连座。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "showtimeId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "people": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "preference": {
+            "type": "string",
+            "enum": [
+              "CENTER",
+              "QUIET",
+              "EASY_ACCESS",
+              "COUPLE",
+              "ACCESSIBLE"
+            ]
+          },
+          "naturalLanguage": {
+            "type": "string",
+            "description": "座位偏好原文，最多200字；属于软偏好，不保证指定排号"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "showtimeId",
+          "people"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "quote_price",
+      "description": "只读试算当前登录用户的最优优惠券与积分组合。提供showtimeId+people，或者仅orderNo，二选一；金额从数据库取，不接受用户提供价格或身份。usePoints默认true，可显式false保留积分。返回原价、券抵扣、积分消耗、预计实付，不支付不占券。",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "showtimeId": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "people": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "orderNo": {
+            "type": "string"
+          },
+          "usePoints": {
+            "type": "boolean",
+            "description": "是否比较使用积分的方案，默认true；用户不想用积分时false"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+]

@@ -5,10 +5,10 @@
       <!-- Logo -->
       <div class="logo-block" @click="router.push('/home')">
         <div class="logo-mark">
-          <img class="brand-logo-image" src="/cinema-logo.png" alt="CINEMA+" />
+          <img class="brand-logo-image" src="/xiangzhi-ticket.png" alt="响指电影" />
         </div>
         <div class="logo-text">
-          <span class="brand">CINEMA+</span>
+          <span class="brand brand-wordmark" role="img" aria-label="响指电影"></span>
           <span class="brand-sub">premium booking</span>
         </div>
       </div>
@@ -43,17 +43,12 @@
           <span>QUICK ACCESS</span>
           <MaterialIcon class="msr" name="expand_more" />
         </div>
-        <a class="qa-item" @click="tip('热映榜单')">
+        <a class="qa-item" @click="router.push('/movies?ranking=hot')">
           <MaterialIcon class="msr qa-ico" name="trending_up" />
           <span class="qa-label">热映榜单</span>
           <span class="qa-tag">TOP 10</span>
         </a>
-        <a class="qa-item" @click="tip('周末特惠')">
-          <MaterialIcon class="msr qa-ico" name="local_fire_department" />
-          <span class="qa-label">周末特惠</span>
-          <span class="qa-tag">-30%</span>
-        </a>
-        <a class="qa-item" @click="tip('兑换券码')">
+        <a class="qa-item" @click="openRedeemDialog">
           <MaterialIcon class="msr qa-ico" name="redeem" />
           <span class="qa-label">兑换券码</span>
           <span class="qa-tag">新</span>
@@ -67,7 +62,7 @@
         <div class="avatar" @click="router.push('/profile')">{{ avatarChar }}</div>
         <div class="user-info" @click="router.push('/profile')">
           <span class="user-name">{{ userStore.userInfo?.nickname || '用户' }}</span>
-          <span class="user-tier">GOLD · 1280 积分</span>
+          <span class="user-tier">GOLD · {{ Number(userStore.userInfo?.points || 0).toLocaleString() }} 积分</span>
         </div>
         <el-dropdown trigger="click">
           <MaterialIcon class="msr more-btn" name="more_horiz" />
@@ -119,17 +114,12 @@
           <span class="tb-pill-text">{{ todayLabel }}</span>
         </div>
         <div class="tb-icon-group">
-          <button class="tb-icon" @click="tip('通知')">
-            <MaterialIcon class="msr" name="notifications" />
-            <span class="tb-dot"></span>
-          </button>
-          <button class="tb-icon" @click="tip('购物车')">
-            <MaterialIcon class="msr" name="shopping_cart" />
-          </button>
+
+
         </div>
-        <button class="tb-cta" @click="tip('扫码取票')">
+        <button class="tb-cta" @click="router.push('/orders')">
           <MaterialIcon class="msr" name="qr_code_scanner" />
-          <span>扫码取票</span>
+          <span>我的影票</span>
         </button>
       </div>
 
@@ -152,11 +142,11 @@
                 <div class="hpc-num">01</div>
                 <div class="hpc-tag">
                   <MaterialIcon class="msr" name="videocam" />
-                  <span>{{ heroFormatBadge }}</span>
+                  <span>在线选座</span>
                 </div>
               </div>
               <div v-if="movie.poster" class="hpc-img">
-                <img :src="movie.poster" :alt="movie.title" />
+                <img v-poster="{ eager: true }" :src="movie.poster" :alt="movie.title" />
               </div>
               <div class="hpc-bottom">
                 <div class="hpc-title">{{ movie.title.split(':')[0] || movie.title }}</div>
@@ -206,7 +196,7 @@
                   <span class="meta-sep-dot">·</span>
                   <span class="meta-item">
                     <MaterialIcon class="msr" name="translate" />
-                    <span>{{ movie.language || '英语·中字' }}</span>
+                    <span>{{ movie.language || '语言未提供' }}</span>
                   </span>
                 </div>
 
@@ -220,24 +210,6 @@
                       </div>
                     </div>
                   </div>
-                  <div class="rating-sources">
-                    <div class="rating-src">
-                      <span class="rs-num">{{ (ratingNum + 0.3).toFixed(1) }}</span>
-                      <span class="rs-label">猫眼</span>
-                    </div>
-                    <div class="rating-src">
-                      <span class="rs-num">{{ (ratingNum - 0.4).toFixed(1) }}</span>
-                      <span class="rs-label">豆瓣</span>
-                    </div>
-                    <div class="rating-src">
-                      <span class="rs-num">{{ (ratingNum - 0.3).toFixed(1) }}</span>
-                      <span class="rs-label">IMDb</span>
-                    </div>
-                    <div class="rating-src">
-                      <span class="rs-num">486K</span>
-                      <span class="rs-label">想看</span>
-                    </div>
-                  </div>
                 </div>
 
                 <p class="hero-desc">
@@ -246,10 +218,14 @@
               </div>
 
               <div class="hero-actions">
-                <button class="hero-cta" @click="scrollToBuy">
+                <button class="hero-cta" @click="router.push({ path: '/posters', query: { movie: movie.title } })">
+                  <MaterialIcon class="msr" name="auto_awesome" />
+                  <span>制作专属海报</span>
+                </button>
+                <button class="hero-cta" @click="goToCinemaSelection">
                   <MaterialIcon class="msr" name="play_arrow" />
                   <span>立即购票</span>
-                  <span class="hero-cta-price">起 ¥{{ minPrice }}</span>
+                  <span v-if="minPrice != null" class="hero-cta-price">起 ¥{{ minPrice }}</span>
                 </button>
                 <WatchlistHeartButton
                   size="large"
@@ -257,9 +233,7 @@
                   :active="isFavorite"
                   @click="toggleFavorite"
                 />
-                <button class="hero-icon" @click="tip('分享')">
-                  <MaterialIcon class="msr" name="share" />
-                </button>
+
                 <button
                   class="hero-icon"
                   aria-label="查看观众评价"
@@ -284,12 +258,12 @@
                   <span class="card-eyebrow">SYNOPSIS</span>
                   <h2 class="card-title">剧情简介</h2>
                 </div>
-                <button class="card-action" @click="tip('展开全文')">
-                  <span>展开全文</span>
-                  <MaterialIcon class="msr" name="expand_more" />
+                <button class="card-action" :aria-expanded="synopsisExpanded" @click="synopsisExpanded = !synopsisExpanded">
+                  <span>{{ synopsisExpanded ? '收起全文' : '展开全文' }}</span>
+                  <MaterialIcon class="msr" :name="synopsisExpanded ? 'expand_less' : 'expand_more'" />
                 </button>
               </div>
-              <p class="synopsis-text">
+              <p class="synopsis-text" :class="{ expanded: synopsisExpanded }">
                 {{ movie.description || '暂无简介' }}
               </p>
               <div class="synopsis-footer">
@@ -303,7 +277,7 @@
                 </div>
                 <div class="sf-item">
                   <span class="sf-label">出品方</span>
-                  <span class="sf-val">CINEMA+ Studios</span>
+                  <span class="sf-val">响指电影 Studios</span>
                 </div>
               </div>
             </article>
@@ -315,16 +289,17 @@
                   <span class="card-eyebrow">CAST &amp; CREW</span>
                   <h2 class="card-title">演职员表</h2>
                 </div>
-                <button class="card-action" @click="tip('查看全部')">
+                <button class="card-action" @click="showCastDialog = true">
                   <span>查看全部</span>
                   <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
               </div>
               <div class="cast-grid">
                 <div
-                  v-for="(c, idx) in castList"
+                  v-for="(c, idx) in castPreview"
                   :key="idx"
                   class="cast-item"
+                  @click="openCastMember(c)"
                 >
                   <div class="cast-avatar" :style="{ background: castGradient(idx) }">
                     <span class="cast-initial">{{ c.name.charAt(0) }}</span>
@@ -342,20 +317,25 @@
                   <span class="card-eyebrow">STILLS</span>
                   <h2 class="card-title">剧照</h2>
                 </div>
-                <button class="card-action" @click="tip('查看全部剧照')">
-                  <span>全部 12 张</span>
+                <button class="card-action" @click="openStillGallery(0)">
+                  <span>全部 {{ mediaStills.length }} 张</span>
                   <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
               </div>
               <div class="stills-grid">
-                <div
-                  v-for="i in 6"
-                  :key="i"
+                <button
+                  v-for="(still, index) in mediaStills.slice(0, 6)"
+                  :key="still.src"
                   class="still-item"
-                  :style="{ background: stillGradient(i) }"
-                  @click="tip('查看剧照')"
+                  :aria-label="`查看剧照 ${index + 1}`"
+                  @click="openStillGallery(index)"
                 >
-                  <MaterialIcon class="msr still-ico" name="image" />
+                  <img :src="still.src" :alt="still.alt" loading="lazy" @error="usePosterFallback" />
+                  <span class="still-overlay"><MaterialIcon class="msr" name="zoom_in" /></span>
+                </button>
+                <div v-if="mediaStills.length === 0" class="media-empty">
+                  <MaterialIcon class="msr" name="image_not_supported" />
+                  <span>暂无可用剧照</span>
                 </div>
               </div>
             </article>
@@ -365,22 +345,28 @@
               <div class="card-head">
                 <div class="card-head-left">
                   <span class="card-eyebrow">TRAILER</span>
-                  <h2 class="card-title">官方预告片</h2>
+                  <h2 class="card-title">预告片与特辑</h2>
                 </div>
-                <button class="card-action" @click="tip('全部预告')">
-                  <span>3 个预告</span>
+                <button class="card-action" @click="openTrailerLibrary">
+                  <span>{{ trailerItems.length }} 个预告</span>
                   <MaterialIcon class="msr" name="arrow_forward" />
                 </button>
               </div>
-              <div class="trailer-frame" @click="tip('播放预告片')">
+              <button
+                class="trailer-frame"
+                :style="trailerCoverStyle"
+                aria-label="播放预告片"
+                @click="openTrailer(0)"
+              >
+                <span class="trailer-shade"></span>
                 <div class="trailer-play">
                   <MaterialIcon class="msr" name="play_arrow" />
                 </div>
                 <div class="trailer-meta">
-                  <span class="trailer-title">官方正式预告 · 2 分 38 秒</span>
-                  <span class="trailer-sub">中文字幕 · 4K HDR</span>
+                  <span class="trailer-title">{{ trailerItems[0]?.title || '查找影片预告' }}</span>
+                  <span class="trailer-sub">{{ trailerItems[0]?.meta || '点击查看相关视频内容' }}</span>
                 </div>
-              </div>
+              </button>
             </article>
 
             <!-- AI Similar Movies Card -->
@@ -409,14 +395,14 @@
                   @click="goToMovie(m.id)"
                 >
                   <div class="similar-poster" :style="{ background: cardGradient(idx) }">
-                    <img v-if="m.poster" :src="m.poster" :alt="m.title" />
-                    <span class="similar-match">{{ matchScore(m.id) }}% 匹配</span>
+                    <img v-if="m.poster" v-poster :src="m.poster" :alt="m.title" />
+                    <span v-if="m.matchScore != null" class="similar-match">{{ m.matchScore }}% 匹配</span>
                   </div>
                   <div class="similar-info">
                     <span class="similar-name">{{ m.title }}</span>
                     <span class="similar-meta">
                       <MaterialIcon class="msr" name="star" />
-                      <span>{{ m.rating?.toFixed(1) || '8.5' }}</span>
+                      <span>{{ m.rating?.toFixed(1) || '暂无评分' }}</span>
                       <span class="sep">·</span>
                       <span>{{ m.genre || '剧情' }}</span>
                     </span>
@@ -515,8 +501,9 @@
 
           <!-- RIGHT COLUMN -->
           <div class="right-col">
+            <PriceComparison v-if="movie?.status === 1" :movie-id="movie.id" :initial-date="dateList[activeDateIdx]?.value" />
             <!-- Buy Card -->
-            <article class="card buy-card" ref="buyCardRef">
+            <article class="card buy-card">
               <div class="buy-head">
                 <div class="buy-head-left">
                   <span class="card-eyebrow primary">立即购票</span>
@@ -584,7 +571,7 @@
                     </div>
                     <div class="st-info">
                       <span class="st-hall">{{ st.hallName }}</span>
-                      <span class="st-format">IMAX · 国语 2D</span>
+                      <span v-if="movie.language" class="st-format">{{ movie.language }}</span>
                     </div>
                     <div class="st-right">
                       <span class="st-price">¥{{ st.basePrice }}</span>
@@ -598,44 +585,7 @@
 
               <div class="buy-footer">
                 <MaterialIcon class="msr" name="verified" />
-                <span>支持改签 · 选座保障 · 无忧购票</span>
-              </div>
-            </article>
-
-            <!-- AI Friends Card -->
-            <article class="card ai-friends-card">
-              <div class="aifc-head">
-                <div class="ai-icon-wrap purple">
-                  <MaterialIcon class="msr" name="groups" />
-                </div>
-                <div class="aifc-title-block">
-                  <span class="aifc-title">AI 同好观影</span>
-                  <span class="aifc-sub">智能匹配 · 团购 8.5 折</span>
-                </div>
-                <span class="aifc-beta">BETA</span>
-              </div>
-              <p class="aifc-desc">
-                AI 根据偏好为你匹配同好,组团观影享 8.5 折优惠,还能解锁专属包场福利。
-              </p>
-              <div class="friends-list">
-                <div v-for="f in friends" :key="f.name" class="friend-row">
-                  <div class="friend-avatar" :style="{ background: f.color }">{{ f.name.charAt(0) }}</div>
-                  <div class="friend-info">
-                    <span class="friend-name">{{ f.name }}</span>
-                    <span class="friend-meta">{{ f.tag }}</span>
-                  </div>
-                  <span class="friend-match">{{ f.match }}%</span>
-                </div>
-              </div>
-              <div class="aifc-actions">
-                <button class="aifc-btn primary" @click="tip('发起组团')">
-                  <MaterialIcon class="msr" name="campaign" />
-                  <span>发起组团</span>
-                </button>
-                <button class="aifc-btn ghost" @click="tip('浏览同好')">
-                  <MaterialIcon class="msr" name="visibility" />
-                  <span>浏览</span>
-                </button>
+                <span>在线选座 · 按规则退票</span>
               </div>
             </article>
 
@@ -677,15 +627,95 @@
 
         <!-- Page Footer -->
         <div class="page-foot">
-          <span>© 2026 CINEMA+ · 沪ICP 备 2024XXXXX 号</span>
+          <span>© 2026 响指电影 · 沪ICP 备 2024XXXXX 号</span>
           <div class="foot-links">
-            <span @click="tip('帮助中心')">帮助中心</span>
-            <span @click="tip('隐私政策')">隐私政策</span>
-            <span @click="tip('用户协议')">用户协议</span>
+
+
+
           </div>
         </div>
       </div>
     </main>
+
+    <!-- ============ 完整演职员表 ============ -->
+    <el-dialog v-model="showCastDialog" width="720px" class="media-dialog cast-dialog" align-center>
+      <template #header>
+        <div class="media-dialog-title">
+          <span class="media-dialog-icon"><MaterialIcon class="msr" name="groups" /></span>
+          <div><strong>演职员表</strong><span>{{ movie?.title }} · {{ castList.length }} 位主创</span></div>
+        </div>
+      </template>
+      <div class="cast-dialog-grid">
+        <div v-for="(member, index) in castList" :key="`${member.role}-${member.name}`" class="cast-dialog-item">
+          <div class="cast-dialog-avatar" :style="{ background: castGradient(index) }">{{ member.name.charAt(0) }}</div>
+          <div><strong>{{ member.name }}</strong><span>{{ member.role }}</span></div>
+        </div>
+      </div>
+    </el-dialog>
+    <CouponRedeemDialog v-model="showRedeemDialog" />
+
+    <!-- ============ 剧照灯箱 ============ -->
+    <el-dialog v-model="showStillsDialog" width="min(980px, 92vw)" class="media-dialog stills-dialog" align-center>
+      <template #header>
+        <div class="media-dialog-title">
+          <span class="media-dialog-icon"><MaterialIcon class="msr" name="photo_library" /></span>
+          <div><strong>{{ movie?.title }} · 剧照</strong><span>{{ activeStillIndex + 1 }} / {{ mediaStills.length }}</span></div>
+        </div>
+      </template>
+      <div v-if="activeStill" class="lightbox-stage">
+        <button v-if="mediaStills.length > 1" class="lightbox-nav prev" aria-label="上一张" @click="previousStill"><MaterialIcon class="msr" name="chevron_left" /></button>
+        <img :src="activeStill.src" :alt="activeStill.alt" @error="usePosterFallback" />
+        <button v-if="mediaStills.length > 1" class="lightbox-nav next" aria-label="下一张" @click="nextStill"><MaterialIcon class="msr" name="chevron_right" /></button>
+      </div>
+      <div class="lightbox-thumbs">
+        <button v-for="(still, index) in mediaStills" :key="still.src" :class="{ active: activeStillIndex === index }" @click="activeStillIndex = index">
+          <img :src="still.src" :alt="still.alt" loading="lazy" @error="usePosterFallback" />
+        </button>
+      </div>
+    </el-dialog>
+
+    <!-- ============ 预告片播放器 ============ -->
+    <el-dialog v-model="showTrailerDialog" width="min(980px, 94vw)" class="media-dialog trailer-dialog" align-center @closed="activeTrailerIndex = 0">
+      <template #header>
+        <div class="media-dialog-title">
+          <span class="media-dialog-icon"><MaterialIcon class="msr" name="movie" /></span>
+          <div><strong>{{ movie?.title }} · 预告与特辑</strong><span>{{ trailerItems.length }} 个视频入口</span></div>
+        </div>
+      </template>
+      <div class="trailer-dialog-layout">
+        <div class="trailer-player-wrap">
+          <iframe
+            v-if="activeTrailer?.embedUrl"
+            :key="activeTrailer.embedUrl"
+            :src="activeTrailer.embedUrl"
+            :title="activeTrailer.title"
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            referrerpolicy="strict-origin-when-cross-origin"
+            allowfullscreen
+          ></iframe>
+          <div v-else class="external-trailer-card" :style="trailerCoverStyle">
+            <span class="trailer-shade"></span>
+            <MaterialIcon class="msr" name="open_in_new" />
+            <strong>{{ activeTrailer?.title }}</strong>
+            <span>该内容由外部平台提供</span>
+            <button @click="openExternal(activeTrailer?.url)">前往观看</button>
+          </div>
+        </div>
+        <div class="trailer-library">
+          <button
+            v-for="(trailer, index) in trailerItems"
+            :key="`${trailer.title}-${trailer.url}`"
+            :class="{ active: activeTrailerIndex === index }"
+            @click="selectTrailer(index)"
+          >
+            <span class="trailer-list-index">0{{ index + 1 }}</span>
+            <span class="trailer-list-copy"><strong>{{ trailer.title }}</strong><small>{{ trailer.meta }}</small></span>
+            <MaterialIcon class="msr" :name="trailer.embedUrl ? 'play_circle' : 'open_in_new'" />
+          </button>
+        </div>
+      </div>
+      <p class="media-source-note"><MaterialIcon class="msr" name="info" />视频版权归原发布方所有；无法内嵌时将跳转至来源页面。</p>
+    </el-dialog>
 
     <!-- ============ 写评价对话框 ============ -->
     <el-dialog
@@ -698,7 +728,7 @@
       <div class="review-form" v-if="movie">
         <div class="rf-movie">
           <div class="rf-poster" :style="{ background: heroPosterGradient }">
-            <img v-if="movie.poster" :src="movie.poster" :alt="movie.title" />
+            <img v-if="movie.poster" v-poster :src="movie.poster" :alt="movie.title" />
           </div>
           <div class="rf-movie-info">
             <span class="rf-movie-title">{{ movie.title }}</span>
@@ -736,9 +766,12 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 影片详情：整合媒体资料、评价、相似影片与影院场次，承接选场购票。
+ */
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { movieApi } from '@/api/movie'
 import { cinemaApi } from '@/api/cinema'
 import { showtimeApi } from '@/api/showtime'
@@ -748,12 +781,55 @@ import { useUserStore } from '@/stores/user'
 import request from '@/utils/request'
 import type { Movie, Cinema, Showtime, Comment, CommentEligibility } from '@/types'
 import WatchlistHeartButton from '@/components/WatchlistHeartButton.vue'
+import CouponRedeemDialog from '@/components/CouponRedeemDialog.vue'
+import PriceComparison from '@/components/PriceComparison.vue'
+
+type TrailerProvider = 'youtube' | 'bilibili' | 'external'
+interface TrailerSource {
+  title: string
+  meta: string
+  provider: TrailerProvider
+  id?: string
+  url?: string
+}
+interface TrailerItem extends TrailerSource {
+  url: string
+  embedUrl?: string
+  youtubeId?: string
+}
+interface MediaStill {
+  src: string
+  alt: string
+}
+
+// 已核验的公开预告入口。影片自身的 trailer 字段优先级更高；这里为演示库补齐真实素材。
+const movieMediaCatalog: Record<string, TrailerSource[]> = {
+  '流浪地球3': [
+    { title: '“催更版”官方预告', meta: '官方账号 · 2 分 03 秒', provider: 'bilibili', id: 'BV1XM411D7b4' },
+    { title: '定档预告与宣传素材', meta: '预告片资料页', provider: 'external', url: 'https://www.6huo.com/movie/38586' }
+  ],
+  '封神第二部战火西岐': [
+    { title: '官方正式预告片', meta: '中文字幕 · 2 分 03 秒', provider: 'youtube', id: 'xYQ65FNLJvU' },
+    { title: '国际版官方预告', meta: 'GSC Movies · 高清', provider: 'youtube', id: '0Z44B8u7_C0' },
+    { title: '预告与幕后特辑合集', meta: '1905 电影网 · 12 个视频', provider: 'external', url: 'https://www.1905.com/mdb/film/2256837/video/' }
+  ],
+  '哪吒之魔童闹海': [
+    { title: '官方预告片', meta: '官方中文字幕 · 高清', provider: 'youtube', id: 'EBLY_sez_LI' },
+    { title: '国际版官方预告', meta: 'Official Trailer · HD', provider: 'youtube', id: 'axIa5sTi9B4' }
+  ],
+  '满江红': [
+    { title: 'TIFF 官方预告', meta: '多伦多国际电影节 · HD', provider: 'youtube', id: '1nrBhJE2w7E' },
+    { title: '国际版正式预告', meta: 'FilmIsNow · HD', provider: 'youtube', id: 'NL02h8VB3zo' },
+    { title: '院线版官方预告', meta: '中文字幕 · 1 分 22 秒', provider: 'youtube', id: 'Ju3iH89GeUI' }
+  ]
+}
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 
 const loading = ref(false)
+const showRedeemDialog = ref(false)
 const movie = ref<Movie | null>(null)
 const isFavorite = ref(false)
 const cinemas = ref<Cinema[]>([])
@@ -766,9 +842,14 @@ const activeDateIdx = ref(0)
 const activeNav = ref('movies')
 const searchKeyword = ref('')
 const aiQuestion = ref('')
-const buyCardRef = ref<HTMLElement | null>(null)
 const reviewsCardRef = ref<HTMLElement | null>(null)
 const reviewsFocused = ref(false)
+const synopsisExpanded = ref(false)
+const showCastDialog = ref(false)
+const showStillsDialog = ref(false)
+const showTrailerDialog = ref(false)
+const activeStillIndex = ref(0)
+const activeTrailerIndex = ref(0)
 let reviewsFocusTimer: ReturnType<typeof setTimeout> | undefined
 
 const comments = ref<Comment[]>([])
@@ -783,16 +864,8 @@ const navItems = [
   { key: 'movies', label: '影片', icon: 'movie', badge: 'NEW', badgeClass: 'badge-primary', route: '/movies' },
   { key: 'cinemas', label: '影院', icon: 'theaters', route: '/cinemas' },
   { key: 'profile', label: '个人中心', icon: 'person', route: '/profile' },
-  { key: 'events', label: '演出', icon: 'event' },
   { key: 'orders', label: '订单', icon: 'receipt_long', route: '/orders' },
   { key: 'favorites', label: '想看', icon: 'favorite', route: '/favorites' },
-  { key: 'settings', label: '设置', icon: 'settings' }
-]
-
-const friends = [
-  { name: '陈思源', tag: '硬核科幻 · 92% 重合', match: 96, color: 'linear-gradient(135deg, #A855F7, #EC4899)' },
-  { name: '林晓彤', tag: '诺兰粉丝 · 88% 重合', match: 91, color: 'linear-gradient(135deg, #0EA5E9, #6366F1)' },
-  { name: '王梓豪', tag: 'IMAX 体验 · 85% 重合', match: 87, color: 'linear-gradient(135deg, #F59E0B, #EF4444)' }
 ]
 
 const hotQuestions = [
@@ -808,11 +881,90 @@ const castList = computed(() => {
   const base: { name: string; role: string }[] = [
     { name: movie.value.director || '导演', role: '导演' }
   ]
-  actors.slice(0, 6).forEach(a => base.push({ name: a, role: '主演' }))
-  while (base.length < 7) {
-    base.push({ name: '主演' + base.length, role: '主演' })
+  actors.forEach(a => base.push({ name: a, role: '主演' }))
+  return base
+})
+const castPreview = computed(() => castList.value.slice(0, 7))
+
+const normalizedMovieTitle = computed(() => (movie.value?.title || '').replace(/[\s:：·!！?？,，.。\-]/g, '').toLowerCase())
+
+const resolveTrailer = (source: TrailerSource): TrailerItem => {
+  if (source.provider === 'youtube' && source.id) {
+    return {
+      ...source,
+      youtubeId: source.id,
+      url: `https://www.youtube.com/watch?v=${source.id}`,
+      embedUrl: `https://www.youtube-nocookie.com/embed/${source.id}?autoplay=1&rel=0`
+    }
   }
-  return base.slice(0, 7)
+  if (source.provider === 'bilibili' && source.id) {
+    return {
+      ...source,
+      url: `https://www.bilibili.com/video/${source.id}/`,
+      embedUrl: `https://player.bilibili.com/player.html?bvid=${source.id}&page=1&high_quality=1&autoplay=1`
+    }
+  }
+  return { ...source, url: source.url || '#' }
+}
+
+const trailerFromMovieField = (url?: string): TrailerSource | null => {
+  if (!url) return null
+  const youtube = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([\w-]{6,})/i)
+  if (youtube) return { title: '官方预告片', meta: '影片资料 · 高清', provider: 'youtube', id: youtube[1] }
+  const bilibili = url.match(/bilibili\.com\/video\/(BV[\w]+)/i)
+  if (bilibili) return { title: '官方预告片', meta: '影片资料 · 高清', provider: 'bilibili', id: bilibili[1] }
+  return { title: '官方预告片', meta: '影片资料 · 外部播放', provider: 'external', url }
+}
+
+const trailerItems = computed<TrailerItem[]>(() => {
+  if (!movie.value) return []
+  const sources: TrailerSource[] = []
+  const configured = trailerFromMovieField(movie.value.trailer)
+  if (configured) sources.push(configured)
+
+  const catalogEntry = Object.entries(movieMediaCatalog).find(([title]) =>
+    normalizedMovieTitle.value.includes(title.toLowerCase()) || title.toLowerCase().includes(normalizedMovieTitle.value)
+  )
+  if (catalogEntry) sources.push(...catalogEntry[1])
+
+  const keyword = encodeURIComponent(`${movie.value.title} 官方预告`)
+  sources.push(
+    { title: 'B站预告与特辑', meta: '搜索更多官方及幕后视频', provider: 'external', url: `https://search.bilibili.com/all?keyword=${keyword}` },
+    { title: 'YouTube 预告合集', meta: '搜索国际版与字幕版本', provider: 'external', url: `https://www.youtube.com/results?search_query=${keyword}` },
+    { title: '百度视频资料', meta: '搜索影片采访与制作花絮', provider: 'external', url: `https://www.baidu.com/s?wd=${keyword}` }
+  )
+
+  const unique = new Map<string, TrailerItem>()
+  sources.map(resolveTrailer).forEach(item => {
+    const key = item.youtubeId || item.id || item.url
+    if (key && !unique.has(key)) unique.set(key, item)
+  })
+  return [...unique.values()].slice(0, 3)
+})
+
+const mediaStills = computed<MediaStill[]>(() => {
+  if (!movie.value) return []
+  const stills: MediaStill[] = []
+  const youtubeIds = trailerItems.value.map(item => item.youtubeId).filter((id): id is string => Boolean(id))
+  youtubeIds.forEach((id, videoIndex) => {
+    ;['0', '1', '2'].forEach((frame, frameIndex) => {
+      stills.push({
+        src: `https://i.ytimg.com/vi/${id}/${frame}.jpg`,
+        alt: `${movie.value?.title} 预告剧照 ${videoIndex * 3 + frameIndex + 1}`
+      })
+    })
+  })
+  if (movie.value.poster) stills.push({ src: movie.value.poster, alt: `${movie.value.title} 官方海报` })
+  return stills.slice(0, 12)
+})
+
+const activeStill = computed(() => mediaStills.value[activeStillIndex.value])
+const activeTrailer = computed(() => trailerItems.value[activeTrailerIndex.value])
+const trailerCoverStyle = computed(() => {
+  const src = mediaStills.value[0]?.src || movie.value?.poster
+  return src
+    ? { backgroundImage: `linear-gradient(rgba(10,10,12,.18), rgba(10,10,12,.72)), url("${src}")` }
+    : { background: 'linear-gradient(135deg, #1a0f08 0%, #3d1f10 100%)' }
 })
 
 const genreList = computed(() => {
@@ -820,11 +972,11 @@ const genreList = computed(() => {
   return movie.value.genre.split(/[\/\s,、]+/).filter(Boolean).slice(0, 5)
 })
 
-const ratingNum = computed(() => movie.value?.rating ?? 8.8)
-const ratingDisplay = computed(() => ratingNum.value.toFixed(1))
+const ratingNum = computed(() => movie.value?.rating ?? 0)
+const ratingDisplay = computed(() => movie.value?.rating == null ? '暂无评分' : ratingNum.value.toFixed(1))
 
 const minPrice = computed(() => {
-  if (showtimes.value.length === 0) return 58
+  if (showtimes.value.length === 0) return null
   return Math.min(...showtimes.value.map(s => s.basePrice))
 })
 
@@ -847,12 +999,6 @@ const heroPosterGradient = computed(() => {
   return palette[id % palette.length]
 })
 
-const heroFormatBadge = computed(() => {
-  const formats = ['IMAX · 3D', 'IMAX', 'CINITY', '杜比全景声']
-  const id = movie.value?.id || 1
-  return formats[id % formats.length]
-})
-
 const dateList = computed(() => {
   const arr: { value: string; week: string; day: string }[] = []
   const weekNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
@@ -860,7 +1006,7 @@ const dateList = computed(() => {
     const d = new Date()
     d.setDate(d.getDate() + i)
     arr.push({
-      value: d.toISOString().split('T')[0],
+      value: new Date(d.getTime() + 8 * 3600000).toISOString().split('T')[0],
       week: i === 0 ? '今日' : i === 1 ? '明日' : weekNames[d.getDay()],
       day: `${d.getMonth() + 1}.${String(d.getDate()).padStart(2, '0')}`
     })
@@ -902,17 +1048,6 @@ const castGradients = [
 ]
 const castGradient = (i: number) => castGradients[i % castGradients.length]
 
-const stillGradients = [
-  'linear-gradient(135deg, #2a1a3a 0%, #0a0815 100%)',
-  'linear-gradient(135deg, #3a2a1a 0%, #150a08 100%)',
-  'linear-gradient(135deg, #1a3a2a 0%, #08150a 100%)',
-  'linear-gradient(135deg, #3a1a2a 0%, #150815 100%)',
-  'linear-gradient(135deg, #1a2a3a 0%, #08150f 100%)',
-  'linear-gradient(135deg, #2a3a1a 0%, #15150a 100%)'
-]
-const stillGradient = (i: number) => stillGradients[(i - 1) % stillGradients.length]
-
-const matchScore = (id: number) => 80 + (id % 20)
 
 const formatTime = (datetime: string) => {
   const date = new Date(datetime)
@@ -931,8 +1066,15 @@ const formatReleaseDate = (date?: string) => {
   return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`
 }
 
+/** 加载影片详情及关联展示数据。 */
 const loadMovie = async () => {
   loading.value = true
+  synopsisExpanded.value = false
+  showCastDialog.value = false
+  showStillsDialog.value = false
+  showTrailerDialog.value = false
+  activeStillIndex.value = 0
+  activeTrailerIndex.value = 0
   try {
     const id = Number(route.params.id)
     movie.value = await movieApi.getById(id)
@@ -950,6 +1092,7 @@ const loadMovie = async () => {
   }
 }
 
+/** 切换影片想看状态，请求成功后更新页面反馈。 */
 const toggleFavorite = async () => {
   if (!movie.value) return
   if (!userStore.isLoggedIn) {
@@ -961,6 +1104,7 @@ const toggleFavorite = async () => {
   ElMessage.success(isFavorite.value ? '已加入想看' : '已移出想看')
 }
 
+/** 读取与当前影片相似的推荐影片。 */
 const loadSimilarMovies = async (movieId: number) => {
   try {
     const res = await request.get<any, Movie[]>(`/recommend/similar/${movieId}`, {
@@ -972,6 +1116,7 @@ const loadSimilarMovies = async (movieId: number) => {
   }
 }
 
+/** 加载当前影片的观众评价。 */
 const loadComments = async (movieId: number) => {
   commentsLoading.value = true
   try {
@@ -983,6 +1128,7 @@ const loadComments = async (movieId: number) => {
   }
 }
 
+/** 查询本人观影评价资格，决定新增或编辑入口。 */
 const loadEligibility = async (movieId: number) => {
   if (!userStore.isLoggedIn) {
     commentEligibility.value = { watched: false, commented: false, canComment: false }
@@ -1003,6 +1149,7 @@ const openReviewDialog = () => {
   showReviewDialog.value = true
 }
 
+/** 校验评价表单，创建或更新本人评价后刷新列表。 */
 const submitReview = async () => {
   if (!movie.value) return
   if (!reviewForm.value.rating) {
@@ -1056,6 +1203,7 @@ const reviewAvatarGradients = [
 ]
 const reviewAvatarGradient = (id: number) => reviewAvatarGradients[id % reviewAvatarGradients.length]
 
+/** 加载影院列表，供影院选择或地图展示。 */
 const loadCinemas = async () => {
   try {
     cinemas.value = await cinemaApi.getAll()
@@ -1067,12 +1215,13 @@ const loadCinemas = async () => {
   }
 }
 
+/** 按当前筛选条件加载场次列表。 */
 const loadShowtimes = async () => {
   if (!selectedCinemaId.value || !movie.value) return
 
   showtimesLoading.value = true
   try {
-    const dateStr = selectedDate.value.toISOString().split('T')[0]
+    const dateStr = new Date(selectedDate.value.getTime() + 8 * 3600000).toISOString().split('T')[0]
     showtimes.value = await showtimeApi.getList({
       movieId: movie.value.id,
       cinemaId: selectedCinemaId.value,
@@ -1093,11 +1242,6 @@ const onPickDate = (idx: number) => {
 }
 
 const selectShowtime = (showtime: Showtime) => {
-  if (!userStore.isLoggedIn) {
-    ElMessage.warning('请先登录')
-    router.push('/login')
-    return
-  }
   if (showtime.availableSeats === 0) {
     ElMessage.warning('该场次已售罄')
     return
@@ -1109,11 +1253,11 @@ const goToMovie = (id: number) => {
   router.push(`/movie/${id}`)
 }
 
-const scrollToBuy = () => {
-  nextTick(() => {
-    const el = buyCardRef.value as any
-    const node = el?.$el || el
-    node?.scrollIntoView?.({ behavior: 'smooth', block: 'center' })
+const goToCinemaSelection = () => {
+  if (!movie.value) return
+  router.push({
+    path: '/cinemas',
+    query: { movieId: String(movie.value.id) }
   })
 }
 
@@ -1131,9 +1275,66 @@ const scrollToReviews = () => {
   })
 }
 
+const openCastMember = (_member: { name: string; role: string }) => {
+  showCastDialog.value = true
+}
+
+const openStillGallery = (index: number) => {
+  if (mediaStills.value.length === 0) {
+    ElMessage.info('该影片暂未提供剧照')
+    return
+  }
+  activeStillIndex.value = Math.min(Math.max(index, 0), mediaStills.value.length - 1)
+  showStillsDialog.value = true
+}
+
+const previousStill = () => {
+  const count = mediaStills.value.length
+  if (count) activeStillIndex.value = (activeStillIndex.value - 1 + count) % count
+}
+
+const nextStill = () => {
+  const count = mediaStills.value.length
+  if (count) activeStillIndex.value = (activeStillIndex.value + 1) % count
+}
+
+const usePosterFallback = (event: Event) => {
+  const image = event.currentTarget as HTMLImageElement
+  const poster = movie.value?.poster
+  if (poster && image.src !== new URL(poster, window.location.origin).href && image.dataset.fallback !== 'poster') {
+    image.dataset.fallback = 'poster'
+    image.src = poster
+  } else {
+    image.style.visibility = 'hidden'
+  }
+}
+
+const openTrailerLibrary = () => {
+  activeTrailerIndex.value = 0
+  showTrailerDialog.value = true
+}
+
+const openTrailer = (index: number) => {
+  if (trailerItems.value.length === 0) {
+    ElMessage.info('该影片暂未提供预告片')
+    return
+  }
+  activeTrailerIndex.value = Math.min(Math.max(index, 0), trailerItems.value.length - 1)
+  showTrailerDialog.value = true
+}
+
+const selectTrailer = (index: number) => {
+  activeTrailerIndex.value = index
+}
+
+const openExternal = (url?: string) => {
+  if (!url || url === '#') return
+  window.open(url, '_blank', 'noopener,noreferrer')
+}
+
 const askAi = (q: string) => {
   if (!q.trim()) return
-  window.dispatchEvent(new CustomEvent('open-movie-assistant', { detail: q.trim() }))
+  void router.push({ path: '/assistant', query: { q: q.trim() } })
   aiQuestion.value = ''
 }
 
@@ -1146,13 +1347,17 @@ const onNavClick = (item: { key: string; route?: string }) => {
       return
     }
     router.push(item.route)
-  } else {
-    ElMessage.info(`${navItems.find(n => n.key === item.key)?.label} 模块敬请期待`)
   }
 }
 
-const tip = (label: string) => {
-  ElMessage.info(`${label} 功能敬请期待`)
+
+const openRedeemDialog = () => {
+  if (!userStore.isLoggedIn) {
+    ElMessage.warning('请先登录后兑换优惠券')
+    router.push('/login')
+    return
+  }
+  showRedeemDialog.value = true
 }
 
 const onSearch = () => {
@@ -1161,6 +1366,7 @@ const onSearch = () => {
   router.push({ path: '/movies', query: { q: kw } })
 }
 
+/** 清理当前会话并跳转登录页面。 */
 const handleLogout = () => {
   userStore.logout()
   ElMessage.success('已退出登录')
@@ -1185,8 +1391,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .app {
   --primary: #FF8400;
@@ -1920,6 +2124,37 @@ onBeforeUnmount(() => {
 }
 .hero-icon:hover { background: rgba(255, 255, 255, 0.14); }
 
+/* Keep the three secondary hero actions visually consistent. */
+.hero-actions :deep(.watchlist-heart.is-dark) {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.hero-actions :deep(.watchlist-heart.is-dark:not(.is-active)) {
+  --heart-fill: transparent;
+  --heart-stroke: #fff;
+}
+.hero-actions :deep(.watchlist-heart.is-dark .watchlist-heart__icon) {
+  width: 22px;
+  height: 22px;
+  filter: none;
+}
+.hero-actions :deep(.watchlist-heart.is-dark:hover:not(:disabled)) {
+  background: rgba(255, 255, 255, 0.14);
+  box-shadow: none;
+  transform: none;
+}
+.hero-actions :deep(.watchlist-heart.is-dark.is-active) {
+  --heart-fill: #ec4899;
+  --heart-stroke: #ec4899;
+  border-color: rgba(236, 72, 153, 0.72);
+  background: rgba(236, 72, 153, 0.18);
+}
+.hero-actions :deep(.watchlist-heart.is-dark.is-active:hover:not(:disabled)) {
+  background: rgba(236, 72, 153, 0.28);
+}
+
 /* ============ MAIN COLUMNS ============ */
 .main-columns {
   display: grid;
@@ -1985,6 +2220,12 @@ onBeforeUnmount(() => {
   font-size: 14px;
   line-height: 1.8;
   color: var(--fg);
+}
+.synopsis-text:not(.expanded) {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 .synopsis-footer {
   display: grid;
@@ -2057,7 +2298,9 @@ onBeforeUnmount(() => {
   gap: 12px;
 }
 .still-item {
+  position: relative;
   height: 130px;
+  padding: 0;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -2065,19 +2308,37 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: transform 0.15s;
   border: 1px solid var(--border);
+  background: #171717;
+  overflow: hidden;
 }
+.still-item > img { width: 100%; height: 100%; display: block; object-fit: cover; transition: transform .25s ease; }
 .still-item:hover { transform: translateY(-2px); }
-.still-ico {
-  font-size: 36px !important;
-  color: rgba(255, 255, 255, 0.3);
+.still-item:hover > img { transform: scale(1.04); }
+.still-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: rgba(8, 8, 10, .42);
+  opacity: 0;
+  transition: opacity .18s ease;
 }
+.still-overlay .msr { font-size: 30px; }
+.still-item:hover .still-overlay { opacity: 1; }
+.media-empty { grid-column: 1 / -1; min-height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border: 1px dashed var(--border); border-radius: 12px; color: var(--muted); font-size: 12px; }
+.media-empty .msr { font-size: 30px; }
 
 /* Trailer */
 .trailer-frame {
   position: relative;
+  width: 100%;
   height: 380px;
+  padding: 0;
   border-radius: 16px;
   background: linear-gradient(135deg, #1a0f08 0%, #3d1f10 100%);
+  background-position: center;
+  background-size: cover;
   border: 1px solid var(--border);
   cursor: pointer;
   display: flex;
@@ -2085,7 +2346,10 @@ onBeforeUnmount(() => {
   justify-content: center;
   overflow: hidden;
 }
+.trailer-shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,8,10,.08), rgba(8,8,10,.64)); }
 .trailer-play {
+  position: relative;
+  z-index: 1;
   width: 80px;
   height: 80px;
   border-radius: 999px;
@@ -2109,6 +2373,8 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 4px;
   color: #fff;
+  z-index: 1;
+  text-align: left;
 }
 .trailer-title { font-size: 15px; font-weight: 600; }
 .trailer-sub {
@@ -2116,6 +2382,42 @@ onBeforeUnmount(() => {
   font-size: 11px;
   color: rgba(255, 255, 255, 0.6);
 }
+
+/* Media dialogs */
+:global(.media-dialog) { --el-dialog-border-radius: 18px; overflow: hidden; border: 1px solid #CBCCC9; }
+:global(.media-dialog .el-dialog__header) { margin: 0; padding: 20px 22px 16px; border-bottom: 1px solid #E7E8E5; }
+:global(.media-dialog .el-dialog__body) { padding: 20px 22px 22px; }
+.media-dialog-title { display: flex; align-items: center; gap: 11px; }
+.media-dialog-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 11px; background: rgba(255,132,0,.12); color: #B85F00; }
+.media-dialog-icon .msr { font-size: 21px; }
+.media-dialog-title > div { display: flex; flex-direction: column; gap: 2px; }
+.media-dialog-title strong { color: #111; font-size: 16px; }
+.media-dialog-title span { color: #666; font-size: 11px; }
+.cast-dialog-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.cast-dialog-item { display: flex; align-items: center; gap: 11px; padding: 11px; border: 1px solid #E7E8E5; border-radius: 11px; background: #F8F9F6; }
+.cast-dialog-avatar { width: 42px; height: 42px; flex: 0 0 42px; display: grid; place-items: center; border-radius: 50%; color: #fff; font: 800 17px/1 var(--font-mono); }
+.cast-dialog-item > div:last-child { display: flex; min-width: 0; flex-direction: column; gap: 3px; }
+.cast-dialog-item strong { overflow: hidden; color: #111; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }
+.cast-dialog-item span { color: #666; font-size: 10px; }
+.lightbox-stage { position: relative; height: min(60vh, 580px); display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: 14px; background: #0B0B0D; }
+.lightbox-stage > img { width: 100%; height: 100%; object-fit: contain; }
+.lightbox-nav { position: absolute; top: 50%; z-index: 2; width: 42px; height: 42px; display: grid; place-items: center; transform: translateY(-50%); border: 1px solid rgba(255,255,255,.28); border-radius: 50%; background: rgba(17,17,17,.72); color: #fff; cursor: pointer; }
+.lightbox-nav:hover { background: #FF8400; color: #111; }
+.lightbox-nav.prev { left: 14px; }.lightbox-nav.next { right: 14px; }.lightbox-nav .msr { font-size: 26px; }
+.lightbox-thumbs { display: flex; gap: 8px; margin-top: 12px; padding-bottom: 3px; overflow-x: auto; }
+.lightbox-thumbs button { width: 86px; height: 58px; flex: 0 0 86px; padding: 0; overflow: hidden; border: 2px solid transparent; border-radius: 8px; background: #111; cursor: pointer; }
+.lightbox-thumbs button.active { border-color: #FF8400; }.lightbox-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+.trailer-dialog-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 14px; }
+.trailer-player-wrap { min-height: 440px; overflow: hidden; border-radius: 13px; background: #0B0B0D; }
+.trailer-player-wrap iframe { width: 100%; height: 100%; min-height: 440px; display: block; border: 0; }
+.external-trailer-card { position: relative; min-height: 440px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: #fff; background-position: center; background-size: cover; text-align: center; }
+.external-trailer-card > *:not(.trailer-shade) { position: relative; z-index: 1; }.external-trailer-card > .msr { font-size: 42px; color: #FF8400; }.external-trailer-card strong { font-size: 18px; }.external-trailer-card span:not(.trailer-shade) { color: rgba(255,255,255,.72); font-size: 12px; }
+.external-trailer-card button { margin-top: 8px; padding: 10px 16px; border: 0; border-radius: 9px; background: #FF8400; color: #111; font-weight: 700; cursor: pointer; }
+.trailer-library { display: flex; flex-direction: column; gap: 8px; }
+.trailer-library > button { display: flex; align-items: center; gap: 9px; padding: 12px; border: 1px solid #E7E8E5; border-radius: 10px; background: #F8F9F6; color: #111; text-align: left; cursor: pointer; }
+.trailer-library > button:hover,.trailer-library > button.active { border-color: #FF8400; background: rgba(255,132,0,.08); }
+.trailer-list-index { color: #999; font: 700 10px/1 var(--font-mono); }.trailer-list-copy { display: flex; min-width: 0; flex: 1; flex-direction: column; gap: 4px; }.trailer-list-copy strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.trailer-list-copy small { color: #666; font-size: 9px; line-height: 1.4; }.trailer-library .msr { color: #FF8400; font-size: 18px; }
+.media-source-note { display: flex; align-items: center; gap: 6px; margin: 12px 0 0; color: #777; font-size: 10px; }.media-source-note .msr { font-size: 14px; }
 
 /* AI Similar */
 .ai-similar-card {
@@ -2803,5 +3105,18 @@ onBeforeUnmount(() => {
   .hero-title { font-size: 36px; }
   .rating-big { font-size: 56px; }
   .rating-sources { padding-left: 16px; gap: 14px; }
+  .cast-dialog-grid { grid-template-columns: 1fr 1fr; }
+  .trailer-dialog-layout { grid-template-columns: 1fr; }
+  .trailer-player-wrap,
+  .trailer-player-wrap iframe,
+  .external-trailer-card { min-height: 280px; }
+  .trailer-library { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .trailer-library > button { align-items: flex-start; }
+  .trailer-library > button > .msr { display: none; }
+}
+@media (max-width: 520px) {
+  .cast-dialog-grid { grid-template-columns: 1fr; }
+  .trailer-library { grid-template-columns: 1fr; }
+  .trailer-frame { height: 250px; }
 }
 </style>

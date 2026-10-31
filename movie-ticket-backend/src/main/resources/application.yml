@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:./.local/assistant.properties,optional:file:../.local/assistant.properties,optional:file:./.local/marketing.properties,optional:file:../.local/marketing.properties,optional:file:./.local/qwen.properties,optional:file:../.local/qwen.properties
   application:
     name: movie-ticket-backend
 
@@ -12,6 +14,13 @@ spring:
     url: ${DB_URL:jdbc:mysql://localhost:3306/movie_ticket?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:123456}
+
+  flyway:
+    enabled: true
+    locations: classpath:db/flyway
+    baseline-on-migrate: true
+    baseline-version: 6
+    validate-on-migrate: true
 
   # Redis配置
   data:
@@ -44,6 +53,9 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
 
 # JWT配置
 jwt:
@@ -64,14 +76,20 @@ file:
     max-size: 5242880
     allowed-types: jpg,jpeg,png,gif,webp,bmp
 
-# 智能电影助手：通过阿里云百炼 OpenAI 兼容接口调用千问；未配置密钥时使用本地知识库。
+# DeepSeek 密钥仅从环境变量或仓库外置的 .local 私有配置读取。
 assistant:
-  api-key: ${DASHSCOPE_API_KEY:}
-  base-url: ${AI_ASSISTANT_BASE_URL:https://dashscope.aliyuncs.com/compatible-mode/v1}
-  model: ${AI_ASSISTANT_MODEL:qwen3.8-flash}
-  reasoning-effort: ${AI_ASSISTANT_REASONING_EFFORT:low}
+  api-key: ${DEEPSEEK_API_KEY:}
+  base-url: ${AI_ASSISTANT_BASE_URL:https://api.deepseek.com}
+  model: ${AI_ASSISTANT_MODEL:deepseek-v4-flash}
   connect-timeout-ms: ${AI_ASSISTANT_CONNECT_TIMEOUT_MS:5000}
   read-timeout-ms: ${AI_ASSISTANT_READ_TIMEOUT_MS:60000}
+
+# 日志配置
+listing:
+  vision-api-key: ${LISTING_VISION_API_KEY:${marketing.zhipu-api-key:}}
+  vision-base-url: ${LISTING_VISION_BASE_URL:https://open.bigmodel.cn/api/paas/v4}
+  vision-model: ${LISTING_VISION_MODEL:glm-4.6v-flash}
+  proxy-url: ${LISTING_PROXY_URL:http://127.0.0.1:7890}
 
 # 日志配置
 logging:

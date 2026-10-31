@@ -13,6 +13,7 @@ import java.util.Set;
 /** Enumerates every available same-row seat block and ranks it with explainable scores. */
 public class SeatRecommendationEngine {
 
+    /** 枚举符合人数和连座约束的候选组合，并按偏好评分排序。 */
     public List<SeatRecommendationVO> recommend(int rows,
                                                 int cols,
                                                 boolean[][] enabled,
@@ -21,14 +22,23 @@ public class SeatRecommendationEngine {
                                                 SeatPreference preference,
                                                 int limit,
                                                 BigDecimal unitPrice) {
+        return recommend(rows, cols, enabled, occupied, people, preference, limit, unitPrice, Set.of());
+    }
+
+    /** 枚举符合人数和连座约束的候选组合，并按偏好评分排序。 */
+    public List<SeatRecommendationVO> recommend(int rows, int cols, boolean[][] enabled,
+                                                Set<String> occupied, int people, SeatPreference preference,
+                                                int limit, BigDecimal unitPrice, Set<Integer> aisleAfterCols) {
         List<Candidate> candidates = new ArrayList<>();
         for (int row = 1; row <= rows; row++) {
             for (int start = 1; start <= cols - people + 1; start++) {
                 int end = start + people - 1;
-                if (!isAvailableBlock(row, start, end, enabled, occupied)) {
+                int blockStart = start;
+                if (aisleAfterCols.stream().anyMatch(col -> col >= blockStart && col < end)
+                        || !isAvailableBlock(row, start, end, enabled, occupied)) {
                     continue;
                 }
-                candidates.add(score(row, start, end, rows, cols, enabled, occupied, people, preference));
+                candidates.add(score(row, start, end, rows, cols, enabled, occupied, people, preference, aisleAfterCols));
             }
         }
 
@@ -63,7 +73,7 @@ public class SeatRecommendationEngine {
                             boolean[][] enabled,
                             Set<String> occupied,
                             int people,
-                            SeatPreference preference) {
+                            SeatPreference preference, Set<Integer> aisleAfterCols) {
         double blockCenter = (start + end) / 2.0;
         double hallCenter = (cols + 1) / 2.0;
         double center = closeness(blockCenter, hallCenter, Math.max(1.0, (cols - 1) / 2.0));
@@ -71,20 +81,20 @@ public class SeatRecommendationEngine {
         double goldenRow = 1.0 + (rows - 1) * 0.65;
         double distance = closeness(row, goldenRow, Math.max(1.0, rows - 1));
 
-        int freeRun = freeRunLength(row, start, end, cols, enabled, occupied);
+        int freeRun = freeRunLength(row, start, end, cols, enabled, occupied, aisleAfterCols);
         double continuity = clamp(70.0 + 30.0 * people / Math.max(people, freeRun));
 
         double nearestExitDistance = Math.min(start - 1.0, cols - end);
-        int aisleLeft = cols / 2;
-        int aisleRight = aisleLeft + 1;
-        nearestExitDistance = Math.min(nearestExitDistance,
-                Math.min(Math.abs(start - aisleRight), Math.abs(end - aisleLeft)));
+        for (int aisleLeft : aisleAfterCols) {
+            nearestExitDistance = Math.min(nearestExitDistance,
+                    Math.min(Math.abs(start - (aisleLeft + 1)), Math.abs(end - aisleLeft)));
+        }
         double access = clamp(100.0 * (1.0 - nearestExitDistance / Math.max(1.0, cols / 2.0)));
 
         double realtime = realtimeAvailability(row, start, end, rows, cols, enabled, occupied);
         double preferenceScore = preferenceScore(preference, people, row, rows, center, distance, access,
                 occupied, start, end, cols);
-        int singleSeats = countSingleSeatsLeft(row, start, end, cols, enabled, occupied);
+        int singleSeats = countSingleSeatsLeft(row, start, end, cols, enabled, occupied, aisleAfterCols);
         int penalty = singleSeats * 18;
         double total = center * 0.30
                 + distance * 0.25
@@ -154,11 +164,11 @@ public class SeatRecommendationEngine {
                               int end,
                               int cols,
                               boolean[][] enabled,
-                              Set<String> occupied) {
+                              Set<String> occupied, Set<Integer> aisleAfterCols) {
         int left = start;
-        while (left > 1 && isAvailable(row, left - 1, enabled, occupied)) left--;
+        while (left > 1 && !aisleAfterCols.contains(left - 1) && isAvailable(row, left - 1, enabled, occupied)) left--;
         int right = end;
-        while (right < cols && isAvailable(row, right + 1, enabled, occupied)) right++;
+        while (right < cols && !aisleAfterCols.contains(right) && isAvailable(row, right + 1, enabled, occupied)) right++;
         return right - left + 1;
     }
 
@@ -167,10 +177,14 @@ public class SeatRecommendationEngine {
                                      int end,
                                      int cols,
                                      boolean[][] enabled,
-                                     Set<String> occupied) {
+                                     Set<String> occupied, Set<Integer> aisleAfterCols) {
         int singles = 0;
         int runLength = 0;
         for (int col = 1; col <= cols + 1; col++) {
+            if (aisleAfterCols.contains(col - 1)) {
+                if (runLength == 1) singles++;
+                runLength = 0;
+            }
             boolean freeAfterSelection = col <= cols
                     && isAvailable(row, col, enabled, occupied)
                     && (col < start || col > end);

@@ -4,7 +4,10 @@
       v-model="visible"
       :title="title"
       width="480px"
+      class="consumer-dialog"
+      align-center
       :close-on-click-modal="false"
+      @opened="generateQRCode"
       @close="handleClose"
     >
       <div class="qrcode-container">
@@ -56,9 +59,9 @@
             <MaterialIcon class="msr" name="download" />
             <span>保存二维码</span>
           </button>
-          <button class="action-btn secondary" @click="handleCopyData">
+          <button class="action-btn secondary" :disabled="!ticketCode" @click="handleCopyTicketCode">
             <MaterialIcon class="msr" name="content_copy" />
-            <span>复制数据</span>
+            <span>复制取票码</span>
           </button>
         </div>
 
@@ -80,9 +83,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+/**
+ * 取票凭证组件：根据取票码生成二维码，支持下载与复制。
+ */
+import { computed, ref, watch } from 'vue'
 import QRCode from 'qrcode'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import type { Order } from '@/types'
 
 interface Props {
@@ -101,11 +107,11 @@ const emit = defineEmits<{
 
 const visible = ref(props.modelValue)
 const qrcodeCanvas = ref<HTMLCanvasElement | null>(null)
-const qrDataString = ref('')
 
 // 从订单中获取取票码
-const ticketCode = ref('')
+const ticketCode = computed(() => props.order?.ticketCode || '')
 
+/** 将取票凭证编码为二维码图片供展示。 */
 const generateQRCode = async () => {
   if (!props.order || !qrcodeCanvas.value) return
 
@@ -115,8 +121,6 @@ const generateQRCode = async () => {
       ElMessage.error('该订单暂无取票码，请联系客服')
       return
     }
-
-    ticketCode.value = props.order.ticketCode
 
     // 二维码内容：包含订单信息的JSON
     const qrData = JSON.stringify({
@@ -130,10 +134,6 @@ const generateQRCode = async () => {
       showtime: props.order.showtime,
       timestamp: Date.now()
     })
-
-    // 保存二维码数据用于调试
-    qrDataString.value = qrData
-    console.log('生成的二维码数据:', qrData)
 
     // 生成二维码
     await QRCode.toCanvas(qrcodeCanvas.value, qrData, {
@@ -162,6 +162,7 @@ const formatShowtime = (showtime?: string) => {
   })
 }
 
+/** 下载当前取票二维码，供用户保存。 */
 const handleDownload = () => {
   if (!qrcodeCanvas.value) return
 
@@ -178,13 +179,13 @@ const handleDownload = () => {
   }
 }
 
-const handleCopyData = () => {
-  if (!qrDataString.value) return
+/** 将当前取票码写入剪贴板。 */
+const handleCopyTicketCode = async () => {
+  if (!ticketCode.value) return
 
   try {
-    navigator.clipboard.writeText(qrDataString.value)
-    ElMessage.success('二维码数据已复制到剪贴板')
-    console.log('已复制的数据:', qrDataString.value)
+    await navigator.clipboard.writeText(ticketCode.value)
+    ElMessage.success('取票码已复制到剪贴板')
   } catch (error) {
     console.error('复制失败:', error)
     ElMessage.error('复制失败')
@@ -197,11 +198,6 @@ const handleClose = () => {
 
 watch(() => props.modelValue, (val) => {
   visible.value = val
-  if (val && props.order) {
-    nextTick(() => {
-      generateQRCode()
-    })
-  }
 })
 
 watch(visible, (val) => {
@@ -212,7 +208,6 @@ watch(visible, (val) => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .msr {
   font-family: 'Material Symbols Rounded';
@@ -229,27 +224,6 @@ watch(visible, (val) => {
   -webkit-font-smoothing: antialiased;
   font-size: 20px;
   user-select: none;
-}
-
-:deep(.el-dialog) {
-  border-radius: 20px;
-  overflow: hidden;
-}
-
-:deep(.el-dialog__header) {
-  padding: 24px 24px 16px;
-  border-bottom: 1px solid #e5e7eb;
-  background: linear-gradient(135deg, #FFF8F0 0%, #FFF 100%);
-}
-
-:deep(.el-dialog__title) {
-  font-size: 20px;
-  font-weight: 700;
-  color: #111;
-}
-
-:deep(.el-dialog__body) {
-  padding: 0;
 }
 
 .qrcode-container {

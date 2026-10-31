@@ -84,6 +84,12 @@
           </div>
         </div>
 
+        <section v-if="order.status === 1" class="souvenir-entry" aria-label="AI 观影纪念票">
+          <div class="souvenir-entry-icon"><MaterialIcon name="auto_awesome" /></div>
+          <div><span class="souvenir-eyebrow">CINEMA MEMORIES</span><h3>为这一场电影，留一张纪念票</h3><p>深蓝星云与全息光轨，收藏专属星空纪念。可保存分享，非入场凭证。</p></div>
+          <button class="action-btn primary" @click="showSouvenir = true"><MaterialIcon name="auto_awesome" />AI 观影纪念票</button>
+        </section>
+
         <!-- ACTIONS -->
         <div class="actions-section">
           <!-- 已支付订单显示取票码 -->
@@ -140,18 +146,26 @@
       </div>
 
       <!-- 取票码二维码对话框 -->
-      <TicketQRCode v-model="showQRCode" :order="order" />
+      <TicketQRCode v-if="showQRCode" v-model="showQRCode" :order="order" />
+      <SouvenirTicketDialog v-if="showSouvenir && order" v-model="showSouvenir" :order="order" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+/**
+ * 订单详情：展示场次、座位、优惠与取票状态，按订单状态提供后续操作。
+ */
+import { ref, computed, defineAsyncComponent, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { orderApi } from '@/api/order'
+import { confirmRefund } from '@/utils/confirmRefund'
 import type { Order } from '@/types'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import TicketQRCode from '@/components/TicketQRCode.vue'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+
+const TicketQRCode = defineAsyncComponent(() => import('@/components/TicketQRCode.vue'))
+const SouvenirTicketDialog = defineAsyncComponent(() => import('@/components/SouvenirTicketDialog.vue'))
 
 const route = useRoute()
 const router = useRouter()
@@ -159,6 +173,7 @@ const router = useRouter()
 const loading = ref(false)
 const order = ref<Order | null>(null)
 const showQRCode = ref(false)
+const showSouvenir = ref(false)
 
 const getStatusIcon = (status: number) => {
   const icons: Record<number, string> = {
@@ -238,11 +253,13 @@ const getRefundInfo = computed(() => {
   return null
 })
 
+/** 加载订单详情，更新可执行操作和支付状态。 */
 const loadOrder = async () => {
   loading.value = true
   try {
     const orderNo = route.params.orderNo as string
     order.value = await orderApi.getByOrderNo(orderNo)
+    if (order.value.status === 1 && route.query.souvenir === '1') showSouvenir.value = true
   } catch (error) {
     console.error('加载订单失败:', error)
     ElMessage.error('加载失败')
@@ -263,19 +280,22 @@ const formatDateTime = (datetime: string) => {
   })
 }
 
+/** 发起当前订单的支付操作，具体支付资格由服务端核验。 */
 const handlePay = () => {
   if (!order.value) return
   router.push(`/order/pay/${order.value.orderNo}`)
 }
 
+/** 确认后提交取消请求，并刷新订单或场次状态。 */
 const handleCancel = async () => {
   if (!order.value) return
 
   try {
-    await ElMessageBox.confirm('确定要取消该订单吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
+    await ElMessageBox.confirm('取消后将释放已选座位，订单无法恢复。', '取消订单', {
+      confirmButtonText: '确认取消',
+      cancelButtonText: '保留订单',
+      customClass: 'order-cancel-dialog',
+      closeOnClickModal: false
     })
 
     await orderApi.cancel(order.value.orderNo)
@@ -288,6 +308,7 @@ const handleCancel = async () => {
   }
 }
 
+/** 展示退票确认，提交成功后刷新订单及返还信息。 */
 const handleRefund = async () => {
   if (!order.value) return
 
@@ -298,57 +319,7 @@ const handleRefund = async () => {
   }
 
   try {
-    let message = `
-      <div style="padding: 16px 0;">
-        <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 16px; padding: 16px; background: #FFF9E6; border-radius: 8px; border: 1px solid #FFB84D;">
-          <span style="font-size: 24px;">⚠️</span>
-          <div style="flex: 1;">
-            <div style="font-weight: 700; font-size: 15px; color: #333; margin-bottom: 8px;">退票确认</div>
-            <div style="font-size: 14px; color: #666; line-height: 1.6;">
-              确认申请退票吗？退票成功后座位将立即释放。
-            </div>
-          </div>
-        </div>
-
-        <div style="background: #f3f4f6; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #666;">订单金额</span>
-            <span style="font-weight: 600;">¥${order.value.totalPrice}</span>
-          </div>
-    `
-
-    if (refundInfo.fee > 0) {
-      message += `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="color: #666;">手续费 (${refundInfo.feeRate}%)</span>
-            <span style="color: #f59e0b; font-weight: 600;">-¥${refundInfo.fee.toFixed(2)}</span>
-          </div>
-      `
-    }
-
-    message += `
-          <div style="height: 1px; background: #e5e7eb; margin: 12px 0;"></div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="font-weight: 700; font-size: 16px;">退款金额</span>
-            <span style="font-weight: 800; font-size: 20px; color: #16a34a;">¥${refundInfo.refundAmount.toFixed(2)}</span>
-          </div>
-        </div>
-
-        <div style="font-size: 13px; color: #666; line-height: 1.6;">
-          <div style="margin-bottom: 4px;">• 退款将原路退回至支付账户</div>
-          <div style="margin-bottom: 4px;">• 预计 1-7 个工作日到账</div>
-          <div>• 退票成功后将收到通知</div>
-        </div>
-      </div>
-    `
-
-    await ElMessageBox.confirm(message, '申请退票', {
-      confirmButtonText: '确认退票',
-      cancelButtonText: '取消',
-      type: 'warning',
-      dangerouslyUseHTMLString: true,
-      customClass: 'refund-confirm-dialog'
-    })
+    await confirmRefund({ totalPrice: Number(order.value.totalPrice), ...refundInfo })
 
     await orderApi.refund(order.value.orderNo)
     ElMessage.success('退票成功，退款将在1-7个工作日内到账')
@@ -366,8 +337,11 @@ onMounted(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+
+.souvenir-entry { display: flex; align-items: center; gap: 18px; padding: 24px 32px; border-top: 1px solid #38446e; background: linear-gradient(110deg, #101d38, #252144); color: #e1eaff; }
+.souvenir-entry-icon { width: 48px; height: 56px; border: 1px solid #8a9de2; border-radius: 10px; color: #b6c9ff; display: grid; place-items: center; flex-shrink: 0; background: #394276; box-shadow: 0 0 15px #8d91ff40; }
+.souvenir-entry > div:nth-child(2) { flex: 1; }.souvenir-eyebrow { font-size: 10px; color: #a5b1ec; letter-spacing: 2px; }.souvenir-entry h3 { font-size: 16px; margin: 6px 0; }.souvenir-entry p { font-size: 12px; color: #a2b2d4; margin: 0; line-height: 1.7; }.souvenir-entry button { flex-shrink: 0; }
+@media (max-width: 680px) { .souvenir-entry { flex-wrap: wrap; padding: 20px; gap: 12px; }.souvenir-entry > div:nth-child(2) { min-width: 180px; }.souvenir-entry button { width: 100%; } }
 
 .msr {
   font-family: 'Material Symbols Rounded';

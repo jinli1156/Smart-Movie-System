@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/** 修改本人评价的请求，只接收评分与内容等允许编辑的字段。 */
 @Data
 public class CommentUpdateDTO {
 

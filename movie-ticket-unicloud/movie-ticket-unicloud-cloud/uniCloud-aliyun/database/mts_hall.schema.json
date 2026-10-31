@@ -1,0 +1,25 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_hall",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "id": {
+      "bsonType": "number"
+    },
+    "cinemaId": {
+      "bsonType": "number"
+    },
+    "name": {
+      "bsonType": "string"
+    },
+    "status": {
+      "bsonType": "number"
+    }
+  }
+}

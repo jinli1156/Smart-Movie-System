@@ -7,7 +7,14 @@
     <main class="main-area">
       <!-- Top Bar -->
       <div class="top-bar">
-        <div class="tb-pill">
+        <div
+          class="tb-pill"
+          role="button"
+          tabindex="0"
+          :title="location.source === 'ip' ? 'IP 定位可能受代理影响，点击选择城市' : '点击选择城市'"
+          @click="cityPickerVisible = true"
+          @keyup.enter="cityPickerVisible = true"
+        >
           <MaterialIcon class="msr tb-pill-ico primary" name="location_on" />
           <span class="tb-pill-text">{{ location.label }}</span>
           <MaterialIcon class="msr tb-pill-caret" name="keyboard_arrow_down" />
@@ -26,13 +33,8 @@
           <span class="tb-pill-text">{{ todayLabel }}</span>
         </div>
         <div class="tb-icon-group">
-          <button class="tb-icon" @click="tip('通知')">
-            <MaterialIcon class="msr" name="notifications" />
-            <span class="tb-dot"></span>
-          </button>
-          <button class="tb-icon" @click="tip('购物车')">
-            <MaterialIcon class="msr" name="shopping_cart" />
-          </button>
+
+
         </div>
         <button class="tb-cta" @click="showScanner = true">
           <MaterialIcon class="msr" name="qr_code_scanner" />
@@ -45,11 +47,11 @@
         <!-- ============ HERO ============ -->
         <section
           class="hero"
-          v-if="heroMovie"
+          v-if="heroMovie || comingSoon.length || loadingComing"
           @mouseenter="stopAutoRotate"
           @mouseleave="startAutoRotate"
         >
-          <div class="hero-main">
+          <div class="hero-main" v-if="heroMovie">
             <div class="hero-content">
               <div class="hero-left" :key="`hl-${heroMovie.id}`">
                 <div class="hero-top">
@@ -58,24 +60,22 @@
                       <span class="dot-now"></span>
                       <span>NOW SHOWING</span>
                     </span>
-                    <span class="badge-tag">IMAX</span>
-                    <span class="badge-tag">3D</span>
-                    <span class="badge-tag">杜比全景声</span>
+                    <span v-if="heroMovie.language" class="badge-tag">{{ heroMovie.language }}</span>
                   </div>
                   <h1 class="hero-title">{{ heroMovie.title }}</h1>
                   <p class="hero-en">{{ (heroMovie.englishTitle || heroMovie.title).toUpperCase() }}</p>
                   <div class="hero-meta">
                     <div class="rating-block">
                       <MaterialIcon class="msr star" name="star" />
-                      <span class="rating-num">{{ heroMovie.rating?.toFixed(1) || '9.2' }}</span>
+                      <span class="rating-num">{{ heroMovie.rating?.toFixed(1) || '暂无评分' }}</span>
                       <span class="rating-out">/ 10</span>
                     </div>
-                    <span class="meta-sep">{{ heroMovie.genre || '科幻 · 冒险' }}</span>
+                    <span class="meta-sep">{{ heroMovie.genre || '类型未提供' }}</span>
                     <span class="meta-sep">{{ heroMovie.duration }} 分钟</span>
-                    <span class="meta-sep">{{ heroMovie.director || '丹尼斯·维伦纽瓦' }}</span>
+                    <span class="meta-sep">{{ heroMovie.director || '导演未提供' }}</span>
                   </div>
                   <p class="hero-desc">
-                    {{ heroMovie.description || '保罗·厄崔迪在弗里曼人的支持下,对那些摧毁了他的家族的人进行复仇,并在他对未来的预见中阻止一场可怕的命运。' }}
+                    {{ heroMovie.description || '暂无简介' }}
                   </p>
                 </div>
                 <div class="hero-actions">
@@ -84,25 +84,21 @@
                     <span>立即购票</span>
                     <span class="kbd-b">B</span>
                   </button>
-                  <button class="hero-ghost" @click="tip('观看预告')">
-                    <MaterialIcon class="msr" name="play_circle" />
-                    <span>观看预告</span>
-                  </button>
+
                   <WatchlistHeartButton
                     size="large"
                     variant="dark"
                     :active="Boolean(heroMovie && favoriteMovieIds.has(heroMovie.id))"
                     @click="heroMovie && toggleFavorite(heroMovie)"
                   />
-                  <button class="hero-icon" @click="tip('分享')">
-                    <MaterialIcon class="msr" name="share" />
-                  </button>
+
                 </div>
               </div>
               <div class="hero-right">
                 <div class="hero-poster" :key="`hp-${heroMovie.id}`">
                   <img
                     v-if="heroMovie.poster"
+                    v-poster="{ eager: true }"
                     :src="heroMovie.poster"
                     :alt="heroMovie.title"
                     class="poster-img"
@@ -138,30 +134,37 @@
               </div>
             </div>
           </div>
-          <aside class="hero-side">
-            <div class="up-next-head">
-              <span>UP NEXT</span>
-              <span class="up-next-all">查看全部 →</span>
-            </div>
-            <div
-              v-for="(m, i) in upNextMovies"
-              :key="m.id"
-              class="up-next-card"
-              @click="goToDetail(m.id)"
-            >
-              <div class="un-poster" :style="{ background: upNextGradient(i) }">
-                <img v-if="m.poster" :src="m.poster" :alt="m.title" />
-                <span class="un-num">{{ String(i + 2).padStart(2, '0') }}</span>
+            <aside class="hero-side cs-panel" aria-label="即将上映" v-loading="loadingComing">
+              <div class="cs-head">
+                <div class="cs-title-row">
+                  <MaterialIcon class="msr cs-ico" name="event" />
+                  <h3 class="cs-title">即将上映</h3>
+                </div>
+                <router-link class="cs-all" :to="{ path: '/movies', query: { ranking: 'upcoming' } }">全部 →</router-link>
               </div>
-              <div class="un-info">
-                <span class="un-title">{{ m.title }}</span>
-                <span class="un-sub">{{ (m.englishTitle || m.title).toUpperCase() }}</span>
+              <div
+                v-for="m in comingSoonDisplay"
+                :key="m.id"
+                class="cs-item" role="button" tabindex="0" @keydown.enter="goToDetail(m.id)" @keydown.space.prevent="goToDetail(m.id)"
+                @click="goToDetail(m.id)"
+              >
+                <div class="cs-date">
+                  <span class="cs-day">{{ dayOf(m.releaseDate) }}</span>
+                  <span class="cs-mon">{{ monthOf(m.releaseDate) }}</span>
+                </div>
+                <div class="cs-poster" :style="{ background: csGradient(m.id) }">
+                  <img v-if="m.poster" v-poster :src="m.poster" :alt="m.title" />
+                </div>
+                <div class="cs-info">
+                  <span class="cs-name">{{ m.title }}</span>
+                  <span class="cs-genre">{{ m.genre || '剧情' }}</span>
+                </div>
               </div>
-              <MaterialIcon class="msr un-play" name="play_arrow" />
-            </div>
-          </aside>
+              <el-empty v-if="!loadingComing && comingSoon.length === 0" description="暂无影片" :image-size="60" />
+            </aside>
         </section>
 
+        <MarketingPlacements slot="HOME" />
         <!-- ============ NOW SHOWING ============ -->
         <section class="ns-section">
           <div class="ns-head">
@@ -179,7 +182,7 @@
                   :key="p.key"
                   class="ns-pill"
                   :class="{ active: activeDay === p.key }"
-                  @click="activeDay = p.key"
+                  @click="p.key === 'all' ? router.push('/movies') : activeDay = p.key"
                 >
                   {{ p.label }}
                 </button>
@@ -207,7 +210,7 @@
               @click="goToDetail(m.id)"
             >
               <div class="card-poster" :style="{ background: cardGradient(i) }">
-                <img v-if="m.poster" :src="m.poster" :alt="m.title" />
+                <img v-if="m.poster" v-poster :src="m.poster" :alt="m.title" />
                 <div class="card-top">
                   <span class="card-badge" :class="{ primary: i === featuredIndex }">
                     <span class="dot-now"></span>
@@ -215,7 +218,7 @@
                   </span>
                   <span class="card-rating">
                     <MaterialIcon class="msr" name="star" />
-                    <span>{{ m.rating?.toFixed(1) || '8.5' }}</span>
+                    <span>{{ m.rating?.toFixed(1) || '暂无评分' }}</span>
                   </span>
                 </div>
               </div>
@@ -230,9 +233,7 @@
                     <span class="card-genre">{{ m.genre || '剧情' }}</span>
                   </div>
                   <div class="card-price-row">
-                    <span class="price-cur">¥</span>
-                    <span class="price-num">{{ priceFor(m) }}</span>
-                    <span class="price-unit">起</span>
+                    <span class="price-unit">票价以场次为准</span>
                   </div>
                 </div>
                 <button class="card-cta" :class="{ primary: i === featuredIndex }" @click.stop="goToDetail(m.id)">
@@ -247,271 +248,234 @@
 
         <!-- ============ TWO COL ROW ============ -->
         <section class="two-col">
-          <!-- Cinema Panel -->
-          <div class="cinema-panel" v-loading="loadingCinemas">
-            <div class="cp-head">
-              <div class="cp-head-left">
-                <div class="cp-title-row">
-                  <MaterialIcon class="msr cp-ico" name="location_on" />
-                  <h3 class="cp-title">附近影院</h3>
+          <div class="main-col">
+            <!-- Main recommendation -->
+            <div class="rec-panel">
+              <div class="rec-head">
+                <div class="rec-head-left">
+                  <div class="rec-title-row">
+                    <span class="rec-icon-wrap">
+                      <MaterialIcon class="msr" name="stars" />
+                    </span>
+                    <h3 class="rec-title">AI 智能推荐</h3>
+                    <span class="rec-tag">PERSONALIZED</span>
+                  </div>
+                  <p class="rec-sub">
+                    {{ userStore.isLoggedIn ? '根据你的观影历史和偏好,AI 为你精选 6 部影片' : '登录后,AI 将根据你的观影历史推荐影片' }}
+                  </p>
                 </div>
-                <p class="cp-sub">已为您按距离排序 · {{ nearestArea }}附近</p>
+                <div class="rec-controls">
+                  <div class="rec-tabs">
+                    <button
+                      v-for="t in recTabs"
+                      :key="t.key"
+                      class="rec-tab"
+                      :class="{ active: activeRecTab === t.key }"
+                      @click="t.key === 'all' ? router.push('/movies') : activeRecTab = t.key"
+                    >
+                      {{ t.label }}
+                    </button>
+                  </div>
+                  <button class="rec-refresh" :disabled="loadingRec" @click="showNextRecommendations">
+                    <MaterialIcon class="msr" name="refresh" />
+                    <span>{{ loadingRec ? '加载中' : '换一批' }}</span>
+                  </button>
+                </div>
               </div>
-              <button class="cp-map" @click="router.push('/cinemas')">
-                <MaterialIcon class="msr" name="map" />
-                <span>地图查看</span>
-              </button>
+              <div class="rec-grid">
+                <article
+                  v-for="m in recDisplay"
+                  :key="m.id"
+                  class="rec-card"
+                  @click="goToDetail(m.id)"
+                >
+                  <div class="rec-poster" :style="{ background: cardGradient(m.id) }">
+                    <img v-if="m.poster" v-poster :src="m.poster" :alt="m.title" />
+                    <span v-if="m.matchScore != null" class="rec-match">{{ m.matchScore }}% 匹配</span>
+                  </div>
+                  <div class="rec-info">
+                    <span class="rec-name">{{ m.title }}</span>
+                    <span class="rec-meta">
+                      <MaterialIcon class="msr" name="star" />
+                      <span>{{ m.rating?.toFixed(1) || '暂无评分' }}</span>
+                      <span class="sep">·</span>
+                      <span>{{ m.genre || '剧情' }}</span>
+                    </span>
+                    <span v-if="m.recommendationReason" class="rec-reason">
+                      {{ m.analysisSource === 'model' ? '大模型推荐' : '实时推荐' }}《{{ m.title }}》：{{ m.recommendationReason }}。
+                    </span>
+                  </div>
+                </article>
+              </div>
+              <div v-if="recDisplay.length === 0 && !loadingRec" class="rec-empty">
+                <MaterialIcon class="msr" name="auto_awesome" />
+                <p>{{ userStore.isLoggedIn ? '暂无推荐内容' : '登录后查看你的专属推荐' }}</p>
+                <button v-if="!userStore.isLoggedIn" class="rec-login-btn" @click="router.push('/login')">
+                  立即登录
+                </button>
+              </div>
             </div>
-            <div
-              v-for="(c, i) in cinemas"
-              :key="c.id"
-              class="cinema-item"
-              :class="{ active: i === 0 }"
-            >
-              <div class="cinema-rank" :class="{ active: i === 0 }">{{ String(i + 1).padStart(2, '0') }}</div>
-              <div class="cinema-body">
-                <div class="cinema-name-row">
-                  <span class="cinema-name">{{ c.name }}</span>
-                  <span class="cinema-tag" v-if="c.tag">{{ c.tag }}</span>
+
+            <!-- Cinema Panel -->
+            <div class="cinema-panel" v-loading="loadingCinemas">
+              <div class="cp-head">
+                <div class="cp-head-left">
+                  <div class="cp-title-row">
+                    <MaterialIcon class="msr cp-ico" name="location_on" />
+                    <h3 class="cp-title">附近影院</h3>
+                  </div>
+                  <p class="cp-sub">已为您按距离排序 · {{ nearestArea }}附近</p>
                 </div>
-                <p class="cinema-sub">{{ c.area }} · 起价 ¥{{ c.startPrice }}</p>
-                <div class="cinema-meta">
-                  <span class="cm-item"><MaterialIcon class="msr" name="star" />{{ c.rating }}</span>
-                  <span class="cm-item"><MaterialIcon class="msr" name="straighten" />{{ c.distance }}</span>
-                  <span class="cm-item"><MaterialIcon class="msr" name="directions_walk" />{{ c.walkTime }}</span>
+                <button class="cp-map" @click="router.push('/cinemas')">
+                  <MaterialIcon class="msr" name="map" />
+                  <span>查看影院</span>
+                </button>
+              </div>
+              <div
+                v-for="(c, i) in cinemas"
+                :key="c.id"
+                class="cinema-item"
+                role="button"
+                tabindex="0"
+                :aria-label="`查看${c.name}详情`"
+                @click="goToCinema(c.id)"
+                @keydown.enter="goToCinema(c.id)"
+                @keydown.space.prevent="goToCinema(c.id)"
+              >
+                <div class="cinema-rank">{{ String(i + 1).padStart(2, '0') }}</div>
+                <div class="cinema-body">
+                  <div class="cinema-name-row">
+                    <span class="cinema-name">{{ c.name }}</span>
+                  </div>
+                  <p class="cinema-sub">{{ c.area }}</p>
+                  <div class="cinema-meta">
+                    <span class="cm-item"><MaterialIcon class="msr" name="straighten" />{{ c.distance }}</span>
+                    <span class="cm-item"><MaterialIcon class="msr" name="directions_walk" />{{ c.walkTime }}</span>
+                  </div>
                 </div>
-                <div class="cinema-features">
-                  <span v-for="f in c.features" :key="f" class="cinema-feature">{{ f }}</span>
-                </div>
+              </div>
+
+              <div v-if="!loadingCinemas && cinemas.length === 0" class="cinema-empty">
+                <MaterialIcon class="msr" name="location_on" />
+                <p>该城市暂未开通影院，点击顶部城市可切换</p>
               </div>
             </div>
           </div>
 
           <!-- Right column -->
           <div class="right-col">
-            <!-- Coming Soon -->
-            <div class="cs-panel">
-              <div class="cs-head">
-                <div class="cs-title-row">
-                  <MaterialIcon class="msr cs-ico" name="event" />
-                  <h3 class="cs-title">即将上映</h3>
+            <!-- AI Personalization Card -->
+            <aside class="ai-card">
+              <div class="ai-head">
+                <div class="ai-icon-wrap">
+                  <MaterialIcon class="msr" name="stars" />
                 </div>
-                <span class="cs-all" @click="loadComingSoon">全部 →</span>
+                <div class="ai-title-block">
+                  <span class="ai-title">AI 个性化分析</span>
+                  <span class="ai-sub">基于你的观影数据</span>
+                </div>
+                <span class="ai-beta">BETA</span>
               </div>
-              <div
-                v-for="m in comingSoonDisplay"
-                :key="m.id"
-                class="cs-item"
-                @click="goToDetail(m.id)"
-              >
-                <div class="cs-date">
-                  <span class="cs-day">{{ dayOf(m.releaseDate) }}</span>
-                  <span class="cs-mon">{{ monthOf(m.releaseDate) }}</span>
-                </div>
-                <div class="cs-poster" :style="{ background: csGradient(m.id) }">
-                  <img v-if="m.poster" :src="m.poster" :alt="m.title" />
-                </div>
-                <div class="cs-info">
-                  <span class="cs-name">{{ m.title }}</span>
-                  <span class="cs-genre">{{ m.genre || '剧情' }}</span>
-                </div>
-                <span class="cs-want">想看</span>
-              </div>
-              <el-empty v-if="!loadingComing && comingSoon.length === 0" description="暂无影片" :image-size="60" />
-            </div>
-
-            <!-- Shortcuts -->
-            <div class="shortcuts">
-              <div class="sc-head">
-                <div class="sc-title-row">
-                  <MaterialIcon class="msr sc-ico" name="bolt" />
-                  <h3 class="sc-title">快捷功能</h3>
-                </div>
-                <span class="sc-all" @click="tip('查看全部')">查看全部</span>
-              </div>
-              <div class="sc-grid">
-                <button
-                  v-for="s in shortcuts"
-                  :key="s.key"
-                  class="sc-item"
-                  @click="onShortcut(s)"
-                >
-                  <MaterialIcon class="msr" :style="{ color: s.color }" :name="s.icon" />
-                  <span class="sc-label">{{ s.label }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- ============ AI SECTION ============ -->
-        <section class="ai-section">
-          <!-- Main recommendation -->
-          <div class="rec-panel">
-            <div class="rec-head">
-              <div class="rec-head-left">
-                <div class="rec-title-row">
-                  <span class="rec-icon-wrap">
-                    <MaterialIcon class="msr" name="stars" />
+              <div class="ai-profile">
+                <span class="ai-section-label">观影画像</span>
+                <div class="profile-row">
+                  <span class="profile-label">
+                    <MaterialIcon class="msr" name="movie" />
+                    <span>已观看</span>
                   </span>
-                  <h3 class="rec-title">AI 智能推荐</h3>
-                  <span class="rec-tag">PERSONALIZED</span>
+                  <span class="profile-val">{{ userStore.isLoggedIn ? `${recommendationProfile?.purchasedCount || 0} 部` : '— 部' }}</span>
                 </div>
-                <p class="rec-sub">
-                  {{ userStore.isLoggedIn ? '根据你的观影历史和偏好,AI 为你精选 6 部影片' : '登录后,AI 将根据你的观影历史推荐影片' }}
+                <div class="profile-row">
+                  <span class="profile-label">
+                    <MaterialIcon class="msr" name="category" />
+                    <span>偏好类型</span>
+                  </span>
+                  <span class="profile-val">{{ userStore.isLoggedIn ? (recommendationProfile?.favoriteGenres.join(' / ') || '待探索') : '— / —' }}</span>
+                </div>
+                <div class="profile-row">
+                  <span class="profile-label">
+                    <MaterialIcon class="msr" name="star" />
+                    <span>已评价</span>
+                  </span>
+                  <span class="profile-val">{{ userStore.isLoggedIn ? `${recommendationProfile?.ratedCount || 0} 次` : '—' }}</span>
+                </div>
+              </div>
+              <RecommendationRadar
+                v-if="userStore.isLoggedIn && recommendationRadar"
+                :data="recommendationRadar"
+              />
+              <div class="ai-tags-block">
+                <span class="ai-section-label">你的偏好标签</span>
+                <div class="ai-tags">
+                  <span v-for="t in (userStore.isLoggedIn ? userTags : guestTags)" :key="t" class="ai-tag">
+                    {{ t }}
+                  </span>
+                </div>
+              </div>
+              <div class="ai-line"></div>
+              <div class="ai-insight">
+                <div class="ai-insight-head">
+                  <MaterialIcon class="msr insight-ico" name="stars" />
+                  <span>{{ recommendationProfile?.analysisSource === 'model' ? 'AI 洞察 · 大模型分析' : '观影洞察 · 行为统计' }}</span>
+                </div>
+                <p class="ai-insight-text">
+                  {{ aiInsightText }}
                 </p>
               </div>
-              <div class="rec-controls">
-                <div class="rec-tabs">
-                  <button
-                    v-for="t in recTabs"
-                    :key="t.key"
-                    class="rec-tab"
-                    :class="{ active: activeRecTab === t.key }"
-                    @click="activeRecTab = t.key"
-                  >
-                    {{ t.label }}
-                  </button>
-                </div>
-                <button class="rec-refresh" @click="loadRecommendations">
-                  <MaterialIcon class="msr" name="refresh" />
-                  <span>换一批</span>
-                </button>
-              </div>
-            </div>
-            <div class="rec-grid">
-              <article
-                v-for="m in recDisplay"
-                :key="m.id"
-                class="rec-card"
-                @click="goToDetail(m.id)"
-              >
-                <div class="rec-poster" :style="{ background: cardGradient(m.id) }">
-                  <img v-if="m.poster" :src="m.poster" :alt="m.title" />
-                  <span class="rec-match">{{ m.matchScore || matchScore(m.id) }}% 匹配</span>
-                </div>
-                <div class="rec-info">
-                  <span class="rec-name">{{ m.title }}</span>
-                  <span class="rec-meta">
-                    <MaterialIcon class="msr" name="star" />
-                    <span>{{ m.rating?.toFixed(1) || '8.5' }}</span>
-                    <span class="sep">·</span>
-                    <span>{{ m.genre || '剧情' }}</span>
-                  </span>
-                  <span v-if="m.recommendationReason" class="rec-reason">
-                    推荐《{{ m.title }}》：{{ m.recommendationReason }}。
-                  </span>
-                </div>
-              </article>
-            </div>
-            <div v-if="recDisplay.length === 0 && !loadingRec" class="rec-empty">
-              <MaterialIcon class="msr" name="auto_awesome" />
-              <p>{{ userStore.isLoggedIn ? '暂无推荐内容' : '登录后查看你的专属推荐' }}</p>
-              <button v-if="!userStore.isLoggedIn" class="rec-login-btn" @click="router.push('/login')">
-                立即登录
+              <button class="ai-cta" @click="onAiChat">
+                <MaterialIcon class="msr" name="chat" />
+                <span>与 AI 观影助手对话</span>
               </button>
-            </div>
+            </aside>
           </div>
-
-          <!-- AI Personalization Card -->
-          <aside class="ai-card">
-            <div class="ai-head">
-              <div class="ai-icon-wrap">
-                <MaterialIcon class="msr" name="stars" />
-              </div>
-              <div class="ai-title-block">
-                <span class="ai-title">AI 个性化分析</span>
-                <span class="ai-sub">基于你的观影数据</span>
-              </div>
-              <span class="ai-beta">BETA</span>
-            </div>
-            <div class="ai-profile">
-              <span class="ai-section-label">观影画像</span>
-              <div class="profile-row">
-                <span class="profile-label">
-                  <MaterialIcon class="msr" name="movie" />
-                  <span>已观看</span>
-                </span>
-                <span class="profile-val">{{ userStore.isLoggedIn ? `${recommendationProfile?.purchasedCount || 0} 部` : '— 部' }}</span>
-              </div>
-              <div class="profile-row">
-                <span class="profile-label">
-                  <MaterialIcon class="msr" name="category" />
-                  <span>偏好类型</span>
-                </span>
-                <span class="profile-val">{{ userStore.isLoggedIn ? (recommendationProfile?.favoriteGenres.join(' / ') || '待探索') : '— / —' }}</span>
-              </div>
-              <div class="profile-row">
-                <span class="profile-label">
-                  <MaterialIcon class="msr" name="star" />
-                  <span>已评价</span>
-                </span>
-                <span class="profile-val">{{ userStore.isLoggedIn ? `${recommendationProfile?.ratedCount || 0} 次` : '—' }}</span>
-              </div>
-            </div>
-            <div class="ai-tags-block">
-              <span class="ai-section-label">你的偏好标签</span>
-              <div class="ai-tags">
-                <span v-for="t in (userStore.isLoggedIn ? userTags : guestTags)" :key="t" class="ai-tag">
-                  {{ t }}
-                </span>
-              </div>
-            </div>
-            <div class="ai-line"></div>
-            <div class="ai-insight">
-              <div class="ai-insight-head">
-                <MaterialIcon class="msr insight-ico" name="stars" />
-                <span>AI 洞察</span>
-              </div>
-              <p class="ai-insight-text">
-                {{ userStore.isLoggedIn
-                  ? '你近期偏爱硬核科幻题材,平均观影时长 142 分钟,推荐你尝试本周新上映的《沙丘》系列。'
-                  : '登录后,AI 将为你生成专属观影洞察,推荐最适合你的影片与影院。' }}
-              </p>
-            </div>
-            <button class="ai-cta" @click="onAiChat">
-              <MaterialIcon class="msr" name="chat" />
-              <span>与 AI 观影助手对话</span>
-            </button>
-          </aside>
         </section>
 
         <div class="page-foot">
-          <span>© 2026 CINEMA+ · 沪ICP 备 2024XXXXX 号</span>
+          <span>© 2026 响指电影 · 沪ICP 备 2024XXXXX 号</span>
           <div class="foot-links">
-            <span @click="tip('帮助中心')">帮助中心</span>
-            <span @click="tip('隐私政策')">隐私政策</span>
-            <span @click="tip('用户协议')">用户协议</span>
+
+
+
           </div>
         </div>
       </div>
     </main>
 
     <!-- 扫码取票对话框 -->
-    <QRScanner v-model="showScanner" @success="handleScanSuccess" />
+    <QRScanner v-if="showScanner" v-model="showScanner" @success="handleScanSuccess" />
     <ColdStartDialog v-model="showColdStart" :movies="nowShowing" @complete="handleColdStartComplete" />
+    <CityPickerDialog v-model="cityPickerVisible" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+/**
+ * 首页：展示热映、待映、实时票房和个性化推荐，连接搜索、想看与购票入口。
+ */
+import { ref, computed, defineAsyncComponent, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { useUserStore } from '@/stores/user'
 import { movieApi } from '@/api/movie'
 import { cinemaApi } from '@/api/cinema'
 import { recommendApi } from '@/api/recommend'
 import request from '@/utils/request'
-import type { Movie, Cinema, RecommendationProfile } from '@/types'
-import QRScanner from '@/components/QRScanner.vue'
+import type { Movie, Cinema, RecommendationProfile, RecommendationRadar as RecommendationRadarData } from '@/types'
 import AppSidebar from '@/components/AppSidebar.vue'
+import MarketingPlacements from '@/components/MarketingPlacements.vue'
+import CityPickerDialog from '@/components/CityPickerDialog.vue'
 import ColdStartDialog from '@/components/ColdStartDialog.vue'
+import RecommendationRadar from '@/components/RecommendationRadar.vue'
 import WatchlistHeartButton from '@/components/WatchlistHeartButton.vue'
 import { useLocation } from '@/composables/useLocation'
+import { cityOfAddress, normalizeCityName } from '@/utils/city'
+
+const QRScanner = defineAsyncComponent(() => import('@/components/QRScanner.vue'))
 
 const router = useRouter()
 const userStore = useUserStore()
 const { location, ensure: ensureLocation } = useLocation()
+const cityPickerVisible = ref(false)
 
 const searchKeyword = ref('')
 const loadingNow = ref(false)
@@ -520,114 +484,17 @@ const loadingRec = ref(false)
 const showScanner = ref(false)
 const showColdStart = ref(false)
 const recommendationProfile = ref<RecommendationProfile | null>(null)
+const recommendationRadar = ref<RecommendationRadarData | null>(null)
+let homeDisposed = false
 const favoriteMovieIds = ref(new Set<number>())
 
-const demoNowShowing: Movie[] = [
-  {
-    id: 1001,
-    title: '星际穿越',
-    director: '克里斯托弗·诺兰',
-    actors: '马修·麦康纳, 安妮·海瑟薇',
-    genre: '科幻 / 剧情',
-    duration: 169,
-    releaseDate: '2026-05-21',
-    description: '一支宇航员小队穿越虫洞,为人类寻找新的家园。在跨越时空的旅途中,他们面对着前所未有的抉择与情感冲击。',
-    rating: 9.4
-  },
-  {
-    id: 1002,
-    title: '沙丘 第二部',
-    director: '丹尼斯·维伦纽瓦',
-    actors: '提莫西·查拉梅, 赞达亚',
-    genre: '科幻 / 冒险',
-    duration: 166,
-    releaseDate: '2026-05-15',
-    description: '保罗·厄崔迪联合弗瑞曼人,对抗那些毁灭他家族的人。',
-    rating: 9.1
-  },
-  {
-    id: 1003,
-    title: '奥本海默',
-    director: '克里斯托弗·诺兰',
-    actors: '基里安·墨菲, 艾米莉·布朗特',
-    genre: '传记 / 历史',
-    duration: 180,
-    releaseDate: '2026-05-10',
-    description: '原子弹之父奥本海默的故事。',
-    rating: 9.3
-  },
-  {
-    id: 1004,
-    title: '蜘蛛侠:平行宇宙',
-    director: '华金·多斯·桑托斯',
-    actors: '沙梅克·摩尔, 海莉·斯坦菲尔德',
-    genre: '动画 / 动作',
-    duration: 140,
-    releaseDate: '2026-04-28',
-    description: '迈尔斯·莫拉莱斯穿越多元宇宙的冒险。',
-    rating: 9.0
-  },
-  {
-    id: 1005,
-    title: '宇宙探索编辑部',
-    director: '孔大山',
-    actors: '杨皓宇, 艾丽娅',
-    genre: '剧情 / 喜剧',
-    duration: 118,
-    releaseDate: '2026-05-01',
-    description: '一群追寻外星文明的人,在路上发现了人生意义。',
-    rating: 8.8
-  }
-]
-
-const demoComingSoon: Movie[] = [
-  {
-    id: 2001,
-    title: '阿凡达 3',
-    director: '詹姆斯·卡梅隆',
-    actors: '萨姆·沃辛顿',
-    genre: '科幻 / 冒险',
-    duration: 192,
-    releaseDate: '2026-06-18',
-    description: '潘多拉星球的全新故事。'
-  },
-  {
-    id: 2002,
-    title: '哥斯拉大战金刚 2',
-    director: '亚当·温加德',
-    actors: '丽贝卡·豪尔',
-    genre: '动作 / 科幻',
-    duration: 115,
-    releaseDate: '2026-06-04',
-    description: '两大泰坦再度联手对抗未知威胁。'
-  },
-  {
-    id: 2003,
-    title: '寄生兽:灰色部队',
-    director: '延尚昊',
-    actors: '全昭旻',
-    genre: '惊悚 / 科幻',
-    duration: 130,
-    releaseDate: '2026-06-12',
-    description: '寄生生物入侵后的人类生存。'
-  },
-  {
-    id: 2004,
-    title: '疯狂动物城 2',
-    director: '杰瑞德·布什',
-    actors: '金妮弗·古德温',
-    genre: '动画 / 喜剧',
-    duration: 108,
-    releaseDate: '2026-06-25',
-    description: '朱迪和尼克的全新案件。'
-  }
-]
-
-const nowShowing = ref<Movie[]>([...demoNowShowing])
-const comingSoon = ref<Movie[]>([...demoComingSoon])
-const recommendations = ref<Movie[]>([...demoNowShowing])
+const nowShowing = ref<Movie[]>([])
+const comingSoon = ref<Movie[]>([])
+const recommendations = ref<Movie[]>([])
 const activeDay = ref<'today' | 'tomorrow' | 'week' | 'all'>('today')
 const activeRecTab = ref<'all' | 'scifi' | 'action' | 'drama'>('all')
+const recommendationBatch = ref(0)
+const RECOMMENDATION_BATCH_SIZE = 6
 
 const dayPills = [
   { key: 'today', label: '今日' },
@@ -648,15 +515,6 @@ const userTags = computed(() => recommendationProfile.value?.favoriteGenres.leng
   : ['画像学习中'])
 const guestTags = ['立即注册', '探索更多', '解锁专属']
 
-const shortcuts = [
-  { key: 'card', label: '会员卡', icon: 'card_membership', color: '#FF8400' },
-  { key: 'coupon', label: '优惠券', icon: 'confirmation_number', color: '#A855F7' },
-  { key: 'gift', label: '礼品卡', icon: 'card_giftcard', color: '#EC4899' },
-  { key: 'snack', label: '卖品', icon: 'lunch_dining', color: '#0EA5E9' },
-  { key: 'redeem', label: '兑换券码', icon: 'redeem', color: '#22C55E' },
-  { key: 'support', label: '客服', icon: 'support_agent', color: '#F59E0B' }
-]
-
 const currentHeroIndex = ref(0)
 const AUTO_ROTATE_MS = 4500
 let autoRotateTimer: ReturnType<typeof setInterval> | null = null
@@ -675,55 +533,41 @@ const haversine = (lat1: number, lng1: number, lat2: number, lng2: number) => {
 interface CinemaDisplayItem {
   id: number
   name: string
-  tag: string
   area: string
-  startPrice: number
-  rating: string
   distance: string
   distanceNum: number
   walkTime: string
-  features: string[]
 }
-
-const featurePool: Record<number, string[]> = {
-  0: ['IMAX 厅', '杜比全景声', 'CINITY'],
-  1: ['激光厅', '4K 高清', '亲子厅'],
-  2: ['IMAX 厅', 'VIP 厅', '巨幕厅'],
-  3: ['CINITY', '4DX', '杜比全景声'],
-  4: ['激光厅', 'VIP 厅', '巨幕厅']
-}
-const ratingPool = ['9.4', '9.1', '9.0', '8.9', '8.7']
-const pricePool = [58, 52, 48, 55, 45]
 
 const cinemas = computed<CinemaDisplayItem[]>(() => {
   const { lat: userLat, lng: userLng } = location.value
-  const items: CinemaDisplayItem[] = allCinemas.value.map((c, i) => {
+  const selectedCity = normalizeCityName(location.value.city)
+  const source = selectedCity
+    ? allCinemas.value.filter(c => normalizeCityName(cityOfAddress(c.address || '')) === selectedCity)
+    : allCinemas.value
+  const items: CinemaDisplayItem[] = source.map(c => {
     let distanceNum = Infinity
     if (userLat != null && userLng != null && c.lat != null && c.lng != null) {
       distanceNum = haversine(userLat, userLng, Number(c.lat), Number(c.lng))
     }
     const distStr = distanceNum === Infinity ? '—' : distanceNum < 1000 ? `${Math.round(distanceNum)} m` : `${(distanceNum / 1000).toFixed(1)} km`
-    const walkMin = distanceNum === Infinity ? '—' : distanceNum < 1000 ? `步行 ${Math.max(1, Math.round(distanceNum / 80))} 分` : `步行 ${Math.round(distanceNum / 80)} 分`
+    const walkMin = distanceNum === Infinity ? '距离未知' : '直线距离估算'
     const addr = c.address || ''
     const area = addr.includes('市') ? addr.split('市')[1]?.substring(0, 6) || addr.substring(0, 6) : addr.substring(0, 6)
     return {
       id: c.id,
       name: c.name,
-      tag: ['IMAX', 'DOLBY', 'CINITY', '4DX', 'LUXE'][i % 5],
       area,
-      startPrice: pricePool[i % pricePool.length],
-      rating: ratingPool[i % ratingPool.length],
       distance: distStr,
       distanceNum,
-      walkTime: walkMin,
-      features: featurePool[i % 5]
+      walkTime: walkMin
     }
   })
   return items.sort((a, b) => a.distanceNum - b.distanceNum).slice(0, 5)
 })
 
 const nearestArea = computed(() => {
-  if (cinemas.value.length === 0) return '附近'
+  if (cinemas.value.length === 0) return normalizeCityName(location.value.city) || ''
   return cinemas.value[0].area
 })
 
@@ -732,18 +576,6 @@ const heroCount = computed(() => Math.min(nowShowing.value.length, 5))
 const heroMovie = computed(() => {
   if (nowShowing.value.length === 0) return null
   return nowShowing.value[currentHeroIndex.value] || nowShowing.value[0]
-})
-
-const upNextMovies = computed(() => {
-  const list = nowShowing.value
-  if (list.length <= 1) return []
-  const arr: Movie[] = []
-  for (let i = 1; i <= 3; i++) {
-    const idx = (currentHeroIndex.value + i) % list.length
-    if (idx === currentHeroIndex.value) break
-    arr.push(list[idx])
-  }
-  return arr
 })
 
 const heroPageCur = computed(() =>
@@ -756,7 +588,68 @@ const heroPageTot = computed(() =>
 const nowShowingDisplay = computed(() => nowShowing.value.slice(0, 5))
 const featuredIndex = computed(() => Math.min(4, nowShowingDisplay.value.length - 1))
 const comingSoonDisplay = computed(() => comingSoon.value.slice(0, 4))
-const recDisplay = computed(() => recommendations.value.slice(0, 6))
+const filteredRecommendations = computed(() => {
+  const tokens: Record<typeof activeRecTab.value, string[]> = {
+    all: [],
+    scifi: ['科幻'],
+    action: ['动作', '冒险'],
+    drama: ['剧情']
+  }
+  const expected = tokens[activeRecTab.value]
+  if (expected.length === 0) return recommendations.value
+  return recommendations.value.filter(movie => expected.some(token => movie.genre?.includes(token)))
+})
+const recDisplay = computed(() => {
+  const list = filteredRecommendations.value
+  if (list.length <= RECOMMENDATION_BATCH_SIZE) return list
+  const start = recommendationBatch.value * RECOMMENDATION_BATCH_SIZE % list.length
+  return Array.from(
+    { length: Math.min(RECOMMENDATION_BATCH_SIZE, list.length) },
+    (_, index) => list[(start + index) % list.length]
+  )
+})
+
+const asSentence = (value?: string) => {
+  const text = value?.trim().replace(/[。！？!?]+$/, '')
+  return text ? `${text}。` : ''
+}
+
+const aiInsightText = computed(() => {
+  if (!userStore.isLoggedIn) {
+    return '登录后，系统将根据你的观影、想看、购票和评分数据生成专属洞察。'
+  }
+  if (loadingRec.value && !recommendationProfile.value && !recommendationRadar.value) {
+    return '正在汇总你的真实观影数据并生成个性化分析…'
+  }
+
+  const profile = recommendationProfile.value
+  const radar = recommendationRadar.value
+  if (!profile && !radar) {
+    return '暂时无法读取个性化分析，请稍后刷新重试。'
+  }
+
+  if (profile?.summary) return profile.summary
+  const topMovie = recommendations.value[0]
+  const summary = radar?.summary || (profile?.needsColdStart
+    ? '暂无足够的用户行为证据，当前以影片口碑和近期趋势作为冷启动依据'
+    : '')
+  const genres = radar?.topGenres?.length
+    ? radar.topGenres.slice(0, 3)
+    : profile?.favoriteGenres.slice(0, 3) || []
+  const preference = genres.length > 0 ? `你的主要偏好类型是${genres.join('、')}` : ''
+  const recommendation = topMovie
+    ? `当前首选《${topMovie.title}》${topMovie.recommendationReason ? `，推荐理由：${topMovie.recommendationReason}` : ''}`
+    : ''
+
+  return [summary, preference, recommendation]
+    .map(asSentence)
+    .filter(Boolean)
+    .join('') || '还没有足够的数据生成个性化洞察，多浏览、收藏或评价几部影片后会更准确。'
+})
+
+watch(activeRecTab, () => {
+  recommendationBatch.value = 0
+})
 
 const goPrevHero = () => {
   const n = heroCount.value
@@ -832,13 +725,6 @@ const cardGradients = [
 ]
 const cardGradient = (i: number) => cardGradients[i % cardGradients.length]
 
-const upNextPalette = [
-  'linear-gradient(180deg, #1a3a5c 0%, #000000 100%)',
-  'linear-gradient(180deg, #5c1a3a 0%, #000000 100%)',
-  'linear-gradient(180deg, #3a5c1a 0%, #000000 100%)'
-]
-const upNextGradient = (i: number) => upNextPalette[i % upNextPalette.length]
-
 const csGradients = [
   'linear-gradient(180deg, #1f3a1a 0%, #0a1f08 100%)',
   'linear-gradient(180deg, #3a1a1a 0%, #1f0808 100%)',
@@ -846,13 +732,6 @@ const csGradients = [
   'linear-gradient(180deg, #1a5c4a 0%, #082a20 100%)'
 ]
 const csGradient = (id: number) => csGradients[id % csGradients.length]
-
-const priceFor = (m: Movie) => {
-  const base = 38 + (m.id % 7) * 6
-  return base
-}
-
-const matchScore = (id: number) => 80 + (id % 20)
 
 const dayOf = (date?: string) => {
   if (!date) return '--'
@@ -867,7 +746,7 @@ const loadNowShowing = async () => {
   loadingNow.value = true
   try {
     const data = await movieApi.getNowShowing(true)
-    if (data && data.length > 0) nowShowing.value = data
+    nowShowing.value = data || []
   } catch (e) {
     console.error('加载正在热映失败:', e)
   } finally {
@@ -875,6 +754,7 @@ const loadNowShowing = async () => {
   }
 }
 
+/** 加载影院列表，供影院选择或地图展示。 */
 const loadCinemas = async () => {
   loadingCinemas.value = true
   try {
@@ -892,7 +772,7 @@ const loadComingSoon = async () => {
   loadingComing.value = true
   try {
     const data = await movieApi.getComingSoon(true)
-    if (data && data.length > 0) comingSoon.value = data
+    comingSoon.value = data || []
   } catch (e) {
     console.error('加载即将上映失败:', e)
   } finally {
@@ -900,20 +780,25 @@ const loadComingSoon = async () => {
   }
 }
 
+/** 按当前偏好和场景加载推荐结果，更新加载状态。 */
 const loadRecommendations = async () => {
   loadingRec.value = true
   try {
     if (userStore.isLoggedIn) {
       try {
-        recommendationProfile.value = await recommendApi.profile()
-        showColdStart.value = recommendationProfile.value.needsColdStart
-        const r = await recommendApi.personal({
-          limit: 6,
-          latitude: location.value.lat ?? undefined,
-          longitude: location.value.lng ?? undefined
-        })
+        const [profile, radar, r] = await Promise.all([
+          recommendApi.profile().catch(() => null),
+          recommendApi.radar().catch(() => null),
+          recommendApi.personal({ limit: 18,
+            latitude: location.value.lat ?? undefined,
+            longitude: location.value.lng ?? undefined })
+        ])
+        recommendationProfile.value = profile
+        recommendationRadar.value = radar
+        showColdStart.value = profile?.needsColdStart ?? false
         if (r && r.length > 0) {
           recommendations.value = r
+          recommendationBatch.value = 0
           return
         }
       } catch (error: any) {
@@ -924,10 +809,11 @@ const loadRecommendations = async () => {
       }
     }
     const hot = await request.get<any, Movie[]>('/recommend/hot', {
-      params: { limit: 6 },
+      params: { limit: 18 },
       silent: true
     })
-    if (hot && hot.length > 0) recommendations.value = hot
+    recommendations.value = hot || []
+    recommendationBatch.value = 0
   } catch (e) {
     console.error('加载推荐失败:', e)
   } finally {
@@ -935,13 +821,31 @@ const loadRecommendations = async () => {
   }
 }
 
+const showNextRecommendations = async () => {
+  if (loadingRec.value) return
+  const previousBatch = recommendationBatch.value
+  if (userStore.isLoggedIn) await loadRecommendations()
+  recommendationBatch.value = previousBatch
+  const count = filteredRecommendations.value.length
+  if (count <= RECOMMENDATION_BATCH_SIZE) {
+    ElMessage.info(count > 0 ? '当前分类的推荐已全部展示' : '当前分类暂无推荐')
+    return
+  }
+  const batchCount = Math.ceil(count / RECOMMENDATION_BATCH_SIZE)
+  recommendationBatch.value = (recommendationBatch.value + 1) % batchCount
+}
+
+/** 接收初始偏好收集结果并刷新个性化推荐。 */
 const handleColdStartComplete = async () => {
-  recommendationProfile.value = await recommendApi.profile()
   await loadRecommendations()
 }
 
 const goToDetail = (id: number) => {
   router.push(`/movie/${id}`)
+}
+
+const goToCinema = (id: number) => {
+  router.push(`/cinema/${id}`)
 }
 
 const goToHotRanking = () => {
@@ -954,20 +858,18 @@ const onSearch = () => {
   router.push({ path: '/movies', query: { q: kw } })
 }
 
-const onShortcut = (s: { label: string }) => {
-  ElMessage.info(`${s.label} 功能敬请期待`)
-}
-
 const onAiChat = () => {
-  window.dispatchEvent(new Event('open-movie-assistant'))
+  void router.push('/assistant')
 }
 
+/** 读取本人想看记录，并同步影片收藏状态。 */
 const loadFavorites = async () => {
   if (!userStore.isLoggedIn) return
   const list = await recommendApi.favorites().catch(() => [] as Movie[])
   favoriteMovieIds.value = new Set(list.map(movie => movie.id))
 }
 
+/** 切换影片想看状态，请求成功后更新页面反馈。 */
 const toggleFavorite = async (movie: Movie) => {
   if (!userStore.isLoggedIn) {
     ElMessage.warning('登录后才能加入想看')
@@ -981,9 +883,6 @@ const toggleFavorite = async (movie: Movie) => {
   ElMessage.success(active ? `已将《${movie.title}》加入想看` : `已将《${movie.title}》移出想看`)
 }
 
-const tip = (label: string) => {
-  ElMessage.info(`${label} 功能敬请期待`)
-}
 
 const handleScanSuccess = (ticketInfo: any) => {
   console.log('取票成功:', ticketInfo)
@@ -992,6 +891,7 @@ const handleScanSuccess = (ticketInfo: any) => {
 
 onMounted(async () => {
   await loadNowShowing()
+  if (homeDisposed) return
   loadCinemas()
   loadComingSoon()
   loadRecommendations()
@@ -1001,13 +901,12 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  homeDisposed = true
   stopAutoRotate()
 })
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .app {
   --primary: #FF8400;
@@ -1331,6 +1230,15 @@ onBeforeUnmount(() => {
 }
 .hero-ghost:hover { background: rgba(255, 255, 255, 0.15); }
 .hero-ghost .msr { font-size: 20px; }
+.hero-actions :deep(.watchlist-heart.is-dark:not(.is-active)) {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+}
+.hero-actions :deep(.watchlist-heart.is-dark:not(.is-active):hover:not(:disabled)) {
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+}
 .hero-icon {
   width: 48px;
   height: 48px;
@@ -1460,7 +1368,7 @@ onBeforeUnmount(() => {
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   color: var(--muted);
 }
 .up-next-all {
@@ -1817,6 +1725,22 @@ onBeforeUnmount(() => {
 .cp-map:hover { background: var(--border); }
 .cp-map .msr { font-size: 14px; }
 
+.cinema-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 12px;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 14px;
+  color: var(--muted);
+  font-size: 12px;
+  text-align: center;
+}
+.cinema-empty .msr { font-size: 24px; color: var(--primary); }
+.cinema-empty p { margin: 0; }
+
 .cinema-item {
   display: flex;
   gap: 16px;
@@ -1825,12 +1749,20 @@ onBeforeUnmount(() => {
   border: 1px solid var(--border);
   border-radius: 14px;
   cursor: pointer;
-  transition: transform 0.15s, border-color 0.15s;
+  transform: translate3d(0, 0, 0);
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s ease,
+    background-color 0.28s ease,
+    box-shadow 0.28s ease;
 }
-.cinema-item:hover { transform: translateY(-2px); }
-.cinema-item.active {
-  background: rgba(255, 132, 0, 0.08);
-  border-color: rgba(255, 132, 0, 0.4);
+.cinema-item:hover,
+.cinema-item:focus-visible {
+  transform: translate3d(6px, -3px, 0);
+  border-color: rgba(255, 132, 0, 0.58);
+  background: rgba(255, 132, 0, 0.055);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+  outline: none;
 }
 .cinema-rank {
   width: 56px;
@@ -1846,15 +1778,34 @@ onBeforeUnmount(() => {
   font-size: 16px;
   font-weight: 700;
   flex-shrink: 0;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s ease,
+    background-color 0.28s ease,
+    color 0.28s ease,
+    box-shadow 0.28s ease;
 }
-.cinema-rank.active {
+.cinema-item:hover .cinema-rank,
+.cinema-item:focus-visible .cinema-rank {
+  transform: rotate(-6deg) scale(1.08);
+  border-color: var(--primary);
   background: var(--primary);
   color: var(--primary-foreground);
-  border-color: var(--primary);
+  box-shadow: 0 8px 18px rgba(255, 132, 0, 0.24);
 }
 .cinema-body { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .cinema-name-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.cinema-name { font-size: 15px; font-weight: 700; color: var(--fg); }
+.cinema-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--fg);
+  transition: color 0.22s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cinema-item:hover .cinema-name,
+.cinema-item:focus-visible .cinema-name {
+  color: var(--primary);
+  transform: translateX(3px);
+}
 .cinema-tag {
   padding: 2px 8px;
   background: var(--secondary);
@@ -1865,7 +1816,21 @@ onBeforeUnmount(() => {
   letter-spacing: 0.5px;
   color: var(--fg);
 }
-.cinema-item.active .cinema-tag { background: var(--primary); color: var(--primary-foreground); }
+@media (prefers-reduced-motion: reduce) {
+  .cinema-item,
+  .cinema-rank,
+  .cinema-name {
+    transition: none;
+  }
+  .cinema-item:hover,
+  .cinema-item:focus-visible,
+  .cinema-item:hover .cinema-rank,
+  .cinema-item:focus-visible .cinema-rank,
+  .cinema-item:hover .cinema-name,
+  .cinema-item:focus-visible .cinema-name {
+    transform: none;
+  }
+}
 .cinema-sub { margin: 0; font-size: 12px; color: var(--muted); }
 .cinema-meta { display: flex; gap: 16px; flex-wrap: wrap; }
 .cm-item {
@@ -1890,7 +1855,7 @@ onBeforeUnmount(() => {
 }
 
 /* Right column */
-.right-col { display: flex; flex-direction: column; gap: 24px; }
+.main-col, .right-col { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 
 .cs-panel {
   display: flex;
@@ -1905,7 +1870,7 @@ onBeforeUnmount(() => {
 .cs-title-row { display: flex; align-items: center; gap: 10px; }
 .cs-ico { color: var(--primary); font-size: 20px; }
 .cs-title { margin: 0; font-size: 18px; font-weight: 700; color: var(--fg); }
-.cs-all { font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; }
+.cs-all { text-decoration: none; font-size: 12px; font-weight: 500; color: var(--muted); cursor: pointer; }
 .cs-all:hover { color: var(--primary); }
 .cs-item {
   display: flex;
@@ -1952,47 +1917,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
 }
 
-.shortcuts {
-  padding: 24px;
-  background: linear-gradient(135deg, #111111 0%, #2a2a2a 100%);
-  border-radius: 20px;
-  color: #fff;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-.sc-head { display: flex; justify-content: space-between; align-items: center; }
-.sc-title-row { display: flex; align-items: center; gap: 10px; }
-.sc-ico { color: var(--primary); font-size: 20px; }
-.sc-title { margin: 0; font-size: 18px; font-weight: 700; color: #fff; }
-.sc-all { font-size: 11px; font-weight: 500; color: rgba(255, 255, 255, 0.5); cursor: pointer; }
-.sc-all:hover { color: #fff; }
-.sc-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
-.sc-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(255, 255, 255, 0.9);
-  font-family: var(--font-sans);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.sc-item:hover { background: rgba(255, 255, 255, 0.1); }
-.sc-item .msr { font-size: 24px; }
-
 /* ============ AI SECTION ============ */
-.ai-section { display: grid; grid-template-columns: 1fr 380px; gap: 24px; align-items: start; }
 
 .rec-panel {
   display: flex;
@@ -2075,7 +2000,8 @@ onBeforeUnmount(() => {
   cursor: pointer;
   transition: all 0.15s;
 }
-.rec-refresh:hover { border-color: var(--primary); color: var(--primary); }
+.rec-refresh:hover:not(:disabled) { border-color: var(--primary); color: var(--primary); }
+.rec-refresh:disabled { cursor: wait; opacity: 0.65; }
 .rec-refresh .msr { font-size: 14px; }
 
 .rec-grid {
@@ -2311,10 +2237,11 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 1280px) {
-  .hero-side { display: none; }
+  .hero { flex-direction: column; height: auto; }
+  .hero-main { min-height: 460px; }
+  .hero-side { width: 100%; }
   .ns-grid { grid-template-columns: repeat(3, 1fr); }
   .two-col { grid-template-columns: 1fr; }
-  .ai-section { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 1024px) {
@@ -2326,7 +2253,7 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 640px) {
-  .ns-grid, .rec-grid, .sc-grid { grid-template-columns: 1fr 1fr; }
+  .ns-grid, .rec-grid { grid-template-columns: 1fr 1fr; }
   .hero-right { display: none; }
   .hero-content { padding: 24px; }
   .hero-title { font-size: 32px; }

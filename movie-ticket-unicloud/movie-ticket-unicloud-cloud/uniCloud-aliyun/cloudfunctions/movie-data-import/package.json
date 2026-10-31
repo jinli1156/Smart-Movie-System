@@ -1,0 +1,11 @@
+{
+  "name": "movie-data-import",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "cloudfunction-config": {
+    "memorySize": 512,
+    "timeout": 60,
+    "runtime": "Nodejs18"
+  }
+}

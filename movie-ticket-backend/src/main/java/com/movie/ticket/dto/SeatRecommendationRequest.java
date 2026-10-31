@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/** 智能选座请求，携带观影人数、结构化偏好及自然语言需求。 */
 @Data
 public class SeatRecommendationRequest {
     @Min(value = 1, message = "购票人数至少为 1 人")

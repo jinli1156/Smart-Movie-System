@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/** 观影评价实体，关联评价用户与影片，保存评分和评价内容。 */
 @Data
 @TableName("comment")
 public class Comment {

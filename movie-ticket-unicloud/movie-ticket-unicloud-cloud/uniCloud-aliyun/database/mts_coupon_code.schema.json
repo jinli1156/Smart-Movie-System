@@ -1,0 +1,22 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_coupon_code",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "id": {
+      "bsonType": "number"
+    },
+    "code": {
+      "bsonType": "string"
+    },
+    "status": {
+      "bsonType": "number"
+    }
+  }
+}

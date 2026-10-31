@@ -7,6 +7,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+/** 影片新增或编辑参数，声明片名、片长、上映日期与媒体资料等字段约束。 */
 @Data
 public class MovieDTO {
 

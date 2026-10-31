@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+/** 新增观影评价请求，限定影片、评分与评价内容。 */
 @Data
 public class CommentCreateDTO {
 

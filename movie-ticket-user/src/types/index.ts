@@ -1,3 +1,6 @@
+/**
+ * 共享业务类型，约束影片、影院、场次、订单与分页响应的数据结构。
+ */
 export interface Movie {
   id: number
   title: string
@@ -19,6 +22,8 @@ export interface Movie {
   updateTime?: string
   matchScore?: number
   recommendationReason?: string
+  analysisSource?: 'model' | 'algorithm'
+  model?: string
   recommendationScores?: RecommendationScores
   favoriteTime?: string
 }
@@ -32,6 +37,9 @@ export interface RecommendationScores {
 }
 
 export interface RecommendationProfile {
+  summary?: string
+  analysisSource?: 'model' | 'algorithm'
+  model?: string
   needsColdStart: boolean
   favoriteGenres: string[]
   viewedCount: number
@@ -45,9 +53,36 @@ export interface RecommendationEvaluation {
   evaluatedUsers: number
   precisionAtK: number
   recallAtK: number
+  ndcgAtK: number
   catalogCoverage: number
   diversity: number
+  skippedUsers: number
+  baselines: RecommendationExperiment[]
+  ablations: RecommendationExperiment[]
   protocol: string
+  candidatePolicy: string
+  generatedAt: string
+}
+
+export interface RecommendationExperiment {
+  key: string
+  name: string
+  category: 'FULL' | 'BASELINE' | 'ABLATION'
+  evaluatedUsers: number
+  precisionAtK: number
+  recallAtK: number
+  ndcgAtK: number
+  catalogCoverage: number
+  diversity: number
+  recallChangeVsFull: number
+  description: string
+}
+
+export interface RecommendationRadar {
+  dimensions: Record<string, number>
+  topGenres: string[]
+  evidenceCount: number
+  summary: string
 }
 
 export interface MovieInsight {
@@ -60,6 +95,14 @@ export interface MovieInsight {
   generatedAt: string
 }
 
+export interface MovieBoxOfficeRank {
+  movieId: number
+  movieTitle: string
+  moviePoster?: string
+  boxOffice: number
+  ticketCount: number
+}
+
 export interface Cinema {
   id: number
   name: string
@@ -69,6 +112,17 @@ export interface Cinema {
   phone?: string
   description?: string
   images?: string
+  status?: number
+}
+
+export interface Hall {
+  id: number
+  cinemaId: number
+  cinemaName?: string
+  name: string
+  totalRows: number
+  totalCols: number
+  totalSeats: number
   status?: number
 }
 
@@ -108,6 +162,8 @@ export interface Order {
   totalPrice: number
   originalPrice?: number
   discountAmount?: number
+  pointsUsed?: number
+  pointsEarned?: number
   couponId?: number
   status: number
   statusText?: string

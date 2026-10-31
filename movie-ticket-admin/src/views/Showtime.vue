@@ -69,7 +69,10 @@
       </div>
 
       <!-- 排片列表 -->
-      <el-table :data="showtimeList" v-loading="loading" style="margin-top: 20px;">
+      <BatchActions :rows="selectedRows" :disabled="loading" :api="showtimeApi" :statuses="[{ label: '批量取消排片', value: 2 }]"
+        @clear="batchTable?.clearSelection()" @busy="batchBusy = $event" @completed="handleBatchCompleted" />
+      <ManagementTable ref="batchTable" row-key="id" @selection-change="selectedRows = $event" :data="showtimeList" v-loading="loading || batchBusy" style="margin-top: 20px;">
+        <el-table-column type="selection" width="48" :selectable="() => !loading && !batchBusy" />
         <el-table-column prop="id" label="ID" width="70" />
         <el-table-column label="电影" min-width="200">
           <template #default="{ row }">
@@ -77,6 +80,7 @@
               <el-image
                 v-if="row.moviePoster"
                 :src="row.moviePoster"
+                lazy
                 fit="cover"
                 style="width: 40px; height: 56px; border-radius: 2px;"
               />
@@ -139,7 +143,7 @@
             </el-button>
           </template>
         </el-table-column>
-      </el-table>
+      </ManagementTable>
 
       <!-- 分页 -->
       <el-pagination
@@ -147,6 +151,7 @@
         v-model:page-size="pagination.size"
         :total="pagination.total"
         :page-sizes="[10, 20, 50, 100]"
+        :pager-count="5"
         layout="total, sizes, prev, pager, next, jumper"
         style="margin-top: 20px; justify-content: flex-end;"
         @size-change="loadShowtimes"
@@ -267,14 +272,30 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 场次管理：联动影片、影院和影厅，维护起止时间、票价与售票状态。
+ */
+import BatchActions from '@/components/BatchActions.vue'
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
+import { ElMessageBox } from 'element-plus/es/components/message-box/index'
+import type { FormInstance, FormRules } from 'element-plus'
 import { Plus, Search, Refresh, Edit, Delete, Close } from '@element-plus/icons-vue'
 import { showtimeApi } from '@/api/showtime'
 import { movieApi } from '@/api/movie'
 import { cinemaApi } from '@/api/cinema'
 import { hallApi } from '@/api/hall'
+import { useListPageState } from '@/composables/usePageState'
 import type { Showtime, Movie, Cinema, Hall } from '@/types'
+
+const batchTable = ref<{ clearSelection: () => void }>()
+const selectedRows = ref<Showtime[]>([])
+const batchBusy = ref(false)
+/** 接收批量操作结果，清理选择并刷新当前列表。 */
+const handleBatchCompleted = async (deleted: number) => {
+  if (deleted > 0 && deleted >= showtimeList.value.length && pagination.page > 1) pagination.page--
+  await loadShowtimes()
+}
 
 const loading = ref(false)
 const submitting = ref(false)
@@ -298,6 +319,7 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
+useListPageState('showtime', searchForm, pagination)
 
 const showtimeList = ref<Showtime[]>([])
 const formRef = ref<FormInstance>()
@@ -325,7 +347,10 @@ const formatDateTime = (val?: string) => {
   return val.replace('T', ' ').slice(0, 16)
 }
 
+/** 按当前筛选条件加载场次列表。 */
 const loadShowtimes = async () => {
+  batchTable.value?.clearSelection()
+  selectedRows.value = []
   loading.value = true
   try {
     const res = await showtimeApi.getPage({
@@ -346,6 +371,7 @@ const loadShowtimes = async () => {
   }
 }
 
+/** 加载影片和影院选项，供场次表单联动使用。 */
 const loadOptions = async () => {
   try {
     const [movies, cinemas] = await Promise.all([
@@ -359,6 +385,7 @@ const loadOptions = async () => {
   }
 }
 
+/** 按选中影院读取可选影厅。 */
 const loadHalls = async (cinemaId: number) => {
   try {
     hallOptions.value = await hallApi.getByCinemaId(cinemaId)
@@ -372,6 +399,7 @@ const handleMovieChange = () => {
   recalculateEndTime()
 }
 
+/** 切换影院后刷新其关联数据，避免沿用其他影院的选择。 */
 const handleCinemaChange = async (cinemaId: number) => {
   formData.hallId = 0
   if (cinemaId) {
@@ -385,6 +413,7 @@ const handleStartTimeChange = () => {
   recalculateEndTime()
 }
 
+/** 按选中影片片长和开场时间计算结束时间。 */
 const recalculateEndTime = () => {
   if (!formData.startTime || !formData.movieId) return
   const movie = movieOptions.value.find(m => m.id === formData.movieId)
@@ -395,11 +424,13 @@ const recalculateEndTime = () => {
   formData.endTime = `${end.getFullYear()}-${pad(end.getMonth() + 1)}-${pad(end.getDate())} ${pad(end.getHours())}:${pad(end.getMinutes())}:${pad(end.getSeconds())}`
 }
 
+/** 应用筛选条件并从第一页重新查询。 */
 const handleSearch = () => {
   pagination.page = 1
   loadShowtimes()
 }
 
+/** 清空筛选条件并重新加载列表。 */
 const handleReset = () => {
   searchForm.movieId = undefined
   searchForm.cinemaId = undefined
@@ -409,6 +440,7 @@ const handleReset = () => {
   loadShowtimes()
 }
 
+/** 初始化新增表单并打开编辑入口。 */
 const handleAdd = () => {
   isEdit.value = false
   dialogTitle.value = '添加排片'
@@ -416,6 +448,7 @@ const handleAdd = () => {
   dialogVisible.value = true
 }
 
+/** 将选中记录填入编辑表单。 */
 const handleEdit = async (row: Showtime) => {
   isEdit.value = true
   dialogTitle.value = '编辑排片'
@@ -432,6 +465,7 @@ const handleEdit = async (row: Showtime) => {
   dialogVisible.value = true
 }
 
+/** 确认后提交删除请求，成功后刷新列表。 */
 const handleDelete = async (row: Showtime) => {
   try {
     await ElMessageBox.confirm(
@@ -449,6 +483,7 @@ const handleDelete = async (row: Showtime) => {
   }
 }
 
+/** 确认后提交取消请求，并刷新订单或场次状态。 */
 const handleCancel = async (row: Showtime) => {
   try {
     await ElMessageBox.confirm('确定取消该排片吗？', '操作确认', { type: 'warning' })
@@ -462,6 +497,7 @@ const handleCancel = async (row: Showtime) => {
   }
 }
 
+/** 校验当前表单并提交保存，成功后更新页面数据。 */
 const handleSubmit = async () => {
   if (!formRef.value) return
   await formRef.value.validate(async (valid) => {

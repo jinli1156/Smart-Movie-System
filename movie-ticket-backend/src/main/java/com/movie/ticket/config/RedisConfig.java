@@ -13,6 +13,7 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
 
+/** 配置对象型 RedisTemplate，使用字符串键与 JSON 值序列化，并支持 Java 时间类型。 */
 @Configuration
 public class RedisConfig {
 

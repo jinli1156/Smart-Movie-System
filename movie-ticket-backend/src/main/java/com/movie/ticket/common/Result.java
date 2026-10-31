@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 
+/** 统一接口响应结构，封装业务状态码、提示信息和返回数据。 */
 @Data
 public class Result<T> implements Serializable {
 

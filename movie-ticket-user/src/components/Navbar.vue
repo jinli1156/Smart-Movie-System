@@ -3,11 +3,19 @@
     <div class="navbar-container">
       <div class="navbar-left">
         <router-link to="/home" class="logo">
-          <img class="logo-icon" src="/cinema-logo.png" alt="电影票务系统" />
-          <span class="logo-text">电影票务系统</span>
+          <img class="logo-icon" src="/xiangzhi-ticket.png" alt="响指电影" />
+          <span class="logo-text brand-wordmark" role="img" aria-label="响指电影"></span>
         </router-link>
 
         <div class="nav-links">
+          <router-link to="/posters" class="nav-link">
+            <MaterialIcon class="msr" name="auto_awesome" />
+            <span>AI 海报</span>
+          </router-link>
+          <router-link to="/assistant" class="nav-link">
+            <MaterialIcon class="msr" name="smart_toy" />
+            <span>影票观</span>
+          </router-link>
           <router-link to="/home" class="nav-link">
             <MaterialIcon class="msr" name="home" />
             <span>首页</span>
@@ -67,10 +75,13 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 用户导航栏，处理账号菜单与页面跳转。
+ */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -97,7 +108,6 @@ const handleCommand = (command: string) => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .navbar {
   position: sticky;

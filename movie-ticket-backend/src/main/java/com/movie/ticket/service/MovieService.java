@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+/** 影片目录查询及管理，提供热映、待映列表和影片状态维护。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -40,6 +41,7 @@ public class MovieService {
         STATUS_MAP.put(2, "即将上映");
     }
 
+    /** 查询当前热映影片列表。 */
     @SuppressWarnings("unchecked")
     public List<MovieVO> getNowShowing() {
         try {
@@ -69,6 +71,7 @@ public class MovieService {
         return result;
     }
 
+    /** 查询即将上映影片列表。 */
     @SuppressWarnings("unchecked")
     public List<MovieVO> getComingSoon() {
         try {
@@ -106,6 +109,7 @@ public class MovieService {
         }
     }
 
+    /** 按筛选条件分页查询电影，供列表页展示。 */
     public IPage<MovieVO> getPage(Integer page, Integer size, String keyword, Integer status) {
         Page<Movie> pageParam = new Page<>(page, size);
         LambdaQueryWrapper<Movie> wrapper = new LambdaQueryWrapper<>();
@@ -129,6 +133,7 @@ public class MovieService {
         return moviePage.convert(this::convertToVO);
     }
 
+    /** 根据 ID 查询电影详情。 */
     public MovieVO getById(Long id) {
         Movie movie = movieMapper.selectById(id);
         if (movie == null) {
@@ -137,16 +142,24 @@ public class MovieService {
         return convertToVO(movie);
     }
 
-    public void create(MovieDTO dto) {
+    /** 新增电影，由业务层执行参数及关联数据校验。 */
+    public Long create(MovieDTO dto) {
         Movie movie = new Movie();
         BeanUtils.copyProperties(dto, movie);
         if (movie.getStatus() == null) {
             movie.setStatus(1);
         }
         movieMapper.insert(movie);
-        clearMovieCache();
+        if (org.springframework.transaction.support.TransactionSynchronizationManager.isActualTransactionActive()) {
+            org.springframework.transaction.support.TransactionSynchronizationManager.registerSynchronization(
+                new org.springframework.transaction.support.TransactionSynchronization() {
+                    @Override public void afterCommit() { clearMovieCache(); }
+                });
+        } else clearMovieCache();
+        return movie.getId();
     }
 
+    /** 更新电影，由业务层校验当前操作权限与业务条件。 */
     public void update(Long id, MovieDTO dto) {
         Movie movie = movieMapper.selectById(id);
         if (movie == null) {
@@ -158,6 +171,7 @@ public class MovieService {
         clearMovieCache();
     }
 
+    /** 删除电影，由业务层检查权限及关联数据限制。 */
     public void delete(Long id) {
         Movie movie = movieMapper.selectById(id);
         if (movie == null) {
@@ -167,6 +181,7 @@ public class MovieService {
         clearMovieCache();
     }
 
+    /** 修改电影状态，具体可用状态和操作限制由业务层校验。 */
     public void updateStatus(Long id, Integer status) {
         Movie movie = movieMapper.selectById(id);
         if (movie == null) {

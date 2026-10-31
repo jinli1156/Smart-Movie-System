@@ -1,22 +1,23 @@
-import { createApp } from 'vue'
+/**
+ * 应用启动入口，注册状态管理、路由和界面组件后挂载 Vue 应用。
+ */
+import { createApp, defineAsyncComponent } from 'vue'
 import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
-import 'element-plus/dist/index.css'
-import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+// Programmatic message boxes are not covered by template component auto-imports.
+import 'element-plus/es/components/message-box/style/css'
+import 'element-plus/es/components/message/style/css'
+import './styles/dialogs.css'
 import App from './App.vue'
-import MaterialIcon from './components/MaterialIcon.vue'
+import poster from './directives/poster'
 import router from './router'
 
 const app = createApp(App)
 const pinia = createPinia()
 
-for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
-  app.component(key, component)
-}
-app.component('MaterialIcon', MaterialIcon)
+app.component('MaterialIcon', defineAsyncComponent(() => import('./components/MaterialIcon.vue')))
+app.directive('poster', poster)
 
 app.use(pinia)
 app.use(router)
-app.use(ElementPlus)
 
 app.mount('#app')

@@ -19,22 +19,25 @@
 
       <div v-loading="loading" class="content">
         <section v-if="cinema" class="cinema-hero">
-          <div class="hero-mark"><MaterialIcon class="msr" name="theaters" /></div>
+          <div class="hero-mark">
+            <img v-poster :src="cinemaImage(cinema)" :alt="`${cinema.name}影院图片`" />
+            <span class="hero-mark-overlay"><MaterialIcon class="msr" name="theaters" /></span>
+          </div>
           <div class="hero-main">
             <div class="eyebrow">CINEMA PROFILE</div>
             <h1>{{ cinema.name }}</h1>
             <p><MaterialIcon class="msr" name="location_on" />{{ cinema.address }}</p>
             <div class="service-tags">
-              <span>可退票</span><span>可改签</span><span>免费停车</span><span>激光放映</span>
+              <span>在线选座</span><span>按规则退票</span>
             </div>
           </div>
           <div class="hero-side">
-            <div><strong>9.2</strong><span>影院评分</span></div>
-            <i></i>
+
             <div><strong>{{ movies.length }}</strong><span>可选影片</span></div>
           </div>
         </section>
 
+        <MarketingPlacements v-if="cinema" slot="CINEMA" :cinema-id="cinema.id" />
         <section class="movie-picker">
           <div class="section-head">
             <div>
@@ -58,7 +61,7 @@
               @click="selectMovie(movie)"
             >
               <div class="poster">
-                <img v-if="movie.poster" :src="movie.poster" :alt="movie.title" />
+                <img v-if="movie.poster" v-poster :src="movie.poster" :alt="movie.title" />
                 <MaterialIcon v-else class="msr" name="movie" />
                 <span v-if="showtimeCount(movie.id)" class="session-count">{{ showtimeCount(movie.id) }} 场</span>
               </div>
@@ -72,15 +75,15 @@
         <template v-if="selectedMovie">
           <section class="movie-summary">
             <div class="summary-poster">
-              <img v-if="selectedMovie.poster" :src="selectedMovie.poster" :alt="selectedMovie.title" />
+              <img v-if="selectedMovie.poster" v-poster :src="selectedMovie.poster" :alt="selectedMovie.title" />
               <MaterialIcon v-else class="msr" name="movie" />
             </div>
             <div class="summary-body">
               <div class="title-row">
                 <h2>{{ selectedMovie.title }}</h2>
-                <span class="rating">{{ selectedMovie.rating?.toFixed(1) || '8.5' }}<small>分</small></span>
+                <span class="rating">{{ selectedMovie.rating?.toFixed(1) || '暂无评分' }}<small>分</small></span>
               </div>
-              <p class="english">{{ selectedMovie.englishTitle || 'CINEMA+ FEATURE' }}</p>
+              <p class="english">{{ selectedMovie.englishTitle || '响指电影 FEATURE' }}</p>
               <div class="movie-meta">
                 <span><b>时长</b>{{ selectedMovie.duration }} 分钟</span>
                 <span><b>类型</b>{{ selectedMovie.genre || '剧情' }}</span>
@@ -107,6 +110,7 @@
               <button
                 v-for="date in dateOptions"
                 :key="date.value"
+                type="button"
                 :class="{ active: selectedDate === date.value }"
                 :aria-pressed="selectedDate === date.value"
                 @click="selectDate(date.value)"
@@ -137,16 +141,20 @@
           </section>
         </template>
 
-        <footer>© 2026 CINEMA+ · 智能电影购票系统</footer>
+        <footer>© 2026 响指电影 · 智能电影购票系统</footer>
       </div>
     </main>
   </div>
 </template>
 
 <script setup lang="ts">
+import MarketingPlacements from '@/components/MarketingPlacements.vue'
+/**
+ * 影院详情：展示影院资料，按影片和日期加载场次并进入选座。
+ */
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import AppSidebar from '@/components/AppSidebar.vue'
 import { cinemaApi } from '@/api/cinema'
 import { movieApi } from '@/api/movie'
@@ -157,6 +165,25 @@ import type { Cinema, Movie, Showtime } from '@/types'
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const cinemaImagePool = [
+  'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=900&q=82',
+  'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=900&q=82',
+  'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=900&q=82',
+  'https://images.unsplash.com/photo-1574267432553-4b4628081c31?auto=format&fit=crop&w=900&q=82',
+  'https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?auto=format&fit=crop&w=900&q=82',
+  'https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=900&q=82',
+  'https://images.unsplash.com/photo-1543536448-d209d2d13a1c?auto=format&fit=crop&w=900&q=82',
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=82'
+]
+
+const cinemaImage = (value: Cinema) => {
+  const configured = (value.images || '').split(',').map(item => item.trim()).find(Boolean)
+  if (configured) {
+    if (/^https?:\/\//i.test(configured) || configured.startsWith('/')) return configured
+    return `/api/uploads/${configured}`
+  }
+  return cinemaImagePool[Math.abs(value.id - 1) % cinemaImagePool.length]
+}
 const loading = ref(false)
 const cinema = ref<Cinema | null>(null)
 const movies = ref<Movie[]>([])
@@ -173,7 +200,7 @@ const toDateKey = (date: Date) => {
 
 const selectedDate = ref(toDateKey(new Date()))
 const dateOptions = computed(() => {
-  const labels = ['今天', '明天', '后天']
+  const labels = ['今天', '明天', '后天', '3天后', '4天后']
   return labels.map((label, index) => {
     const date = new Date()
     date.setDate(date.getDate() + index)
@@ -193,7 +220,13 @@ const selectedShowtimesAll = computed(() => showtimes.value
 const selectedShowtimes = computed(() => selectedShowtimesAll.value.slice(0, 12))
 
 const showtimeCount = (movieId: number) => showtimes.value.filter(item => item.movieId === movieId).length
+const firstAvailableDateForMovie = (movieId: number) => dateOptions.value.find(option =>
+  showtimes.value.some(showtime =>
+    showtime.movieId === movieId && toDateKey(new Date(showtime.startTime)) === option.value
+  )
+)?.value
 
+/** 加载影院资料、影片及可用场次，恢复页面选择上下文。 */
 const loadPage = async () => {
   const cinemaId = Number(route.params.id)
   if (!cinemaId) {
@@ -204,20 +237,19 @@ const loadPage = async () => {
   try {
     const [cinemaData, pageData, nowShowing] = await Promise.all([
       cinemaApi.getById(cinemaId),
-      showtimeApi.getPage({ page: 1, size: 200, cinemaId, status: 0 }),
+      showtimeApi.getPage({ page: 1, size: 1000, cinemaId, status: 0 }),
       movieApi.getNowShowing(true)
     ])
     cinema.value = cinemaData
     const now = Date.now()
-    showtimes.value = (pageData?.records || []).filter(item => new Date(item.endTime || item.startTime).getTime() > now)
-
-    const merged = new Map<number, Movie>()
-    ;(nowShowing || []).forEach(movie => merged.set(movie.id, movie))
-    const missingIds = Array.from(new Set(showtimes.value.map(item => item.movieId)))
-      .filter(id => !merged.has(id))
-    const missingMovies = await Promise.all(missingIds.map(id => movieApi.getById(id)))
-    missingMovies.forEach(movie => merged.set(movie.id, movie))
-    movies.value = Array.from(merged.values()).sort((a, b) => showtimeCount(b.id) - showtimeCount(a.id))
+    const nowShowingMovies = (nowShowing || []).filter(movie => movie.status === 1)
+    const nowShowingIds = new Set(nowShowingMovies.map(movie => movie.id))
+    showtimes.value = (pageData?.records || []).filter(item =>
+      nowShowingIds.has(item.movieId) && new Date(item.endTime || item.startTime).getTime() > now
+    )
+    movies.value = nowShowingMovies
+      .filter(movie => showtimeCount(movie.id) > 0)
+      .sort((a, b) => showtimeCount(b.id) - showtimeCount(a.id))
 
     const requestedMovieId = Number(route.query.movieId)
     selectedMovieId.value = movies.value.some(movie => movie.id === requestedMovieId)
@@ -227,6 +259,8 @@ const loadPage = async () => {
     const requestedDate = String(route.query.date || '')
     if (dateOptions.value.some(option => option.value === requestedDate)) {
       selectedDate.value = requestedDate
+    } else if (selectedMovieId.value) {
+      selectedDate.value = firstAvailableDateForMovie(selectedMovieId.value) || selectedDate.value
     }
   } catch (error) {
     console.error('加载影院详情失败:', error)
@@ -238,6 +272,7 @@ const loadPage = async () => {
 
 const selectMovie = (movie: Movie) => {
   selectedMovieId.value = movie.id
+  selectedDate.value = firstAvailableDateForMovie(movie.id) || selectedDate.value
   router.replace({ query: { movieId: String(movie.id), date: selectedDate.value } })
 }
 
@@ -278,8 +313,6 @@ onMounted(loadPage)
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 * { box-sizing: border-box; }
 .msr { font-family:'Material Symbols Rounded'; font-weight:normal; font-style:normal; font-size:20px; line-height:1; letter-spacing:normal; text-transform:none; white-space:nowrap; word-wrap:normal; direction:ltr; -webkit-font-feature-settings:'liga'; -webkit-font-smoothing:antialiased; }
@@ -292,7 +325,7 @@ onMounted(loadPage)
 .breadcrumb span { cursor:pointer; }.breadcrumb span:hover { color:var(--orange); }.breadcrumb i { font-style:normal; color:#aaa; }.breadcrumb strong { color:var(--ink); }
 .content { padding:30px 34px 42px; max-width:1500px; margin:0 auto; min-height:calc(100vh - 76px); }
 .cinema-hero { min-height:230px; display:flex; align-items:center; gap:26px; padding:36px 42px; border-radius:26px; color:#fff; background:radial-gradient(circle at 78% 24%,rgba(255,132,0,.22),transparent 30%),linear-gradient(135deg,#241230,#3f285b 58%,#241331); box-shadow:0 18px 40px rgba(35,18,48,.22); }
-.hero-mark { width:116px; height:116px; border-radius:24px; display:grid; place-items:center; background:linear-gradient(145deg,#ff9c32,#ff7900); box-shadow:0 14px 32px rgba(255,132,0,.35); }.hero-mark .msr{font-size:54px;color:#18110a;}
+.hero-mark { width:116px; height:116px; position:relative; overflow:hidden; border-radius:24px; display:grid; place-items:center; background:linear-gradient(145deg,#ff9c32,#ff7900); box-shadow:0 14px 32px rgba(255,132,0,.35); }.hero-mark img{width:100%;height:100%;object-fit:cover;}.hero-mark-overlay{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(145deg,rgba(255,156,50,.15),rgba(24,17,10,.58));}.hero-mark-overlay .msr{font-size:54px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.45);}
 .hero-main { flex:1; min-width:0; }.eyebrow { font:700 10px/1 'JetBrains Mono'; letter-spacing:2.4px; color:#cdb8e9; }.eyebrow.orange{color:var(--orange);}.hero-main h1{margin:12px 0 10px;font-size:34px;}.hero-main p{margin:0;display:flex;gap:7px;align-items:center;color:rgba(255,255,255,.72);}.hero-main p .msr{font-size:18px;}
 .service-tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px;}.service-tags span{padding:6px 10px;border:1px solid rgba(255,255,255,.22);border-radius:7px;font-size:12px;background:rgba(255,255,255,.07);}
 .hero-side{display:flex;align-items:center;gap:24px;padding:20px 26px;border:1px solid rgba(255,255,255,.13);border-radius:18px;background:rgba(255,255,255,.06);}.hero-side div{display:flex;flex-direction:column;align-items:center;gap:5px;}.hero-side strong{font:800 30px/1 'JetBrains Mono';color:#ff9a2e;}.hero-side span{font-size:11px;color:rgba(255,255,255,.6);}.hero-side i{height:45px;width:1px;background:rgba(255,255,255,.14);}

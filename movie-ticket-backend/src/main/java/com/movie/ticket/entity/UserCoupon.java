@@ -10,6 +10,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/** 用户持有的优惠券，保存使用门槛、有效期及支付订单关联。 */
 @Data
 @TableName("user_coupon")
 public class UserCoupon {

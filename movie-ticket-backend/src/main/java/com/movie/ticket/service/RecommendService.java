@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+/** 混合推荐业务：融合内容偏好和用户行为，生成推荐理由、偏好画像及离线评估结果。 */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -42,7 +43,9 @@ public class RecommendService {
     private final CommentMapper commentMapper;
     private final UserMovieBehaviorMapper behaviorMapper;
     private final CinemaMapper cinemaMapper;
+    private final MovieRecommendationAiService movieRecommendationAiService;
 
+    /** 按热度查询热门影片，供首页或推荐兜底使用。 */
     public List<MovieVO> getHotMovies(Integer limit) {
         int size = safeLimit(limit, 10);
         String key = HOT_MOVIES_KEY + ":" + size;
@@ -56,7 +59,7 @@ public class RecommendService {
             log.warn("读取热门电影缓存失败，降级查库: {} - {}", key, exception.getMessage());
         }
         List<Movie> movies = candidates();
-        TrendContext trend = trendContext(movies);
+        TrendContext trend = trendContext(movies, LocalDateTime.now());
         List<Movie> result = movies.stream()
                 .sorted(Comparator.comparingDouble((Movie m) -> trendScore(m, trend)).reversed())
                 .limit(size).toList();
@@ -71,34 +74,66 @@ public class RecommendService {
         return result.stream().map(this::toMovieVO).toList();
     }
 
+    /** 融合用户偏好与行为生成个性化影片及推荐理由。 */
     public List<MovieRecommendationVO> getRecommendedMovies(Long userId, Integer limit,
                                                               Double latitude, Double longitude) {
-        return recommend(userId, safeLimit(limit, 10), latitude, longitude, Set.of());
+        int size = safeLimit(limit, 10);
+        List<Movie> movies = candidates();
+        List<MovieRecommendationVO> pool = recommend(userId, size, latitude, longitude, movies,
+                RecommendationOptions.production());
+        return movieRecommendationAiService.rank(pool, viewingEvidence(userId, movies), size);
     }
 
     private List<MovieRecommendationVO> recommend(Long userId, int limit, Double latitude,
-                                                   Double longitude, Set<Long> heldOut) {
-        List<Movie> movies = candidates();
+                                                   Double longitude, List<Movie> movies,
+                                                   RecommendationOptions options) {
         if (movies.isEmpty()) return List.of();
         Map<Long, Movie> movieMap = movies.stream().collect(Collectors.toMap(Movie::getId, Function.identity()));
-        UserSignals signals = signals(userId, movieMap, heldOut);
-        SceneContext scene = sceneContext(movies, latitude, longitude);
-        TrendContext trend = trendContext(movies);
+        UserSignals signals = signals(userId, movieMap, options);
+        LocalDateTime referenceTime = options.cutoff() == null ? LocalDateTime.now() : options.cutoff();
+        SceneContext scene = sceneContext(movies, latitude, longitude, referenceTime, options.cutoff() != null);
+        TrendContext trend = trendContext(movies, referenceTime, options.cutoff() != null);
         List<ScoredMovie> scored = new ArrayList<>();
         for (Movie movie : movies) {
             if (signals.purchased().contains(movie.getId())) continue;
             double content = contentScore(movie, signals.profile());
             double preference = preferenceScore(movie, signals.explicitGenres());
             double behavior = behaviorScore(movie, signals.interactions(), movieMap);
-            double sceneValue = sceneScore(movie, scene);
-            double trendValue = trendScore(movie, trend);
-            double total = content * .30 + preference * .15 + behavior * .20 + sceneValue * .20 + trendValue * .15;
+            double sceneValue = options.useScene() ? sceneScore(movie, scene) : 0;
+            double trendValue = options.useTrend() ? trendScore(movie, trend) : 0;
+            double total = weightedTotal(content, preference, behavior, sceneValue, trendValue, options);
             scored.add(new ScoredMovie(movie, clamp(total), content, preference, behavior, sceneValue, trendValue,
                     reason(movie, signals, movieMap, scene)));
         }
-        return diversify(scored, limit).stream().map(this::toRecommendationVO).toList();
+        List<ScoredMovie> selected = options.useDiversity() ? diversify(scored, limit) : scored.stream()
+                .sorted(Comparator.comparingDouble(ScoredMovie::total).reversed()).limit(limit).toList();
+        return selected.stream().map(this::toRecommendationVO).toList();
     }
 
+    /** 返回用于偏好雷达图的维度分数及依据。 */
+    public RecommendationRadarVO getRadar(Long userId) {
+        List<MovieRecommendationVO> recommendations = recommend(userId, 8, null, null, candidates(),
+                RecommendationOptions.production());
+        RecommendationProfileVO profile = profileFacts(userId);
+        Map<String, Integer> dimensions = new LinkedHashMap<>();
+        dimensions.put("内容契合", averageScore(recommendations, score -> score.getContent()));
+        dimensions.put("显式偏好", averageScore(recommendations, score -> score.getUserPreference()));
+        dimensions.put("行为相似", averageScore(recommendations, score -> score.getBehavior()));
+        dimensions.put("场景适配", averageScore(recommendations, score -> score.getScene()));
+        dimensions.put("近期趋势", averageScore(recommendations, score -> score.getTrend()));
+        int evidence = profile.getViewedCount() + profile.getFavoriteCount()
+                + profile.getPurchasedCount() + profile.getRatedCount();
+        String strongest = dimensions.entrySet().stream().max(Map.Entry.comparingByValue())
+                .map(Map.Entry::getKey).orElse("内容契合");
+        return RecommendationRadarVO.builder().dimensions(dimensions)
+                .topGenres(profile.getFavoriteGenres().stream().limit(5).toList())
+                .evidenceCount(evidence)
+                .summary(evidence == 0 ? "暂无行为证据，当前以影片口碑和趋势作为冷启动依据"
+                        : "当前推荐主要由“" + strongest + "”驱动，共使用 " + evidence + " 条用户侧证据")
+                .build();
+    }
+
+    /** 依据影片内容特征返回相似影片。 */
     public List<MovieVO> getSimilarMovies(Long movieId, Integer limit) {
         Movie source = movieMapper.selectById(movieId);
         if (source == null) return List.of();
@@ -107,7 +142,24 @@ public class RecommendService {
                 .limit(safeLimit(limit, 6)).map(this::toMovieVO).toList();
     }
 
+    /** 生成用户观影偏好画像与解释。 */
     public RecommendationProfileVO getProfile(Long userId) {
+        return movieRecommendationAiService.describe(profileFacts(userId), viewingEvidence(userId, candidates()));
+    }
+
+    private Map<String, Object> viewingEvidence(Long userId, List<Movie> movies) {
+        Map<Long, Movie> catalog = movies.stream().collect(Collectors.toMap(Movie::getId, Function.identity()));
+        UserSignals signals = signals(userId, catalog, RecommendationOptions.production());
+        Map<String, Object> evidence = new LinkedHashMap<>();
+        evidence.put("explicitGenres", signals.explicitGenres());
+        evidence.put("weightedGenres", signals.profile().genres());
+        evidence.put("weightedDirectors", signals.profile().directors());
+        evidence.put("weightedLanguages", signals.profile().languages());
+        evidence.put("preferredDuration", signals.profile().duration());
+        return evidence;
+    }
+
+    private RecommendationProfileVO profileFacts(Long userId) {
         User user = userMapper.selectById(userId);
         List<UserMovieBehavior> behaviors = behaviors(userId);
         long purchased = orderMapper.selectCount(new LambdaQueryWrapper<TicketOrder>()
@@ -123,6 +175,7 @@ public class RecommendService {
                 .purchasedCount((int) purchased).ratedCount((int) rated).build();
     }
 
+    /** 保存新用户选择的影片及类型偏好，初始化推荐画像。 */
     @Transactional(rollbackFor = Exception.class)
     public void initializeColdStart(Long userId, ColdStartRequest request) {
         List<Long> ids = request.getMovieIds().stream().distinct().toList();
@@ -144,6 +197,7 @@ public class RecommendService {
         userMapper.updateById(update);
     }
 
+    /** 记录影片浏览行为，作为后续推荐的隐式反馈。 */
     @Transactional(rollbackFor = Exception.class)
     public void recordView(Long userId, Long movieId) {
         requireMovie(movieId);
@@ -157,6 +211,7 @@ public class RecommendService {
         }
     }
 
+    /** 切换当前用户对影片的想看状态，并返回最新状态。 */
     @Transactional(rollbackFor = Exception.class)
     public boolean toggleFavorite(Long userId, Long movieId) {
         requireMovie(movieId);
@@ -166,11 +221,13 @@ public class RecommendService {
         return active;
     }
 
+    /** 检查当前用户是否已将影片加入想看。 */
     public boolean isFavorite(Long userId, Long movieId) {
         UserMovieBehavior behavior = findBehavior(userId, movieId, FAVORITE);
         return behavior != null && Integer.valueOf(1).equals(behavior.getActive());
     }
 
+    /** 读取当前用户的想看影片及收藏信息。 */
     public List<FavoriteMovieVO> getFavorites(Long userId) {
         List<UserMovieBehavior> favorites = behaviorMapper.selectList(
                 new LambdaQueryWrapper<UserMovieBehavior>()
@@ -194,6 +251,7 @@ public class RecommendService {
         }).filter(Objects::nonNull).toList();
     }
 
+    /** 移除本人想看记录。 */
     @Transactional(rollbackFor = Exception.class)
     public void removeFavorite(Long userId, Long movieId) {
         UserMovieBehavior behavior = findBehavior(userId, movieId, FAVORITE);
@@ -201,46 +259,158 @@ public class RecommendService {
         setFavorite(userId, movieId, false);
     }
 
+    /** 按时间划分进行离线推荐评估，比较模型、基线和消融指标。 */
     public RecommendationEvaluationVO evaluate(int k) {
         int size = Math.max(1, Math.min(20, k));
         List<UserMovieBehavior> favorites = behaviorMapper.selectList(new LambdaQueryWrapper<UserMovieBehavior>()
                 .eq(UserMovieBehavior::getBehaviorType, FAVORITE).eq(UserMovieBehavior::getActive, 1)
                 .orderByAsc(UserMovieBehavior::getLastOccurredAt));
         Map<Long, List<UserMovieBehavior>> byUser = favorites.stream()
+                .filter(item -> item.getLastOccurredAt() != null)
                 .collect(Collectors.groupingBy(UserMovieBehavior::getUserId));
-        List<Movie> catalog = candidates();
-        Set<Long> catalogIds = catalog.stream().map(Movie::getId).collect(Collectors.toSet());
-        int users = 0, hits = 0;
-        Set<Long> covered = new HashSet<>();
-        double diversity = 0;
+        Map<String, EvaluationAccumulator> metrics = new LinkedHashMap<>();
+        metrics.put("HYBRID", new EvaluationAccumulator());
+        metrics.put("POPULAR", new EvaluationAccumulator());
+        metrics.put("CONTENT", new EvaluationAccumulator());
+        metrics.put("NO_DECAY", new EvaluationAccumulator());
+        metrics.put("NO_SCENE", new EvaluationAccumulator());
+        metrics.put("NO_DIVERSITY", new EvaluationAccumulator());
+        Set<Long> eligibleCatalog = new HashSet<>();
+        int skipped = 0;
         for (Map.Entry<Long, List<UserMovieBehavior>> entry : byUser.entrySet()) {
             UserMovieBehavior heldOut = entry.getValue().getLast();
-            if (!catalogIds.contains(heldOut.getMovieId())) continue;
-            List<MovieRecommendationVO> recommendations = recommend(entry.getKey(), size, null, null,
-                    Set.of(heldOut.getMovieId()));
-            if (recommendations.isEmpty()) continue;
-            users++;
-            if (recommendations.stream().anyMatch(m -> heldOut.getMovieId().equals(m.getId()))) hits++;
-            covered.addAll(recommendations.stream().map(MovieVO::getId).toList());
-            diversity += diversity(recommendations);
+            LocalDateTime cutoff = heldOut.getLastOccurredAt();
+            List<Movie> catalog = evaluationCandidates(cutoff);
+            Set<Long> catalogIds = catalog.stream().map(Movie::getId).collect(Collectors.toSet());
+            if (!catalogIds.contains(heldOut.getMovieId()) || entry.getValue().stream()
+                    .filter(item -> item.getLastOccurredAt().isBefore(cutoff)).findAny().isEmpty()) {
+                skipped++;
+                continue;
+            }
+            eligibleCatalog.addAll(catalogIds);
+            RecommendationOptions full = RecommendationOptions.evaluation(cutoff, Set.of(heldOut.getMovieId()));
+            Map<String, List<MovieRecommendationVO>> runs = new LinkedHashMap<>();
+            runs.put("HYBRID", recommend(entry.getKey(), size, null, null, catalog, full));
+            runs.put("POPULAR", popularBaseline(entry.getKey(), size, catalog, full));
+            runs.put("CONTENT", contentBaseline(entry.getKey(), size, catalog, full));
+            runs.put("NO_DECAY", recommend(entry.getKey(), size, null, null, catalog, full.withTimeDecay(false)));
+            runs.put("NO_SCENE", recommend(entry.getKey(), size, null, null, catalog, full.withScene(false)));
+            runs.put("NO_DIVERSITY", recommend(entry.getKey(), size, null, null, catalog, full.withDiversity(false)));
+            runs.forEach((key, recommendations) -> metrics.get(key)
+                    .add(recommendations, heldOut.getMovieId(), size));
         }
-        return RecommendationEvaluationVO.builder().k(size).evaluatedUsers(users)
-                .precisionAtK(round4(users == 0 ? 0 : hits / (double) (users * size)))
-                .recallAtK(round4(users == 0 ? 0 : hits / (double) users))
-                .catalogCoverage(round4(catalog.isEmpty() ? 0 : covered.size() / (double) catalog.size()))
-                .diversity(round4(users == 0 ? 0 : diversity / users))
-                .protocol("按用户时间顺序留出最近一次想看行为，使用此前行为重建画像并进行 leave-one-out 评估").build();
+        RecommendationExperimentVO hybrid = experiment("HYBRID", "完整混合模型", "FULL", metrics.get("HYBRID"),
+                size, eligibleCatalog.size(), 0, "时间衰减 + 内容偏好 + 行为 + 场景 + 趋势 + 多样性重排");
+        double fullRecall = hybrid.getRecallAtK();
+        List<RecommendationExperimentVO> baselines = List.of(
+                experiment("POPULAR", "热门推荐基线", "BASELINE", metrics.get("POPULAR"), size,
+                        eligibleCatalog.size(), fullRecall, "仅使用留出时间点之前七天的销量与影片评分"),
+                experiment("CONTENT", "纯内容推荐基线", "BASELINE", metrics.get("CONTENT"), size,
+                        eligibleCatalog.size(), fullRecall, "仅使用留出时间点之前的用户行为构建内容画像")
+        );
+        List<RecommendationExperimentVO> ablations = List.of(
+                experiment("NO_DECAY", "去掉时间衰减", "ABLATION", metrics.get("NO_DECAY"), size,
+                        eligibleCatalog.size(), fullRecall, "所有历史行为使用相同时间权重"),
+                experiment("NO_SCENE", "去掉场景特征", "ABLATION", metrics.get("NO_SCENE"), size,
+                        eligibleCatalog.size(), fullRecall, "不使用未来七天场次、价格与距离特征"),
+                experiment("NO_DIVERSITY", "去掉多样性重排", "ABLATION", metrics.get("NO_DIVERSITY"), size,
+                        eligibleCatalog.size(), fullRecall, "直接按相关性得分排序，不限制类型集中度")
+        );
+        return RecommendationEvaluationVO.builder().k(size).evaluatedUsers(hybrid.getEvaluatedUsers())
+                .precisionAtK(hybrid.getPrecisionAtK()).recallAtK(hybrid.getRecallAtK())
+                .ndcgAtK(hybrid.getNdcgAtK()).catalogCoverage(hybrid.getCatalogCoverage())
+                .diversity(hybrid.getDiversity()).skippedUsers(skipped)
+                .baselines(baselines).ablations(ablations)
+                .protocol("严格时间 leave-one-out：每位用户留出最后一次想看，在该时间点截断浏览、想看、购买、评分和趋势；评估时禁用无历史快照的静态类型偏好")
+                .candidatePolicy("仅使用留出时间点后 7 天内存在可售场次的影片，避免向历史用户推荐当时不可购买的影片")
+                .generatedAt(LocalDateTime.now()).build();
     }
 
-    private UserSignals signals(Long userId, Map<Long, Movie> movieMap, Set<Long> heldOut) {
+    private List<Movie> evaluationCandidates(LocalDateTime cutoff) {
+        List<Showtime> available = showtimeMapper.selectList(new LambdaQueryWrapper<Showtime>()
+                .ne(Showtime::getStatus, 2)
+                .le(Showtime::getCreateTime, cutoff)
+                .ge(Showtime::getStartTime, cutoff)
+                .lt(Showtime::getStartTime, cutoff.plusDays(7)));
+        List<Long> movieIds = available.stream().map(Showtime::getMovieId).filter(Objects::nonNull)
+                .distinct().toList();
+        return movieIds.isEmpty() ? List.of() : movieMapper.selectBatchIds(movieIds);
+    }
+
+    private List<MovieRecommendationVO> popularBaseline(Long userId, int limit, List<Movie> catalog,
+                                                         RecommendationOptions options) {
+        Map<Long, Movie> movieMap = catalog.stream().collect(Collectors.toMap(Movie::getId, Function.identity()));
+        UserSignals signals = signals(userId, movieMap, options);
+        TrendContext trend = trendContext(catalog, options.referenceTime(), true);
+        return catalog.stream().filter(movie -> !signals.purchased().contains(movie.getId()))
+                .sorted(Comparator.comparingDouble((Movie movie) -> trendScore(movie, trend)).reversed())
+                .limit(limit).map(movie -> new ScoredMovie(movie, trendScore(movie, trend), 0, 0, 0, 0,
+                        trendScore(movie, trend), "基线模型：该影片在留出时间点之前的口碑与销量较高"))
+                .map(this::toRecommendationVO).toList();
+    }
+
+    private List<MovieRecommendationVO> contentBaseline(Long userId, int limit, List<Movie> catalog,
+                                                         RecommendationOptions options) {
+        Map<Long, Movie> movieMap = catalog.stream().collect(Collectors.toMap(Movie::getId, Function.identity()));
+        UserSignals signals = signals(userId, movieMap, options.withScene(false).withTrend(false).withDiversity(false));
+        return catalog.stream().filter(movie -> !signals.purchased().contains(movie.getId()))
+                .map(movie -> new ScoredMovie(movie, contentScore(movie, signals.profile()),
+                        contentScore(movie, signals.profile()), 0,
+                        behaviorScore(movie, signals.interactions(), movieMap), 0, 0,
+                        "基线模型：影片内容与你在留出时间点之前的观影画像相似"))
+                .sorted(Comparator.comparingDouble(ScoredMovie::total).reversed()).limit(limit)
+                .map(this::toRecommendationVO).toList();
+    }
+
+    private RecommendationExperimentVO experiment(String key, String name, String category,
+                                                    EvaluationAccumulator accumulator, int k, int catalogSize,
+                                                    double fullRecall, String description) {
+        double precision = accumulator.users == 0 ? 0 : accumulator.hits / (double) (accumulator.users * k);
+        double recall = accumulator.users == 0 ? 0 : accumulator.hits / (double) accumulator.users;
+        return RecommendationExperimentVO.builder().key(key).name(name).category(category)
+                .evaluatedUsers(accumulator.users).precisionAtK(round4(precision)).recallAtK(round4(recall))
+                .ndcgAtK(round4(accumulator.users == 0 ? 0 : accumulator.ndcg / accumulator.users))
+                .catalogCoverage(round4(catalogSize == 0 ? 0 : accumulator.covered.size() / (double) catalogSize))
+                .diversity(round4(accumulator.users == 0 ? 0 : accumulator.diversity / accumulator.users))
+                .recallChangeVsFull("FULL".equals(category) ? 0 : round4(recall - fullRecall))
+                .description(description).build();
+    }
+
+    private double weightedTotal(double content, double preference, double behavior, double scene, double trend,
+                                 RecommendationOptions options) {
+        double contentWeight = .30;
+        double preferenceWeight = .15;
+        double behaviorWeight = .20;
+        double sceneWeight = options.useScene() ? .20 : 0;
+        double trendWeight = options.useTrend() ? .15 : 0;
+        double sum = contentWeight + preferenceWeight + behaviorWeight + sceneWeight + trendWeight;
+        return (content * contentWeight + preference * preferenceWeight + behavior * behaviorWeight
+                + scene * sceneWeight + trend * trendWeight) / sum;
+    }
+
+    private int averageScore(List<MovieRecommendationVO> recommendations,
+                             Function<RecommendationScoreVO, Integer> getter) {
+        return (int) Math.round(recommendations.stream().map(MovieRecommendationVO::getRecommendationScores)
+                .filter(Objects::nonNull).map(getter).filter(Objects::nonNull)
+                .mapToInt(Integer::intValue).average().orElse(0));
+    }
+
+    private boolean availableAt(LocalDateTime eventTime, LocalDateTime cutoff) {
+        return cutoff == null || (eventTime != null && !eventTime.isAfter(cutoff));
+    }
+
+    private UserSignals signals(Long userId, Map<Long, Movie> movieMap, RecommendationOptions options) {
         User user = userMapper.selectById(userId);
-        List<String> explicit = user == null || user.getFavoriteGenres() == null ? List.of() : user.getFavoriteGenres();
+        List<String> explicit = !options.useExplicitPreferences() || user == null || user.getFavoriteGenres() == null
+                ? List.of() : user.getFavoriteGenres();
         Map<Long, Double> interactions = new HashMap<>();
         for (UserMovieBehavior behavior : behaviors(userId)) {
-            if (heldOut.contains(behavior.getMovieId())) continue;
+            if (options.heldOut().contains(behavior.getMovieId())
+                    || !availableAt(behavior.getLastOccurredAt(), options.cutoff())) continue;
             double weight = VIEW.equals(behavior.getBehaviorType())
                     ? Math.min(3, value(behavior.getBehaviorCount())) * VIEW_WEIGHT : FAVORITE_WEIGHT;
-            interactions.merge(behavior.getMovieId(), weight * decay(behavior.getLastOccurredAt()), Double::sum);
+            interactions.merge(behavior.getMovieId(), weight * decay(behavior.getLastOccurredAt(),
+                    options.referenceTime(), options.useTimeDecay()), Double::sum);
         }
         List<TicketOrder> orders = orderMapper.selectList(new LambdaQueryWrapper<TicketOrder>()
                 .eq(TicketOrder::getUserId, userId).eq(TicketOrder::getStatus, 1));
@@ -248,14 +418,18 @@ public class RecommendService {
         Set<Long> purchased = new HashSet<>();
         for (TicketOrder order : orders) {
             Showtime showtime = showtimes.get(order.getShowtimeId());
-            if (showtime == null || heldOut.contains(showtime.getMovieId())) continue;
+            if (showtime == null || options.heldOut().contains(showtime.getMovieId())
+                    || !availableAt(order.getCreateTime(), options.cutoff())) continue;
             purchased.add(showtime.getMovieId());
-            interactions.merge(showtime.getMovieId(), PURCHASE_WEIGHT * decay(order.getCreateTime()), Double::sum);
+            interactions.merge(showtime.getMovieId(), PURCHASE_WEIGHT * decay(order.getCreateTime(),
+                    options.referenceTime(), options.useTimeDecay()), Double::sum);
         }
         Set<String> fiveStarDirectors = new HashSet<>();
         for (Comment comment : commentMapper.selectList(new LambdaQueryWrapper<Comment>().eq(Comment::getUserId, userId))) {
-            if (heldOut.contains(comment.getMovieId()) || comment.getRating() == null || comment.getRating() < 5) continue;
-            interactions.merge(comment.getMovieId(), FIVE_STAR_WEIGHT * decay(comment.getCreateTime()), Double::sum);
+            if (options.heldOut().contains(comment.getMovieId()) || comment.getRating() == null || comment.getRating() < 5
+                    || !availableAt(comment.getCreateTime(), options.cutoff())) continue;
+            interactions.merge(comment.getMovieId(), FIVE_STAR_WEIGHT * decay(comment.getCreateTime(),
+                    options.referenceTime(), options.useTimeDecay()), Double::sum);
             Movie rated = movieMap.get(comment.getMovieId());
             if (rated == null) rated = movieMapper.selectById(comment.getMovieId());
             if (rated != null) fiveStarDirectors.addAll(tokens(rated.getDirector()));
@@ -309,10 +483,12 @@ public class RecommendService {
         return weights == 0 ? 50 : sum / weights;
     }
 
-    private SceneContext sceneContext(List<Movie> movies, Double lat, Double lng) {
-        LocalDateTime now = LocalDateTime.now();
+    private SceneContext sceneContext(List<Movie> movies, Double lat, Double lng, LocalDateTime referenceTime,
+                                      boolean historicalSnapshot) {
+        LocalDateTime now = referenceTime == null ? LocalDateTime.now() : referenceTime;
         List<Showtime> showtimes = showtimeMapper.selectList(new LambdaQueryWrapper<Showtime>()
-                .in(Showtime::getMovieId, movies.stream().map(Movie::getId).toList()).eq(Showtime::getStatus, 0)
+                .in(Showtime::getMovieId, movies.stream().map(Movie::getId).toList()).ne(Showtime::getStatus, 2)
+                .le(historicalSnapshot, Showtime::getCreateTime, now)
                 .ge(Showtime::getStartTime, now).le(Showtime::getStartTime, now.plusDays(7)));
         Set<Long> cinemaIds = showtimes.stream().map(Showtime::getCinemaId).collect(Collectors.toSet());
         Map<Long, Cinema> cinemas = cinemaIds.isEmpty() ? Map.of() : cinemaMapper.selectBatchIds(cinemaIds).stream()
@@ -340,21 +516,40 @@ public class RecommendService {
         return nearest == Double.MAX_VALUE ? 50 : clamp(100 - nearest * 12);
     }
 
-    private TrendContext trendContext(List<Movie> movies) {
-        if (movies.isEmpty()) return new TrendContext(Map.of(), 1);
+    private TrendContext trendContext(List<Movie> movies, LocalDateTime referenceTime) {
+        return trendContext(movies, referenceTime, false);
+    }
+
+    private TrendContext trendContext(List<Movie> movies, LocalDateTime referenceTime, boolean historicalRating) {
+        if (movies.isEmpty()) return new TrendContext(Map.of(), 1, Map.of());
+        LocalDateTime end = referenceTime == null ? LocalDateTime.now() : referenceTime;
         List<Showtime> showtimes = showtimeMapper.selectList(new LambdaQueryWrapper<Showtime>()
                 .in(Showtime::getMovieId, movies.stream().map(Movie::getId).toList()));
         Map<Long, Long> movieByShowtime = showtimes.stream().collect(Collectors.toMap(Showtime::getId, Showtime::getMovieId, (a, b) -> a));
         List<TicketOrder> recent = movieByShowtime.isEmpty() ? List.of() : orderMapper.selectList(new LambdaQueryWrapper<TicketOrder>()
                 .eq(TicketOrder::getStatus, 1).in(TicketOrder::getShowtimeId, movieByShowtime.keySet())
-                .ge(TicketOrder::getCreateTime, LocalDateTime.now().minusDays(7)));
-        Map<Long, Long> sales = recent.stream().map(o -> movieByShowtime.get(o.getShowtimeId())).filter(Objects::nonNull)
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-        return new TrendContext(sales, sales.values().stream().mapToLong(Long::longValue).max().orElse(1));
+                .ge(TicketOrder::getCreateTime, end.minusDays(7)).le(TicketOrder::getCreateTime, end));
+        Map<Long, Long> sales = recent.stream().filter(order -> availableAt(order.getCreateTime(), end))
+                .map(o -> Map.entry(movieByShowtime.get(o.getShowtimeId()), Math.max(1, value(o.getTicketCount()))))
+                .filter(entry -> entry.getKey() != null)
+                .collect(Collectors.groupingBy(Map.Entry::getKey, Collectors.summingLong(Map.Entry::getValue)));
+        Map<Long, Double> ratings;
+        if (historicalRating) {
+            List<Comment> comments = commentMapper.selectList(new LambdaQueryWrapper<Comment>()
+                    .in(Comment::getMovieId, movies.stream().map(Movie::getId).toList())
+                    .le(Comment::getCreateTime, end));
+            ratings = comments.stream().filter(comment -> comment.getRating() != null)
+                    .collect(Collectors.groupingBy(Comment::getMovieId,
+                            Collectors.averagingDouble(comment -> comment.getRating() * 20.0)));
+        } else {
+            ratings = movies.stream().collect(Collectors.toMap(Movie::getId,
+                    movie -> movie.getRating() == null ? 50.0 : movie.getRating().doubleValue() * 10));
+        }
+        return new TrendContext(sales, sales.values().stream().mapToLong(Long::longValue).max().orElse(1), ratings);
     }
 
     private double trendScore(Movie movie, TrendContext context) {
-        double rating = movie.getRating() == null ? 50 : movie.getRating().doubleValue() * 10;
+        double rating = context.ratings().getOrDefault(movie.getId(), 50.0);
         return clamp(rating * .70 + 100.0 * context.sales().getOrDefault(movie.getId(), 0L) / context.maxSales() * .30);
     }
 
@@ -400,7 +595,7 @@ public class RecommendService {
     }
 
     private double diversity(List<MovieRecommendationVO> movies) {
-        if (movies.size() < 2) return 1;
+        if (movies.size() < 2) return 0;
         double sum = 0; int pairs = 0;
         for (int i = 0; i < movies.size(); i++) for (int j = i + 1; j < movies.size(); j++) {
             sum += 1 - jaccard(tokens(movies.get(i).getGenre()), tokens(movies.get(j).getGenre())); pairs++;
@@ -474,7 +669,11 @@ public class RecommendService {
         Set<String> intersection = new HashSet<>(a); intersection.retainAll(b); return union.isEmpty() ? 0 : intersection.size() / (double) union.size();
     }
     private String primaryGenre(Movie movie) { return tokens(movie.getGenre()).stream().sorted().findFirst().orElse("其他"); }
-    private double decay(LocalDateTime time) { return time == null ? 1 : Math.max(.35, Math.pow(.97, Math.max(0, Duration.between(time, LocalDateTime.now()).toDays()))); }
+    private double decay(LocalDateTime time, LocalDateTime referenceTime, boolean enabled) {
+        if (!enabled || time == null) return 1;
+        LocalDateTime reference = referenceTime == null ? LocalDateTime.now() : referenceTime;
+        return Math.max(.35, Math.pow(.97, Math.max(0, Duration.between(time, reference).toDays())));
+    }
     private double haversine(double a, double b, double c, double d) {
         double x = Math.toRadians(c - a), y = Math.toRadians(d - b);
         double v = Math.sin(x / 2) * Math.sin(x / 2) + Math.cos(Math.toRadians(a)) * Math.cos(Math.toRadians(c)) * Math.sin(y / 2) * Math.sin(y / 2);
@@ -487,6 +686,64 @@ public class RecommendService {
     private double round4(double value) { return Math.round(value * 10_000.0) / 10_000.0; }
     private String statusText(Integer value) { return Map.of(0, "未上映", 1, "正在上映", 2, "即将上映", 3, "已下架").getOrDefault(value, "未知"); }
 
+    private final class EvaluationAccumulator {
+        private int users;
+        private int hits;
+        private double ndcg;
+        private double diversity;
+        private final Set<Long> covered = new HashSet<>();
+
+        private void add(List<MovieRecommendationVO> recommendations, Long relevantMovieId, int k) {
+            users++;
+            if (recommendations.isEmpty()) return;
+            covered.addAll(recommendations.stream().map(MovieVO::getId).toList());
+            diversity += RecommendService.this.diversity(recommendations);
+            for (int index = 0; index < Math.min(k, recommendations.size()); index++) {
+                if (Objects.equals(recommendations.get(index).getId(), relevantMovieId)) {
+                    hits++;
+                    ndcg += 1.0 / (Math.log(index + 2) / Math.log(2));
+                    break;
+                }
+            }
+        }
+    }
+
+    private record RecommendationOptions(boolean useTimeDecay, boolean useScene, boolean useTrend,
+                                         boolean useDiversity, boolean useExplicitPreferences,
+                                         LocalDateTime cutoff, Set<Long> heldOut) {
+        private static RecommendationOptions production() {
+            return new RecommendationOptions(true, true, true, true, true, null, Set.of());
+        }
+
+        private static RecommendationOptions evaluation(LocalDateTime cutoff, Set<Long> heldOut) {
+            return new RecommendationOptions(true, true, true, true, false, cutoff, heldOut);
+        }
+
+        private LocalDateTime referenceTime() {
+            return cutoff == null ? LocalDateTime.now() : cutoff;
+        }
+
+        private RecommendationOptions withTimeDecay(boolean value) {
+            return new RecommendationOptions(value, useScene, useTrend, useDiversity,
+                    useExplicitPreferences, cutoff, heldOut);
+        }
+
+        private RecommendationOptions withScene(boolean value) {
+            return new RecommendationOptions(useTimeDecay, value, useTrend, useDiversity,
+                    useExplicitPreferences, cutoff, heldOut);
+        }
+
+        private RecommendationOptions withTrend(boolean value) {
+            return new RecommendationOptions(useTimeDecay, useScene, value, useDiversity,
+                    useExplicitPreferences, cutoff, heldOut);
+        }
+
+        private RecommendationOptions withDiversity(boolean value) {
+            return new RecommendationOptions(useTimeDecay, useScene, useTrend, value,
+                    useExplicitPreferences, cutoff, heldOut);
+        }
+    }
+
     private record FeatureProfile(Map<String, Double> genres, Map<String, Double> directors,
                                   Map<String, Double> actors, Map<String, Double> languages, Double duration) {
         boolean empty() { return genres.isEmpty() && directors.isEmpty() && actors.isEmpty() && languages.isEmpty(); }
@@ -495,7 +752,7 @@ public class RecommendService {
                                Set<String> fiveStarDirectors, FeatureProfile profile) {}
     private record SceneContext(Map<Long, List<Showtime>> showtimes, Map<Long, Cinema> cinemas,
                                 Double lat, Double lng, LocalDateTime now) {}
-    private record TrendContext(Map<Long, Long> sales, long maxSales) {}
+    private record TrendContext(Map<Long, Long> sales, long maxSales, Map<Long, Double> ratings) {}
     private record ScoredMovie(Movie movie, double total, double content, double preference,
                                double behavior, double scene, double trend, String reason) {}
 }

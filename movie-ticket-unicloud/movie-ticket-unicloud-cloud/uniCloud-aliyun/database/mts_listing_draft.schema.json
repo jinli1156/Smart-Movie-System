@@ -1,0 +1,28 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_listing_draft",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "id": {
+      "bsonType": "string"
+    },
+    "kind": {
+      "bsonType": "string"
+    },
+    "status": {
+      "bsonType": "string"
+    },
+    "ownerId": {
+      "bsonType": "number"
+    },
+    "version": {
+      "bsonType": "number"
+    }
+  }
+}

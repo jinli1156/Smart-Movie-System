@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/** 单场预测参数，描述影片、影院、影厅及开场时间。 */
 @Data
 public class SchedulingPredictionRequest {
 

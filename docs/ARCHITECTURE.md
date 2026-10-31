@@ -14,10 +14,9 @@ movie-ticket-system/
 │   ├── CHANGELOG.md                       # 变更记录
 │   ├── GETTING_STARTED.md                 # 启动与验收
 │   ├── DATABASE.md                        # 数据库脚本指南
-│   ├── PROJECT_STATUS.md                  # 完成度与待办
+│   ├── TESTING.md                         # 自动化测试指南
 │   ├── design/                            # 系统设计与 UI 原型
-│   ├── features/                          # 专题功能说明
-│   └── archive/                           # 历史阶段文档
+│   └── features/                          # 专题功能说明
 │
 ├── movie-ticket-backend/                  # SpringBoot 3.2.5 后端
 │   ├── src/main/java/com/movie/ticket/
@@ -66,6 +65,7 @@ movie-ticket-system/
 | UI | Element Plus | 2.6 | |
 | 状态 / 路由 | Pinia / Vue Router | 2.1 / 4.3 | |
 | 可视化 | ECharts | 5.5 | 管理端 Dashboard |
+| 组合优化 | Google OR-Tools CP-SAT | 9.11 | 多目标智能排片 |
 | 取票 | qrcode + html5-qrcode | — | 二维码生成 + 摄像头扫码 |
 
 ---
@@ -105,12 +105,12 @@ movie-ticket-system/
 ### 初始化与迁移
 
 ```bash
-# 新建数据库：schema.sql 会重建业务表，仅用于空库/测试库
+# 新建数据库：先创建空库，再启动后端让 Flyway 建表和加约束
 mysql -u root -p < src/main/resources/db/schema.sql
+# Flyway 成功完成后，可选导入会重置业务数据的演示数据
 mysql -u root -p movie_ticket < src/main/resources/db/data.sql
 
-# 已有数据库：先备份，只执行非破坏性结构对齐脚本
-mysql -u root -p movie_ticket < src/main/resources/db/migration_v3_schema_alignment.sql
+# 已有数据库：先备份，直接启动后端，由 Flyway 从版本 6 基线升级
 ```
 
 ---
@@ -173,7 +173,10 @@ mysql -u root -p movie_ticket < src/main/resources/db/migration_v3_schema_alignm
 | --- | --- | --- |
 | GET | `/recommend/hot?limit=` | 热门推荐（Redis 缓存 1h） |
 | GET | `/recommend/personal?limit=` | 个性化推荐（基于观影历史） |
+| GET | `/recommend/profile/radar` | 登录用户五维推荐偏好雷达 |
+| GET | `/recommend/evaluation?k=` | ADMIN 严格时间切分评估、基线与消融实验 |
 | GET | `/recommend/similar/{movieId}?limit=` | 相似推荐（按类型重叠度） |
+| POST | `/statistics/scheduling/optimize` | ADMIN / CINEMA_ADMIN 多目标约束排片模拟 |
 | GET | `/statistics/dashboard` | 电影/影院/今日订单/今日收入/用户总数 |
 | GET | `/statistics/box-office?limit=` | 票房排行 |
 | GET | `/statistics/showtime/{id}` | 场次上座率 |
@@ -326,7 +329,7 @@ file:
 
 ## 七、上线 / 联调清单
 
-1. **数据库**：执行 `schema.sql` + `data.sql`；老库按需追加 migration 脚本
+1. **数据库**：`schema.sql` 创建空库，启动后端由 Flyway 迁移；仅演示环境再执行 `data.sql`
 2. **后端**：`cd movie-ticket-backend && mvn spring-boot:run`（8080）
 3. **管理端**：`cd movie-ticket-admin && npm install && npm run dev`（3001）
 4. **用户端**：`cd movie-ticket-user && npm install && npm run dev`（3000）

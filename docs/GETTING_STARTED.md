@@ -19,23 +19,28 @@ DB_URL=jdbc:mysql://localhost:3306/movie_ticket?...
 DB_USERNAME=root
 DB_PASSWORD=你的数据库密码
 JWT_SECRET=至少32位随机字符串
-DASHSCOPE_API_KEY=你的百炼密钥（可选）
+DEEPSEEK_API_KEY=你的DeepSeek密钥（使用电影助手时配置）
 ```
 
-未设置 AI 密钥时，电影助手会使用本地知识库降级能力。
+本机也可以在项目根目录 `.local/assistant.properties` 中设置 `DEEPSEEK_API_KEY`，后端会自动加载。未配置密钥时小助手明确提示服务未配置。详见 [电影小助手说明](MOVIE_ASSISTANT.md)。
 
 ## 2. 初始化数据库
 
-新建或重置演示库：
+新建空数据库：
 
 ```powershell
-mysql -u root -p < movie-ticket-backend/src/main/resources/db/schema.sql
-mysql -u root -p < movie-ticket-backend/src/main/resources/db/data.sql
+mysql --default-character-set=utf8mb4 -u root -p --execute="SOURCE movie-ticket-backend/src/main/resources/db/schema.sql;"
 ```
 
-`schema.sql` 会删除并重建业务表，`data.sql` 会清空并重建演示数据。不要在生产库或需要保留数据的库上执行它们。
+启动后端时，Flyway 会自动创建或升级表、索引、外键和检查约束。按第 3 节启动后端，确认迁移达到 V24，然后停止后端，在仓库根目录执行：
 
-已有数据库请先备份，然后按版本顺序执行迁移脚本。完整顺序与用途见 [DATABASE.md](DATABASE.md)。
+```powershell
+mysql --default-character-set=utf8mb4 -u root -p --execute="SOURCE movie-ticket-backend/src/main/resources/db/data.sql;"
+```
+
+随后重新启动后端。演示排片按北京时间从执行当天生成至未来第 10 天（含首尾共 11 天），当天只生成距开场至少 15 分钟的场次，每厅每天最多 4 场。影片片长、影院归属和座位容量自动关联，兑换码 `JINLI699` 和新人券也可直接使用。
+
+`data.sql` 会在事务中清空并重建全部演示业务数据，不可用于生产库或需要保留数据的库。已有数据库请先备份，然后直接启动后端，由 Flyway 从版本 6 基线接管。完整规则见 [DATABASE.md](DATABASE.md)。
 
 ## 3. 启动后端
 
@@ -73,6 +78,8 @@ npm run dev
 | `cinema_admin` | `admin123` | 影院管理员 |
 | `admin` | `admin123` | 系统管理员 |
 
+执行新版演示数据脚本后，`cinema_admin` 已绑定影院 1，可直接登录。已有业务库升级不会自动分配影院；未分配的旧账号仍需由 `admin` 在“用户管理”中指定所属影院。重新登录可刷新菜单中的账号信息，后端权限在下一次请求即按最新角色、影院和禁用状态生效。详见 [影院权限与页面一致性](CINEMA_PERMISSIONS.md)。
+
 ## 6. 一键验收
 
 在仓库根目录执行：
@@ -94,7 +101,8 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1
 3. 使用智能选座，确认订单并完成模拟支付。
 4. 展示取票二维码、订单列表和退票规则。
 5. 使用 `admin` 登录管理端，展示 Dashboard、智能排片和各业务管理页面。
-6. 在管理端调用推荐评估能力，结合 [推荐算法评估说明](RECOMMENDATION_EVALUATION.md) 展示论文指标。
+6. 在管理端“推荐算法评估”选择 K，运行实验并导出 JSON，结合 [推荐算法评估说明](RECOMMENDATION_EVALUATION.md) 展示论文指标。
+7. 使用已绑定影院 1 的演示影院管理员，展示所属影院订单和取票码核销，再验证访问其他影院订单返回 403；旧账号需先分配影院。
 
 ## 8. 常见问题
 
@@ -110,9 +118,9 @@ powershell -ExecutionPolicy Bypass -File scripts/verify.ps1
 
 本地默认 `dev` 配置会尝试启动内嵌 Redis。若 6379 已被其他服务占用，请复用现有 Redis 或调整端口配置。
 
-### AI 助手只返回本地答案
+### AI 助手提示服务不可用
 
-检查运行后端的进程是否配置了 `DASHSCOPE_API_KEY`。不要把密钥直接写进 `application.yml` 或提交到 Git。
+检查运行后端的进程是否配置了 `DEEPSEEK_API_KEY`，以及 DeepSeek 账号额度与网络连接。修改配置后重启后端。不要把密钥直接写进 `application.yml` 或提交到 Git。
 
 ### 前端构建出现大分块警告
 

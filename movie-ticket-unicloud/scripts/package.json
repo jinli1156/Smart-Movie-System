@@ -1,0 +1,16 @@
+{
+  "name": "movie-ticket-unicloud-migration-scripts",
+  "version": "1.0.0",
+  "description": "Read-only MySQL export and uniCloud migration checks",
+  "main": "generate-schemas.js",
+  "scripts": {
+    "export": "node export-mysql.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "mysql2": "^3.24.4",
+    "pngjs": "7.0.0"
+  }
+}

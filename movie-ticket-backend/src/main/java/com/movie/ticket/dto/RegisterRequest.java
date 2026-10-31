@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+/** 普通用户注册参数，集中声明账号、密码及联系方式的输入约束。 */
 @Data
 public class RegisterRequest {
 

@@ -6,6 +6,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/** 场次编辑参数，限定影片、影院、影厅、起止时间和基础票价。 */
 @Data
 public class ShowtimeDTO {
 

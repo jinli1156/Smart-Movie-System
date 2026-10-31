@@ -22,7 +22,15 @@
           </template>
         </div>
         <div class="tb-right">
-          <div class="tb-pill">
+          <div
+            class="tb-pill"
+            :class="{ 'is-locating': relocating, 'is-failed': sharedLocation.status === 'failed' }"
+            role="button"
+            tabindex="0"
+            :title="locateHint"
+            @click="cityPickerVisible = true"
+            @keyup.enter="cityPickerVisible = true"
+          >
             <MaterialIcon class="msr tb-pill-ico primary" name="location_on" />
             <span class="tb-pill-text">{{ sharedLocation.city || sharedLocation.label }}</span>
             <MaterialIcon class="msr tb-pill-caret" name="keyboard_arrow_down" />
@@ -37,9 +45,7 @@
             />
 
           </div>
-          <button class="tb-icon" @click="tip('通知')">
-            <MaterialIcon class="msr" name="notifications" />
-          </button>
+
           <div class="tb-avatar">Z</div>
         </div>
       </header>
@@ -49,7 +55,7 @@
         <!-- ============ MOVIE INFO BAR (visible when context movie selected) ============ -->
         <section v-if="contextMovie" class="movie-info-bar">
           <div class="mib-poster" :style="{ background: posterGradient }">
-            <img v-if="contextMovie.poster" :src="contextMovie.poster" :alt="contextMovie.title" />
+            <img v-if="contextMovie.poster" v-poster :src="contextMovie.poster" :alt="contextMovie.title" />
             <div class="mib-poster-text">
               <span class="mib-eng">{{ (contextMovie.englishTitle || contextMovie.title).toUpperCase().split(/[: ]/)[0] }}</span>
               <span class="mib-eng-sub">FEATURED</span>
@@ -66,7 +72,7 @@
             <div class="mib-meta">
               <span class="meta-item">
                 <MaterialIcon class="msr" name="star" />
-                <span class="meta-num">{{ contextMovie.rating?.toFixed(1) || '9.2' }}</span>
+                <span class="meta-num">{{ contextMovie.rating?.toFixed(1) || '暂无评分' }}</span>
                 <span class="meta-out">/ 10</span>
               </span>
               <span class="meta-sep"></span>
@@ -145,17 +151,23 @@
               <div class="map-head-left">
                 <MaterialIcon class="msr map-ico" name="map" />
                 <h3 class="map-title">附近影院</h3>
-                <span class="map-count">· {{ cinemas.length }} 家</span>
+                <span class="map-count">· {{ filteredCinemas.length }} 家</span>
               </div>
-              <button class="map-filter" @click="tip('地图筛选')">
-                <MaterialIcon class="msr" name="filter_list" />
-              </button>
+
             </div>
 
             <div class="map-canvas">
               <div ref="mapContainerRef" class="amap-container"></div>
-              <div class="map-current">
-                <MaterialIcon class="msr" name="my_location" />
+              <div
+                class="map-current"
+                :class="{ 'is-locating': relocating, 'is-failed': sharedLocation.status === 'failed' }"
+                role="button"
+                tabindex="0"
+                :title="locateHint"
+                @click="cityPickerVisible = true"
+                @keyup.enter="cityPickerVisible = true"
+              >
+                <MaterialIcon class="msr" :class="{ spin: relocating }" name="my_location" />
                 <span>{{ sharedLocation.label }}</span>
               </div>
               <div class="map-zoom">
@@ -196,7 +208,7 @@
             <!-- Filter Bar -->
             <section class="filter-bar">
               <div class="filter-row">
-                <button class="filter-chip" @click="cycleSort">
+                <button class="filter-chip" :disabled="sortLoading" @click="cycleSort">
                   <MaterialIcon class="msr" name="swap_vert" />
                   <span>{{ sortLabel }}</span>
                   <MaterialIcon class="msr" name="keyboard_arrow_down" />
@@ -221,13 +233,13 @@
                   <div class="cc-rank">
                     {{ i + 1 }}
                   </div>
+                  <div class="cc-thumb">
+                    <img v-poster :src="cinemaImage(c)" :alt="`${c.name}影院图片`" loading="lazy" />
+                  </div>
                   <div class="cc-info">
                     <div class="cc-title-row">
                       <span class="cc-name">{{ c.name }}</span>
-                      <span class="cc-rating">
-                        <MaterialIcon class="msr" name="star" />
-                        <span>{{ ratingFor(c.id) }}</span>
-                      </span>
+
                     </div>
                     <div class="cc-tags">
                       <span v-for="t in featuresFor(c.id)" :key="t" class="cc-tag">{{ t }}</span>
@@ -245,7 +257,7 @@
                     </div>
                   </div>
                   <div class="cc-right">
-                    <div class="cc-price">
+                    <div v-if="Number.isFinite(minPriceFor(c.id))" class="cc-price">
                       <span class="price-label">最低</span>
                       <div class="price-row">
                         <span class="price-cur">¥</span>
@@ -254,60 +266,84 @@
                       </div>
                     </div>
                     <button class="cc-action primary" @click.stop="goToCinema(c.id)">
-                      <span>选择电影</span>
+                      <span>{{ contextMovie ? '选择场次' : '选择电影' }}</span>
                       <MaterialIcon class="msr" name="chevron_right" />
                     </button>
                   </div>
                 </div>
               </article>
 
-              <el-empty v-if="!loading && filteredCinemas.length === 0" description="暂无影院" />
+              <el-empty
+                v-if="!loading && filteredCinemas.length === 0"
+                :description="emptyDescription"
+              />
             </div>
           </div>
         </section>
 
         <!-- Page footer -->
         <div class="page-foot">
-          <span>© 2026 CINEMA+ · 沪ICP 备 2024XXXXX 号</span>
+          <span>© 2026 响指电影 · 沪ICP 备 2024XXXXX 号</span>
           <div class="foot-links">
-            <span @click="tip('帮助中心')">帮助中心</span>
-            <span @click="tip('隐私政策')">隐私政策</span>
-            <span @click="tip('用户协议')">用户协议</span>
+
+
+
           </div>
         </div>
       </div>
     </main>
+
+    <CityPickerDialog v-model="cityPickerVisible" />
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * 影院列表与地图：按位置、品牌和影厅条件筛选影院，并保留选片上下文。
+ */
 import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import { cinemaApi } from '@/api/cinema'
+import { hallApi } from '@/api/hall'
 import { movieApi } from '@/api/movie'
-import type { Movie, Cinema } from '@/types'
+import { showtimeApi } from '@/api/showtime'
+import type { Movie, Cinema, Hall, Showtime } from '@/types'
 import AppSidebar from '@/components/AppSidebar.vue'
-import AMapLoader from '@amap/amap-jsapi-loader'
+import CityPickerDialog from '@/components/CityPickerDialog.vue'
 import { useLocation } from '@/composables/useLocation'
+import { cityOfAddress, normalizeCityName } from '@/utils/city'
 
 const route = useRoute()
 const router = useRouter()
 const { location: sharedLocation, ensure: ensureLocation } = useLocation()
 
+// 定位按钮状态：失败/定位中给出明确提示，点击打开城市选择弹窗
+const relocating = ref(false)
+const cityPickerVisible = ref(false)
+const locateHint = computed(() => {
+  const loc = sharedLocation.value
+  if (loc.status === 'failed') return '定位失败，点击选择城市'
+  if (loc.source === 'ip') return '当前为 IP 定位，可能受代理/VPN 影响；点击选择城市'
+  if (loc.status === 'fallback') return '已获取坐标但城市解析失败，点击选择城市'
+  return '点击选择城市 / 重新定位'
+})
+
 const searchKeyword = ref('')
 const loading = ref(false)
 const cinemas = ref<Cinema[]>([])
+const halls = ref<Hall[]>([])
+const movieShowtimes = ref<Showtime[]>([])
 const contextMovie = ref<Movie | null>(null)
 const activeCinemaIdx = ref(0)
-const sortMode = ref<'distance' | 'rating' | 'price'>('distance')
+const sortMode = ref<'distance' | 'price'>('distance')
+const sortLoading = ref(false)
 
-type FilterKey = 'brand' | 'area' | 'hall' | 'service'
+type FilterKey = 'brand' | 'area' | 'hall'
 const selectedFilters = ref<Record<FilterKey, string>>({
   brand: '全部',
   area: '全部',
-  hall: '全部',
-  service: '全部'
+  hall: '全部'
 })
 
 // ====== 高德地图相关 ======
@@ -323,38 +359,62 @@ const cinemaCoordKeys = new Map<number, string>()
 const cinemaDistances = ref<Map<number, number>>(new Map())
 const userPosition = ref<[number, number] | null>(null)
 
-const featurePool: Record<number, string[]> = {
-  0: ['IMAX 厅', '杜比全景声', '4DX'],
-  1: ['IMAX', '巨幕'],
-  2: ['LUXE 厅', '杜比影院'],
-  3: ['激光厅', '亲子厅'],
-  4: ['CINITY', 'VIP 厅']
-}
-const ratingPool = ['9.4', '9.1', '8.9', '9.0', '8.7']
-const minPricePool = [58, 65, 52, 48, 55]
-
-const ratingFor = (id: number) => ratingPool[id % ratingPool.length]
-const featuresFor = (id: number) => featurePool[id % 5]
-const minPriceFor = (id: number) => minPricePool[id % minPricePool.length]
-const servicesFor = (id: number) => [
-  ...(id % 2 === 0 ? ['可退票'] : []),
-  ...(id % 3 !== 0 ? ['可改签'] : []),
-  ...(id % 2 !== 0 ? ['免费停车'] : []),
-  ...(id % 3 === 0 ? ['影厅小食'] : [])
+const cinemaImagePool = [
+  'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=640&q=80',
+  'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?auto=format&fit=crop&w=640&q=80',
+  'https://images.unsplash.com/photo-1485846234645-a62644f84728?auto=format&fit=crop&w=640&q=80',
+  'https://images.unsplash.com/photo-1574267432553-4b4628081c31?auto=format&fit=crop&w=640&q=80',
+  'https://images.unsplash.com/photo-1598899134739-24c46f58b8c0?auto=format&fit=crop&w=640&q=80',
+  'https://images.unsplash.com/photo-1586899028174-e7098604235b?auto=format&fit=crop&w=640&q=80',
+  'https://images.unsplash.com/photo-1543536448-d209d2d13a1c?auto=format&fit=crop&w=640&q=80',
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=640&q=80'
 ]
+
+const cinemaImage = (cinema: Cinema) => {
+  const configured = (cinema.images || '').split(',').map(item => item.trim()).find(Boolean)
+  if (configured) {
+    if (/^https?:\/\//i.test(configured) || configured.startsWith('/')) return configured
+    return `/api/uploads/${configured}`
+  }
+  return cinemaImagePool[Math.abs(cinema.id - 1) % cinemaImagePool.length]
+}
+const minPriceFor = (id: number) => {
+  const prices = movieShowtimes.value
+    .filter(showtime => showtime.cinemaId === id)
+    .map(showtime => Number(showtime.basePrice))
+    .filter(Number.isFinite)
+  return prices.length ? Math.min(...prices) : Number.POSITIVE_INFINITY
+}
 
 const brandFor = (cinema: Cinema) => {
   const name = cinema.name || ''
-  const knownBrands = ['万达', 'CGV', '博纳', '耀莱', 'UME', '金逸', '横店', '百老汇', '中影', '卢米埃']
+  const knownBrands = ['万达', 'CGV', '博纳', '沃美', 'UME', '百老汇', '金逸', '卢米埃', '英皇', '中影']
   return knownBrands.find(brand => name.toUpperCase().includes(brand.toUpperCase())) ||
     name.split(/[（(·\s]/)[0].replace(/国际影城|影城|影院/g, '') || '其他'
 }
 
+const NANNING_DISTRICTS = ['青秀区', '兴宁区', '江南区', '西乡塘区', '良庆区', '邕宁区', '武鸣区'] as const
+
 const areaFor = (cinema: Cinema) => {
   const address = cinema.address || ''
-  const district = address.match(/([^省市区县路号]{2,6}[区县])/)
-  return district?.[1] || '其他区域'
+  return NANNING_DISTRICTS.find(district => address.includes(district)) || '其他区域'
 }
+
+const hallTypeLabel = (name: string): string => {
+  if (/IMAX/i.test(name)) return 'IMAX厅'
+  if (name.includes('巨幕')) return '巨幕厅'
+  if (name.includes('杜比')) return '杜比全景声厅'
+  if (name.includes('激光')) return '激光厅'
+  if (/VIP/i.test(name)) return 'VIP厅'
+  if (name.includes('艺术')) return '艺术影厅'
+  return '标准厅'
+}
+
+const featuresFor = (cinemaId: number): string[] => Array.from(new Set(
+  halls.value
+    .filter(hall => hall.cinemaId === cinemaId && hall.status !== 0)
+    .map(hall => hallTypeLabel(hall.name))
+)).slice(0, 3)
 
 const uniqueOptions = (items: string[]) => ['全部', ...Array.from(new Set(items.filter(Boolean)))]
 
@@ -369,19 +429,13 @@ const filterGroups = computed(() => [
     key: 'area' as FilterKey,
     label: '行政区',
     icon: 'location_on',
-    options: uniqueOptions(cinemas.value.map(areaFor))
+    options: ['全部', ...NANNING_DISTRICTS.filter(district => cinemas.value.some(cinema => areaFor(cinema) === district))]
   },
   {
     key: 'hall' as FilterKey,
     label: '影厅类型',
     icon: 'theaters',
-    options: uniqueOptions(Object.values(featurePool).flat())
-  },
-  {
-    key: 'service' as FilterKey,
-    label: '影院服务',
-    icon: 'concierge',
-    options: ['全部', '可退票', '可改签', '免费停车', '影厅小食']
+    options: uniqueOptions(halls.value.filter(hall => hall.status !== 0).map(hall => hallTypeLabel(hall.name)))
   }
 ])
 
@@ -396,7 +450,7 @@ const selectFilter = (key: FilterKey, option: string) => {
 }
 
 const resetFilters = () => {
-  selectedFilters.value = { brand: '全部', area: '全部', hall: '全部', service: '全部' }
+  selectedFilters.value = { brand: '全部', area: '全部', hall: '全部' }
 }
 
 const distanceFor = (id: number) => {
@@ -406,8 +460,22 @@ const distanceFor = (id: number) => {
   return `${(m / 1000).toFixed(1)} km`
 }
 
+/** 从影院地址中提取“XX市”，用于按当前城市过滤影院。 */
+const selectedCityName = computed(() => normalizeCityName(sharedLocation.value.city))
+
 const filteredCinemas = computed(() => {
   let arr = [...cinemas.value]
+  // 手动/自动定位到哪个城市，就只展示该城市的影院
+  if (selectedCityName.value) {
+    arr = arr.filter(cinema =>
+      normalizeCityName(cityOfAddress(cinema.address || '')) === selectedCityName.value
+    )
+  }
+  const movieId = Number(route.query.movieId)
+  if (movieId) {
+    const availableCinemaIds = new Set(movieShowtimes.value.map(showtime => showtime.cinemaId))
+    arr = arr.filter(cinema => availableCinemaIds.has(cinema.id))
+  }
   if (searchKeyword.value.trim()) {
     const kw = searchKeyword.value.trim().toLowerCase()
     arr = arr.filter(c =>
@@ -415,14 +483,11 @@ const filteredCinemas = computed(() => {
       (c.address || '').toLowerCase().includes(kw)
     )
   }
-  const { brand, area, hall, service } = selectedFilters.value
+  const { brand, area, hall } = selectedFilters.value
   if (brand !== '全部') arr = arr.filter(c => brandFor(c) === brand)
   if (area !== '全部') arr = arr.filter(c => areaFor(c) === area)
   if (hall !== '全部') arr = arr.filter(c => featuresFor(c.id).includes(hall))
-  if (service !== '全部') arr = arr.filter(c => servicesFor(c.id).includes(service))
-  if (sortMode.value === 'rating') {
-    arr.sort((a, b) => Number(ratingFor(b.id)) - Number(ratingFor(a.id)))
-  } else if (sortMode.value === 'price') {
+  if (sortMode.value === 'price') {
     arr.sort((a, b) => minPriceFor(a.id) - minPriceFor(b.id))
   } else if (sortMode.value === 'distance') {
     const INF = Number.POSITIVE_INFINITY
@@ -436,24 +501,44 @@ const filteredCinemas = computed(() => {
 })
 
 const sortLabel = computed(() => {
+  if (sortLoading.value) return '价格加载中…'
   if (sortMode.value === 'distance') return '距离最近'
-  if (sortMode.value === 'rating') return '评分最高'
   return '价格最低'
 })
 
-const cycleSort = () => {
-  if (sortMode.value === 'distance') sortMode.value = 'rating'
-  else if (sortMode.value === 'rating') sortMode.value = 'price'
-  else sortMode.value = 'distance'
+const cycleSort = async () => {
+  if (sortLoading.value) return
+  if (sortMode.value === 'price') {
+    sortMode.value = 'distance'
+    return
+  }
+  // 没有选片时，影院页默认不加载全部场次；点“价格”时才按需拉取
+  if (!contextMovie.value && movieShowtimes.value.length === 0) {
+    const ok = await loadAllShowtimes()
+    if (!ok) return
+  }
+  if (!movieShowtimes.value.length) {
+    ElMessage.info('暂无可售场次，无法按价格排序')
+    return
+  }
+  sortMode.value = 'price'
 }
 
+const emptyDescription = computed(() => {
+  if (contextMovie.value) return `暂无影院提供《${contextMovie.value.title}》的可售场次`
+  if (sharedLocation.value.city) {
+    return `${sharedLocation.value.city}暂未开通影院，可点击顶部城市切换`
+  }
+  return '暂无影院'
+})
+
 const movieTags = computed(() => {
-  if (!contextMovie.value) return ['IMAX', '杜比全景声', '4DX']
+  if (!contextMovie.value) return []
   const tags: string[] = []
   if (contextMovie.value.genre) {
     contextMovie.value.genre.split(/[\/\s,、]+/).filter(Boolean).slice(0, 2).forEach(g => tags.push(g))
   }
-  tags.push('IMAX', '原版字幕')
+  if (contextMovie.value.language) tags.push(contextMovie.value.language)
   return tags.slice(0, 4)
 })
 
@@ -468,16 +553,50 @@ const posterGradient = computed(() => {
   return palette[id % palette.length]
 })
 
+/** 加载影院列表，供影院选择或地图展示。 */
 const loadCinemas = async () => {
   loading.value = true
   try {
-    const data = await cinemaApi.getAll()
-    cinemas.value = data || []
+    const movieId = Number(route.query.movieId)
+    const [cinemaData, hallPage, showtimePage] = await Promise.all([
+      cinemaApi.getAll(),
+      hallApi.getPage(),
+      movieId
+        ? showtimeApi.getPage({ page: 1, size: 10000, movieId, status: 0 })
+        : Promise.resolve(null)
+    ])
+    cinemas.value = cinemaData || []
+    halls.value = hallPage?.records || []
+    const now = Date.now()
+    movieShowtimes.value = (showtimePage?.records || []).filter(showtime =>
+      showtime.movieId === movieId && new Date(showtime.endTime || showtime.startTime).getTime() > now
+    )
   } catch (e) {
     console.error('加载影院失败:', e)
     cinemas.value = []
+    halls.value = []
+    movieShowtimes.value = []
   } finally {
     loading.value = false
+  }
+}
+
+/** 未选片时按需加载全部可售场次，用于“价格最低”排序和最低价展示。 */
+const loadAllShowtimes = async () => {
+  sortLoading.value = true
+  try {
+    const page = await showtimeApi.getPage({ page: 1, size: 10000, status: 0 })
+    const now = Date.now()
+    movieShowtimes.value = (page?.records || []).filter(showtime =>
+      new Date(showtime.endTime || showtime.startTime).getTime() > now
+    )
+    return true
+  } catch (e) {
+    console.error('加载场次价格失败:', e)
+    ElMessage.error('加载价格失败，请稍后重试')
+    return false
+  } finally {
+    sortLoading.value = false
   }
 }
 
@@ -513,14 +632,13 @@ const onSearch = () => {
   ElMessage.info(`搜索:${searchKeyword.value || '空'}`)
 }
 
-const tip = (label: string) => {
-  ElMessage.info(`${label} 功能敬请期待`)
-}
 
 watch(
   () => route.query.movieId,
-  () => {
-    loadContextMovie()
+  async () => {
+    activeCinemaIdx.value = 0
+    sortMode.value = 'distance'
+    await Promise.all([loadContextMovie(), loadCinemas()])
   }
 )
 
@@ -533,12 +651,14 @@ const initialCenter = (): [number, number] => {
   return DEFAULT_CENTER
 }
 
+/** 初始化影院地图及其交互，并展示影院与用户位置。 */
 const initMap = async () => {
   if (!mapContainerRef.value) return
   window._AMapSecurityConfig = {
     securityJsCode: import.meta.env.VITE_AMAP_SECURITY_CODE
   }
   try {
+    const { default: AMapLoader } = await import('@amap/amap-jsapi-loader')
     AMapNS = await AMapLoader.load({
       key: import.meta.env.VITE_AMAP_KEY,
       version: '2.0',
@@ -595,6 +715,14 @@ const locateUser = async () => {
   syncFromSharedLocation()
 }
 
+/** SDK 回调可能因鉴权失败或网络问题不触发，超时后按失败处理，避免整张地图被阻塞。 */
+const withTimeout = <T>(task: Promise<T>, ms: number, fallback: T) =>
+  Promise.race<T>([
+    task,
+    new Promise<T>(resolve => setTimeout(() => resolve(fallback), ms))
+  ])
+
+/** 为缺少经纬度的影院补充地址解析结果。 */
 const geocodeCinemas = async () => {
   if (!AMapNS) return
   const geocodeOne = (address: string) =>
@@ -608,15 +736,15 @@ const geocodeCinemas = async () => {
           const loc = result.geocodes[0].location
           resolve([loc.lng, loc.lat])
         } else {
+          console.warn('[Cinemas] 地址解析失败:', address, result?.info || status, result?.infocode || '')
           resolve(null)
         }
       })
     })
   const nextCoords = new Map(cinemaCoords.value)
   const validIds = new Set<number>()
+  const pending: Cinema[] = []
   const failed: string[] = []
-  let attempted = 0
-  let succeeded = 0
   let direct = 0
   for (const c of cinemas.value) {
     validIds.add(c.id)
@@ -634,18 +762,30 @@ const geocodeCinemas = async () => {
       continue
     }
     if (cinemaCoordKeys.get(c.id) === c.address) continue
-    attempted++
-    const coord = await geocodeOne(c.address)
+    pending.push(c)
+  }
+  // 先用后端已有坐标渲染一版：即使地址解析失败/超时，地图也不是空白
+  cinemaCoords.value = new Map(nextCoords)
+  recomputeDistances()
+  if (mapReady.value) renderCinemaMarkers()
+  // 并发解析并逐个加超时：单个地址卡住不再拖垮整张地图的 marker 渲染
+  const settled = await Promise.all(pending.map(async c => ({
+    cinema: c,
+    coord: await withTimeout(geocodeOne(c.address as string), 4000, null)
+  })))
+  let succeeded = 0
+  for (const { cinema, coord } of settled) {
     if (coord) {
       succeeded++
-      nextCoords.set(c.id, coord)
-      cinemaCoordKeys.set(c.id, c.address)
+      nextCoords.set(cinema.id, coord)
+      cinemaCoordKeys.set(cinema.id, cinema.address)
     } else {
-      failed.push(`#${c.id} ${c.name}: ${c.address}`)
-      nextCoords.delete(c.id)
-      cinemaCoordKeys.delete(c.id)
+      failed.push(`#${cinema.id} ${cinema.name}: ${cinema.address}`)
+      nextCoords.delete(cinema.id)
+      cinemaCoordKeys.delete(cinema.id)
     }
   }
+  const attempted = pending.length
   for (const id of [...nextCoords.keys()]) {
     if (!validIds.has(id)) {
       nextCoords.delete(id)
@@ -657,6 +797,9 @@ const geocodeCinemas = async () => {
   if (direct > 0 || attempted > 0) {
     console.info(`[Cinemas] 影院定位:${direct} 个直接使用后端坐标,${succeeded}/${attempted} 个按地址解析成功`)
     if (failed.length) console.warn('[Cinemas] 以下影院地址无法定位:\n' + failed.join('\n'))
+    if (attempted > 0 && succeeded === 0) {
+      console.warn('[Cinemas] 高德地址解析全部失败，请检查 VITE_AMAP_KEY 的域名白名单与安全密钥是否匹配当前访问地址')
+    }
   }
 }
 
@@ -669,6 +812,7 @@ const haversine = (a: [number, number], b: [number, number]) => {
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s))
 }
 
+/** 根据当前用户位置重新计算影院距离。 */
 const recomputeDistances = () => {
   if (!userPosition.value || !AMapNS) return
   const next = new Map<number, number>()
@@ -687,6 +831,7 @@ const buildMarkerContent = (label: number, active: boolean) =>
      <span class="amap-pin-num">${label}</span>
    </div>`
 
+/** 根据当前筛选结果更新影院地图标记。 */
 const renderCinemaMarkers = () => {
   if (!AMapNS || !mapInstance) return
   cinemaMarkers.forEach(m => mapInstance.remove(m))
@@ -721,11 +866,33 @@ const fitView = () => {
 
 const zoomIn = () => mapInstance?.zoomIn()
 const zoomOut = () => mapInstance?.zoomOut()
+
+/** 强制重新定位（跳过 sessionStorage 缓存），并把地图回到用户位置。 */
+const relocate = async () => {
+  if (relocating.value) return
+  relocating.value = true
+  try {
+    await ensureLocation(true)
+    if (!syncFromSharedLocation()) {
+      ElMessage.warning('未获取到位置，请允许浏览器定位权限后重试')
+      return
+    }
+    if (mapInstance && userPosition.value) {
+      mapInstance.setZoomAndCenter(14, userPosition.value)
+    }
+  } catch (e) {
+    console.error('重新定位失败:', e)
+    ElMessage.error('定位失败，请稍后重试')
+  } finally {
+    relocating.value = false
+  }
+}
+
 const locateMe = () => {
   if (userPosition.value && mapInstance) {
     mapInstance.setZoomAndCenter(14, userPosition.value)
   } else {
-    locateUser()
+    void relocate()
   }
 }
 
@@ -747,21 +914,22 @@ watch(
 )
 
 watch(
-  () => [sharedLocation.value.lng, sharedLocation.value.lat],
+  () => [sharedLocation.value.lng, sharedLocation.value.lat, sharedLocation.value.source],
   () => {
     if (!mapReady.value) return
-    const had = userPosition.value != null
     syncFromSharedLocation()
-    if (!had && userPosition.value && cinemaMarkers.size === 0 && mapInstance) {
+    // 手动切换城市或重新定位后，把地图中心拉回新的位置
+    if (userPosition.value && mapInstance) {
       mapInstance.setZoomAndCenter(13, userPosition.value)
     }
   }
 )
 
 onMounted(async () => {
-  await loadCinemas()
-  await loadContextMovie()
+  await Promise.all([loadCinemas(), loadContextMovie()])
   await nextTick()
+  // 定位与地图解耦：即使高德地图 SDK 加载失败，城市胶囊也能给出结果
+  ensureLocation().catch(() => {})
   initMap().catch(e => {
     console.error('地图初始化失败:', e)
     ElMessage.error('地图加载失败')
@@ -776,8 +944,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&display=swap');
 
 .app {
   --primary: #FF8400;
@@ -1096,6 +1262,8 @@ onBeforeUnmount(() => {
   transition: border-color 0.15s;
 }
 .tb-pill:hover { border-color: var(--primary); }
+.tb-pill.is-failed { border-color: var(--destructive); }
+.tb-pill.is-failed .tb-pill-text { color: var(--destructive); }
 .tb-pill .msr { font-size: 14px; color: var(--muted); }
 .tb-pill .primary { color: var(--primary); }
 .tb-pill-caret { font-size: 14px !important; }
@@ -1496,8 +1664,14 @@ onBeforeUnmount(() => {
   font-size: 11px;
   font-weight: 600;
   color: var(--fg);
+  cursor: pointer;
+  transition: border-color 0.15s;
 }
+.map-current:hover { border-color: var(--primary); }
 .map-current .msr { font-size: 12px; color: var(--primary); }
+.map-current.is-failed { border-color: var(--destructive); }
+.map-current.is-failed span { color: var(--destructive); }
+.map-current .msr.spin { animation: spin 1s linear infinite; }
 .map-zoom {
   position: absolute;
   top: 16px;
@@ -1656,6 +1830,7 @@ onBeforeUnmount(() => {
   transition: all 0.15s;
 }
 .filter-chip:hover { border-color: var(--primary); }
+.filter-chip:disabled { opacity: 0.6; cursor: wait; }
 .filter-chip .msr { font-size: 14px; color: var(--muted); }
 
 /* Cinema list */
@@ -1704,6 +1879,16 @@ onBeforeUnmount(() => {
   border-color: var(--primary);
   color: var(--primary-foreground);
 }
+.cc-thumb {
+  width: 86px;
+  height: 62px;
+  flex: 0 0 86px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--secondary);
+}
+.cc-thumb img { width: 100%; height: 100%; display: block; object-fit: cover; }
 .cc-info { flex: 1; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .cc-title-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .cc-name {
@@ -2037,6 +2222,7 @@ onBeforeUnmount(() => {
   .st-th { display: none; }
   .st-row { grid-template-columns: 1fr 1fr; gap: 10px 16px; }
   .st-col-act { grid-column: 1 / -1; }
+  .cc-thumb { width: 72px; height: 54px; flex-basis: 72px; }
 }
 </style>
 

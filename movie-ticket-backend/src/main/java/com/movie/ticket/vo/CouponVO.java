@@ -5,6 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/** 用户优惠券视图，附带可展示的状态与使用信息。 */
 @Data
 public class CouponVO {
     private Long id;

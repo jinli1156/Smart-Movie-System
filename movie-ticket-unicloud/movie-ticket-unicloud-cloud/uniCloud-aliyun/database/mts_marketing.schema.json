@@ -1,0 +1,22 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_marketing",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "id": {
+      "bsonType": "string"
+    },
+    "type": {
+      "bsonType": "string"
+    },
+    "cinemaId": {
+      "bsonType": "number"
+    }
+  }
+}

@@ -5,6 +5,7 @@ import lombok.Data;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/** 订单展示数据，组合影片、影院、场次、座位、优惠和取票信息。 */
 @Data
 public class OrderVO {
 
@@ -39,6 +40,10 @@ public class OrderVO {
     private BigDecimal originalPrice;
 
     private BigDecimal discountAmount;
+
+    private BigDecimal pointsUsed;
+
+    private BigDecimal pointsEarned;
 
     private Long couponId;
 

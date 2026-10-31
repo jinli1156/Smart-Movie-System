@@ -1,5 +1,7 @@
 param(
-    [switch]$Install
+    [switch]$Install,
+    [switch]$Integration,
+    [switch]$E2E
 )
 
 $ErrorActionPreference = 'Stop'
@@ -41,8 +43,19 @@ foreach ($frontend in @($admin, $user)) {
     }
 }
 
-Invoke-Checked -Label 'Backend unit tests' -WorkingDirectory $backend -Command $mavenWrapper -Arguments @('test')
+if ($Integration) {
+    Invoke-Checked -Label 'Backend unit and real-infrastructure integration tests' -WorkingDirectory $backend -Command $mavenWrapper -Arguments @('verify', '-Pintegration')
+}
+else {
+    Invoke-Checked -Label 'Backend unit and API tests' -WorkingDirectory $backend -Command $mavenWrapper -Arguments @('test')
+}
 Invoke-Checked -Label 'Admin production build' -WorkingDirectory $admin -Command 'npm.cmd' -Arguments @('run', 'build')
 Invoke-Checked -Label 'User production build' -WorkingDirectory $user -Command 'npm.cmd' -Arguments @('run', 'build')
+
+if ($E2E) {
+    Invoke-Checked -Label 'Install Playwright Chromium' -WorkingDirectory $user -Command 'npx.cmd' -Arguments @('playwright', 'install', 'chromium')
+    Invoke-Checked -Label 'Admin browser E2E' -WorkingDirectory $admin -Command 'npm.cmd' -Arguments @('run', 'test:e2e')
+    Invoke-Checked -Label 'User browser E2E' -WorkingDirectory $user -Command 'npm.cmd' -Arguments @('run', 'test:e2e')
+}
 
 Write-Host ([Environment]::NewLine + 'All verification steps passed.') -ForegroundColor Green

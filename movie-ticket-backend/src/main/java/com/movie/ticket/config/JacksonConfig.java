@@ -18,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.DateTimeParseException;
 
+/** 统一 JSON 序列化配置，保证接口日期时间等字段的输出格式一致。 */
 @Configuration
 public class JacksonConfig {
 

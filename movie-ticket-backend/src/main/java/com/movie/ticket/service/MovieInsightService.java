@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+/** 根据影片场次与已支付订单汇总今日票房、观影人数、上座率及近期趋势。 */
 @Service
 @RequiredArgsConstructor
 public class MovieInsightService {
@@ -30,6 +31,7 @@ public class MovieInsightService {
     private final ShowtimeMapper showtimeMapper;
     private final TicketOrderMapper orderMapper;
 
+    /** 获取影片票房、观影人数和场次经营指标。 */
     public MovieInsightVO getInsight(Long movieId) {
         Movie movie = movieMapper.selectById(movieId);
         if (movie == null) {

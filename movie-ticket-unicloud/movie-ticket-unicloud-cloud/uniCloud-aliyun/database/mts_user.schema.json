@@ -1,0 +1,40 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_user",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "id": {
+      "bsonType": "number"
+    },
+    "username": {
+      "bsonType": "string"
+    },
+    "password": {
+      "bsonType": "string"
+    },
+    "nickname": {
+      "bsonType": "string"
+    },
+    "role": {
+      "bsonType": "string"
+    },
+    "cinemaId": {
+      "bsonType": [
+        "number",
+        "null"
+      ]
+    },
+    "status": {
+      "bsonType": "number"
+    },
+    "points": {
+      "bsonType": "number"
+    }
+  }
+}

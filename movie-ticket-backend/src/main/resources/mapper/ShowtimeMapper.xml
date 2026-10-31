@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movie.ticket.mapper.ShowtimeMapper">
+
+    <!-- Compare the entire day's eligible inventory BEFORE sorting by discounted total. -->
+    <select id="selectPriceComparisonViews" resultType="com.movie.ticket.vo.ShowtimeVO">
+        SELECT <include refid="showtimeViewColumns"/>
+        <include refid="showtimeViewFrom"/>
+        WHERE s.deleted = 0 AND m.deleted = 0 AND c.deleted = 0 AND h.deleted = 0
+          AND s.status = 0 AND m.status = 1 AND c.status = 1 AND h.status = 1
+          AND s.movie_id = #{movieId} AND s.available_seats &gt;= #{people}
+          AND s.start_time &gt;= #{bookableAfter}
+          AND s.start_time &gt;= #{startTime} AND s.start_time &lt; #{endTime}
+        ORDER BY s.start_time ASC, s.id ASC
+    </select>
+
+    <sql id="assistantCandidateQuery">
+        SELECT <include refid="showtimeViewColumns"/>, m.genre AS movie_genre, m.rating AS movie_rating
+        <include refid="showtimeViewFrom"/>
+        WHERE s.deleted = 0 AND m.deleted = 0 AND c.deleted = 0 AND h.deleted = 0
+          AND s.status = 0 AND m.status = 1 AND c.status = 1 AND h.status = 1
+          AND s.available_seats &gt; 0
+          AND s.start_time &gt;= #{bookableAfter}
+          AND s.start_time &gt;= #{startTime} AND s.start_time &lt; #{endTime}
+        <if test="movieId != null">AND s.movie_id = #{movieId}</if>
+        <if test="cinemaId != null">AND s.cinema_id = #{cinemaId}</if>
+        <if test="filters != null">
+            <if test="filters.genre != null">AND LOCATE(#{filters.genre}, m.genre) &gt; 0</if>
+            <if test="filters.minRating != null">AND m.rating &gt;= #{filters.minRating}</if>
+            <if test="filters.maxDuration != null">AND m.duration &lt;= #{filters.maxDuration}</if>
+            <if test="filters.hallKeyword != null">AND LOCATE(LOWER(#{filters.hallKeyword}), LOWER(h.name)) &gt; 0</if>
+            <if test="filters.cinemaKeyword != null">
+                AND (LOCATE(#{filters.cinemaKeyword}, c.name) &gt; 0 OR LOCATE(#{filters.cinemaKeyword}, c.address) &gt; 0)
+            </if>
+            <if test="filters.people != null">AND s.available_seats &gt;= #{filters.people}</if>
+            <if test="filters.showtimeId != null">AND s.id = #{filters.showtimeId}</if>
+            <if test="filters.endBefore != null">AND s.end_time &lt;= #{filters.endBefore}</if>
+            <if test="filters.excludedGenres != null">
+                <foreach collection="filters.excludedGenres" item="excludedGenre">
+                    AND LOCATE(#{excludedGenre}, COALESCE(m.genre, '')) = 0
+                </foreach>
+            </if>
+            <if test="filters.excludedMovieIds != null and filters.excludedMovieIds.size() > 0">
+                AND s.movie_id NOT IN <foreach collection="filters.excludedMovieIds" item="excludedId" open="(" separator="," close=")">#{excludedId}</foreach>
+            </if>
+        </if>
+        <if test="maxPrice != null">
+            <choose>
+                <when test="priceExclusive">AND s.base_price &lt; #{maxPrice}</when>
+                <otherwise>AND s.base_price &lt;= #{maxPrice}</otherwise>
+            </choose>
+        </if>
+        ORDER BY <if test="maxPrice != null">s.base_price ASC,</if> s.start_time ASC, s.id ASC
+    </sql>
+    <select id="selectAssistantPage" resultType="com.movie.ticket.vo.ShowtimeVO">
+        <include refid="assistantCandidateQuery"/>
+    </select>
+    <select id="selectAssistantCandidates" resultType="com.movie.ticket.vo.ShowtimeVO">
+        <include refid="assistantCandidateQuery"/>
+    </select>
+
+    <sql id="showtimeViewColumns">
+        s.id,
+        s.movie_id,
+        m.title AS movie_title,
+        m.poster AS movie_poster,
+        m.duration AS movie_duration,
+        s.cinema_id,
+        c.name AS cinema_name,
+        s.hall_id,
+        h.name AS hall_name,
+        s.start_time,
+        s.end_time,
+        s.base_price,
+        s.total_seats,
+        s.available_seats,
+        s.status,
+        CASE s.status
+            WHEN 0 THEN '可售'
+            WHEN 1 THEN '已结束'
+            WHEN 2 THEN '已取消'
+            ELSE '未知'
+        END AS status_text,
+        s.create_time,
+        s.update_time
+    </sql>
+
+    <sql id="showtimeViewFrom">
+        FROM showtime s
+        LEFT JOIN movie m ON m.id = s.movie_id
+        LEFT JOIN cinema c ON c.id = s.cinema_id
+        LEFT JOIN hall h ON h.id = s.hall_id
+    </sql>
+
+    <sql id="showtimeFilters">
+        <where>
+            AND s.deleted = 0
+            AND m.deleted = 0
+            AND c.deleted = 0
+            AND h.deleted = 0
+            <if test="movieId != null">AND s.movie_id = #{movieId}</if>
+            <if test="cinemaId != null">AND s.cinema_id = #{cinemaId}</if>
+            <if test="startTime != null">AND s.start_time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.start_time &lt; #{endTime}</if>
+            <if test="status != null">AND s.status = #{status}</if>
+            <if test="showtimeId != null">AND s.id = #{showtimeId}</if>
+        </where>
+    </sql>
+
+    <select id="selectShowtimePage" resultType="com.movie.ticket.vo.ShowtimeVO">
+        SELECT <include refid="showtimeViewColumns"/>
+        <include refid="showtimeViewFrom"/>
+        <where>
+            AND s.deleted = 0
+            AND m.deleted = 0
+            AND c.deleted = 0
+            AND h.deleted = 0
+            <if test="movieId != null">AND s.movie_id = #{movieId}</if>
+            <if test="cinemaId != null">AND s.cinema_id = #{cinemaId}</if>
+            <if test="startTime != null">AND s.start_time &gt;= #{startTime}</if>
+            <if test="endTime != null">AND s.start_time &lt; #{endTime}</if>
+            <if test="status != null">AND s.status = #{status}</if>
+        </where>
+        ORDER BY s.status ASC, s.start_time DESC
+    </select>
+
+    <select id="selectShowtimeViews" resultType="com.movie.ticket.vo.ShowtimeVO">
+        SELECT <include refid="showtimeViewColumns"/>
+        <include refid="showtimeViewFrom"/>
+        <include refid="showtimeFilters"/>
+        ORDER BY s.start_time ASC
+    </select>
+</mapper>

@@ -1,6 +1,8 @@
+/**
+ * 路由配置与访问守卫：组织功能页面，处理登录状态及页面访问权限。
+ */
 import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router'
 import { useUserStore } from '@/stores/user'
-import MainLayout from '@/layout/MainLayout.vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -11,7 +13,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    component: MainLayout,
+    component: () => import('@/layout/MainLayout.vue'),
     redirect: '/dashboard',
     meta: { requiresAuth: true },
     children: [
@@ -33,13 +35,18 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'movie',
         name: 'Movie',
-        component: () => import('@/views/Movie.vue')
+        component: () => import('@/views/Movie.vue'),
+        meta: { role: 'ADMIN' }
       },
       {
         path: 'showtime',
         name: 'Showtime',
         component: () => import('@/views/Showtime.vue')
       },
+      { path: 'listing', name: 'ListingWorkspace', component: () => import('@/views/ListingWorkspace.vue'), meta: { manager: true } },
+      { path: 'marketing/studio', name: 'MarketingStudio', component: () => import('@/views/MarketingStudio.vue'), meta: { manager: true } },
+      { path: 'marketing/tasks', name: 'MarketingTasks', component: () => import('@/views/MarketingTasks.vue'), meta: { manager: true } },
+      { path: 'marketing/review', name: 'MarketingReview', component: () => import('@/views/MarketingReview.vue'), meta: { manager: true } },
       {
         path: 'smart-scheduling',
         name: 'SmartScheduling',
@@ -51,9 +58,21 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/Order.vue')
       },
       {
+        path: 'coupon-code',
+        name: 'CouponCode',
+        component: () => import('@/views/CouponCode.vue'),
+        meta: { role: 'ADMIN' }
+      },
+      {
         path: 'user',
         name: 'User',
         component: () => import('@/views/User.vue'),
+        meta: { role: 'ADMIN' }
+      },
+      {
+        path: 'recommendation-evaluation',
+        name: 'RecommendationEvaluation',
+        component: () => import('@/views/RecommendationEvaluation.vue'),
         meta: { role: 'ADMIN' }
       }
     ]
@@ -71,6 +90,8 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.requiresAuth && !userStore.isLoggedIn) {
     next('/login')
   } else if (to.path === '/login' && userStore.isLoggedIn) {
+    next('/dashboard')
+  } else if (to.meta.manager && !['ADMIN', 'CINEMA_ADMIN'].includes(userStore.userInfo?.role || '')) {
     next('/dashboard')
   } else if (to.meta.role && userStore.userInfo?.role !== to.meta.role) {
     next('/dashboard')

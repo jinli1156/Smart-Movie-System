@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
+/** Spring Boot 启动入口，启用应用配置及组件扫描。 */
 @SpringBootApplication
 @MapperScan("com.movie.ticket.mapper")
 @EnableScheduling

@@ -3,6 +3,9 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 将图标名称映射到本地图标数据，统一图标尺寸和展示方式。
+ */
 import { computed } from 'vue'
 import { Icon, addCollection } from '@iconify/vue'
 import type { IconifyJSON } from '@iconify/types'

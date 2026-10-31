@@ -1,6 +1,9 @@
+/**
+ * 用户会话状态：保存令牌和资料，同步本地缓存，并统一处理登录与退出。
+ */
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { UserInfo } from '@/types/auth'
+import type { UserInfo, UserProfileUpdate } from '@/types/auth'
 import { authApi } from '@/api/auth'
 import request from '@/utils/request'
 import router from '@/router'
@@ -44,8 +47,8 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem('userInfo')
   }
 
-  const login = async (username: string, password: string) => {
-    const res = await authApi.login({ username, password })
+  const login = async (username: string, password: string, captchaId: string, captcha: string) => {
+    const res = await authApi.login({ username, password, captchaId, captcha })
     setToken(res.token)
     setUserInfo(res.userInfo)
     return res
@@ -56,7 +59,7 @@ export const useUserStore = defineStore('user', () => {
     router.push('/login')
   }
 
-  const updateUserInfo = async (data: Partial<UserInfo>) => {
+  const updateUserInfo = async (data: UserProfileUpdate) => {
     try {
       const res = await request.put<any, UserInfo>('/user/profile', data)
       setUserInfo(res)

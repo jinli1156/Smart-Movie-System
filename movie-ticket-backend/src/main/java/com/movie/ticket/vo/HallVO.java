@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
+/** 影厅展示数据，包含所属影院及座位布局。 */
 @Data
 public class HallVO {
 

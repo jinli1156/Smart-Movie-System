@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
+/** 影院新增或编辑参数，声明名称、地址、坐标及联系方式等输入约束。 */
 @Data
 public class CinemaDTO {
 

@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/** 观影评价业务：核验已完成的购票观影资格，维护用户评价并更新影片评分。 */
 @Service
 @RequiredArgsConstructor
 public class CommentService {
@@ -86,6 +87,7 @@ public class CommentService {
         return result;
     }
 
+    /** 核验观影资格后创建本人评价，并刷新影片评分。 */
     @Transactional(rollbackFor = Exception.class)
     public CommentVO createComment(CommentCreateDTO dto) {
         Long userId = UserContext.getUserId();
@@ -117,6 +119,7 @@ public class CommentService {
         return convertToVO(comment);
     }
 
+    /** 更新本人评价内容及评分，并重新汇总影片评分。 */
     @Transactional(rollbackFor = Exception.class)
     public CommentVO updateComment(Long id, CommentUpdateDTO dto) {
         Long userId = UserContext.getUserId();
@@ -135,6 +138,7 @@ public class CommentService {
         return convertToVO(comment);
     }
 
+    /** 读取指定影片的用户评价列表。 */
     public List<CommentVO> listByMovie(Long movieId) {
         List<Comment> comments = commentMapper.selectList(
                 new LambdaQueryWrapper<Comment>()

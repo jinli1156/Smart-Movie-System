@@ -1,6 +1,7 @@
 package com.movie.ticket.service;
 
 import com.movie.ticket.config.FileUploadConfig;
+import com.movie.ticket.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -14,6 +15,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/** 图片上传业务：检查文件类型、大小及存储路径，生成前端可使用的图片地址。 */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,18 +23,20 @@ public class FileUploadService {
 
     private final FileUploadConfig fileUploadConfig;
 
+    /** 检查并保存图片，返回可供页面展示的资源地址。 */
     public Map<String, String> uploadImage(MultipartFile file) throws IOException {
         if (file.isEmpty()) {
-            throw new RuntimeException("请选择要上传的文件");
+            throw new BusinessException(400, "请选择要上传的文件");
         }
 
         if (file.getSize() > fileUploadConfig.getMaxSize()) {
-            throw new RuntimeException("文件大小不能超过" + (fileUploadConfig.getMaxSize() / 1024 / 1024) + "MB");
+            throw new BusinessException(400,
+                    "文件大小不能超过" + (fileUploadConfig.getMaxSize() / 1024 / 1024) + "MB");
         }
 
         String originalFilename = file.getOriginalFilename();
         if (originalFilename == null || originalFilename.isEmpty()) {
-            throw new RuntimeException("文件名不能为空");
+            throw new BusinessException(400, "文件名不能为空");
         }
 
         String extension = getFileExtension(originalFilename).toLowerCase();
@@ -44,7 +48,8 @@ public class FileUploadService {
             }
         }
         if (!allowed) {
-            throw new RuntimeException("不支持的文件格式，允许的格式: jpg, jpeg, png, gif, webp, bmp");
+            throw new BusinessException(400,
+                    "不支持的文件格式，允许的格式: jpg, jpeg, png, gif, webp, bmp");
         }
 
         String newFilename = UUID.randomUUID().toString().replace("-", "") + "." + extension;

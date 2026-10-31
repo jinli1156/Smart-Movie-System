@@ -12,6 +12,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+/** JWT 签发与校验工具，统一处理签名密钥、有效期和令牌中的身份声明。 */
 @Component
 public class JwtUtil {
 

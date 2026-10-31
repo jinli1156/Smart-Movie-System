@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.movie.ticket.mapper.TicketOrderMapper">
+
+    <sql id="orderViewColumns">
+        o.id,
+        o.order_no,
+        o.user_id,
+        u.nickname AS user_name,
+        o.showtime_id,
+        m.id AS movie_id,
+        m.title AS movie_title,
+        m.poster AS movie_poster,
+        c.name AS cinema_name,
+        h.name AS hall_name,
+        s.start_time AS showtime,
+        o.seats,
+        o.seat_count,
+        o.total_price,
+        COALESCE(o.original_price, o.total_price) AS original_price,
+        COALESCE(o.discount_amount, 0) AS discount_amount,
+        COALESCE(o.points_used, 0) AS points_used,
+        COALESCE(o.points_earned, 0) AS points_earned,
+        o.coupon_id,
+        o.status,
+        CASE o.status
+            WHEN 0 THEN '待支付'
+            WHEN 1 THEN '已支付'
+            WHEN 2 THEN '已取消'
+            WHEN 3 THEN '已退款'
+            ELSE '未知'
+        END AS status_text,
+        o.ticket_code,
+        o.is_picked,
+        o.pick_time,
+        o.pay_time,
+        o.remark,
+        o.create_time,
+        o.update_time
+    </sql>
+
+    <sql id="orderViewJoins">
+        FROM ticket_order o
+        LEFT JOIN `user` u ON u.id = o.user_id
+        LEFT JOIN showtime s ON s.id = o.showtime_id
+        LEFT JOIN movie m ON m.id = s.movie_id
+        LEFT JOIN cinema c ON c.id = s.cinema_id
+        LEFT JOIN hall h ON h.id = s.hall_id
+    </sql>
+
+    <select id="selectOrderPage" resultType="com.movie.ticket.vo.OrderVO">
+        SELECT <include refid="orderViewColumns"/>
+        <include refid="orderViewJoins"/>
+        <where>
+            <if test="userId != null">
+                AND o.user_id = #{userId}
+            </if>
+            <if test="orderNo != null and orderNo != ''">
+                AND o.order_no = #{orderNo}
+            </if>
+            <if test="status != null">
+                AND o.status = #{status}
+            </if>
+            <if test="historyOnly">
+                AND o.status = 1
+                AND s.end_time &lt; NOW()
+            </if>
+        </where>
+        <choose>
+            <when test="historyOnly">ORDER BY o.pay_time DESC</when>
+            <otherwise>ORDER BY o.create_time DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="selectCinemaOrderPage" resultType="com.movie.ticket.vo.OrderVO">
+        SELECT <include refid="orderViewColumns"/>
+        <include refid="orderViewJoins"/>
+        WHERE s.cinema_id = #{cinemaId}
+        <if test="orderNo != null and orderNo != ''">AND o.order_no = #{orderNo}</if>
+        <if test="status != null">AND o.status = #{status}</if>
+        ORDER BY o.create_time DESC
+    </select>
+
+    <select id="selectOrderViewByOrderNo" resultType="com.movie.ticket.vo.OrderVO">
+        SELECT <include refid="orderViewColumns"/>
+        <include refid="orderViewJoins"/>
+        WHERE o.order_no = #{orderNo}
+    </select>
+
+    <select id="sumPaidRevenue" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_price), 0)
+        FROM ticket_order
+        WHERE status = 1
+          AND pay_time &gt;= #{startTime}
+          AND pay_time &lt; #{endTime}
+    </select>
+
+    <select id="selectBoxOfficeRanking" resultType="java.util.HashMap">
+        SELECT m.id AS movieId,
+               m.title AS movieTitle,
+               m.poster AS moviePoster,
+               COALESCE(SUM(o.total_price), 0) AS boxOffice,
+               COALESCE(SUM(o.seat_count), 0) AS ticketCount
+        FROM movie m
+        LEFT JOIN showtime s ON s.movie_id = m.id
+        LEFT JOIN ticket_order o ON o.showtime_id = s.id AND o.status = 1
+        WHERE m.status = 1
+          AND m.deleted = 0
+        GROUP BY m.id, m.title, m.poster
+        ORDER BY boxOffice DESC, m.id ASC
+        LIMIT #{limit}
+    </select>
+
+    <!-- Include all public catalog movies, including zero revenue, without a top-N cutoff.
+         Historical paid orders remain counted even when their showtime is soft-deleted. -->
+    <select id="selectHistoricalBoxOfficeRanking" resultType="java.util.HashMap">
+        SELECT m.id AS movieId,
+               m.title AS movieTitle,
+               m.poster AS moviePoster,
+               COALESCE(SUM(o.total_price), 0) AS boxOffice,
+               COALESCE(SUM(o.seat_count), 0) AS ticketCount
+        FROM movie m
+        LEFT JOIN showtime s ON s.movie_id = m.id
+        LEFT JOIN ticket_order o ON o.showtime_id = s.id AND o.status = 1
+        WHERE m.status IN (1, 2) AND m.deleted = 0
+        GROUP BY m.id, m.title, m.poster
+        ORDER BY boxOffice DESC, ticketCount DESC, m.id ASC
+    </select>
+
+    <select id="selectBoxOfficeRankingBetween" resultType="java.util.HashMap">
+        SELECT m.id AS movieId,
+               m.title AS movieTitle,
+               m.poster AS moviePoster,
+               COALESCE(SUM(o.total_price), 0) AS boxOffice,
+               COALESCE(SUM(o.seat_count), 0) AS ticketCount
+        FROM movie m
+        LEFT JOIN showtime s ON s.movie_id = m.id AND s.deleted = 0
+        LEFT JOIN ticket_order o ON o.showtime_id = s.id
+            AND o.status = 1
+            AND o.pay_time &gt;= #{startTime}
+            AND o.pay_time &lt; #{endTime}
+        WHERE m.status = 1
+          AND m.deleted = 0
+        GROUP BY m.id, m.title, m.poster
+        ORDER BY boxOffice DESC, ticketCount DESC, m.rating DESC, m.id ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="sumPaidRevenueByShowtime" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(total_price), 0)
+        FROM ticket_order
+        WHERE showtime_id = #{showtimeId}
+          AND status = 1
+    </select>
+
+    <select id="selectRevenueByDate" resultType="java.util.HashMap">
+        SELECT DATE(pay_time) AS date,
+               COUNT(*) AS orderCount,
+               COALESCE(SUM(total_price), 0) AS revenue
+        FROM ticket_order
+        WHERE status = 1
+          AND pay_time &gt;= #{startTime}
+          AND pay_time &lt; #{endTime}
+        GROUP BY DATE(pay_time)
+        ORDER BY date
+    </select>
+
+    <select id="selectCinemaDashboard" resultType="java.util.HashMap">
+        SELECT
+          (SELECT COUNT(DISTINCT movie_id) FROM showtime WHERE cinema_id=#{cinemaId} AND deleted=0) AS movieCount,
+          1 AS cinemaCount,
+          COUNT(DISTINCT o.user_id) AS userCount,
+          COALESCE(SUM(CASE WHEN o.create_time &gt;= #{startTime} AND o.create_time &lt; #{endTime} THEN 1 ELSE 0 END),0) AS todayOrderCount,
+          COALESCE(SUM(CASE WHEN o.status=1 AND o.pay_time &gt;= #{startTime} AND o.pay_time &lt; #{endTime} THEN o.total_price ELSE 0 END),0) AS todayRevenue
+        FROM ticket_order o JOIN showtime s ON s.id=o.showtime_id
+        WHERE s.cinema_id=#{cinemaId}
+    </select>
+
+    <select id="selectCinemaBoxOffice" resultType="java.util.HashMap">
+        SELECT m.id AS movieId, m.title AS movieTitle, m.poster AS moviePoster,
+               COALESCE(SUM(o.total_price),0) AS boxOffice, COALESCE(SUM(o.seat_count),0) AS ticketCount
+        FROM movie m JOIN showtime s ON s.movie_id=m.id AND s.cinema_id=#{cinemaId}
+        LEFT JOIN ticket_order o ON o.showtime_id=s.id AND o.status=1
+        WHERE m.status=1 AND m.deleted=0
+        GROUP BY m.id,m.title,m.poster ORDER BY boxOffice DESC,m.id ASC LIMIT #{limit}
+    </select>
+
+    <select id="selectCinemaRevenue" resultType="java.util.HashMap">
+        SELECT DATE(o.pay_time) AS date, COUNT(*) AS orderCount, COALESCE(SUM(o.total_price),0) AS revenue
+        FROM ticket_order o JOIN showtime s ON s.id=o.showtime_id
+        WHERE s.cinema_id=#{cinemaId} AND o.status=1 AND o.pay_time &gt;= #{startTime} AND o.pay_time &lt; #{endTime}
+        GROUP BY DATE(o.pay_time) ORDER BY date
+    </select>
+
+    <select id="selectCinemaAggregate" resultType="java.util.HashMap">
+        SELECT c.id AS cinemaId,
+               c.name AS cinemaName,
+               COALESCE(seats.totalSeats, 0) AS totalSeats,
+               COALESCE(seats.soldSeats, 0) AS soldSeats,
+               COALESCE(sales.revenue, 0) AS revenue,
+               COALESCE(sales.orderCount, 0) AS orderCount
+        FROM cinema c
+        LEFT JOIN (
+            SELECT cinema_id,
+                   SUM(total_seats) AS totalSeats,
+                   SUM(total_seats - available_seats) AS soldSeats
+            FROM showtime
+            WHERE deleted = 0
+            GROUP BY cinema_id
+        ) seats ON seats.cinema_id = c.id
+        LEFT JOIN (
+            SELECT s.cinema_id,
+                   SUM(o.total_price) AS revenue,
+                   COUNT(*) AS orderCount
+            FROM ticket_order o
+            JOIN showtime s ON s.id = o.showtime_id
+            WHERE o.status = 1
+              AND s.deleted = 0
+            GROUP BY s.cinema_id
+        ) sales ON sales.cinema_id = c.id
+        WHERE c.id = #{cinemaId}
+          AND c.deleted = 0
+    </select>
+</mapper>

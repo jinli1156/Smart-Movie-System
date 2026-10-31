@@ -5,10 +5,12 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 应用根组件，承载路由页面与全局界面。
+ */
 </script>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
 :root {
   --admin-primary: #ff8400;
@@ -461,6 +463,89 @@ select {
   white-space: nowrap;
 }
 
+/* 批量选择使用独立 SVG 图形，避免组件默认勾号的旋转、位移导致裁切。 */
+.el-table .el-table-column--selection .el-checkbox__inner,
+.el-table .el-table-column--selection .el-checkbox__inner::before,
+.el-table .el-table-column--selection .el-checkbox__inner::after {
+  transition: none;
+}
+
+.el-table .el-table-column--selection .cell {
+  padding-inline: 4px;
+  text-align: center;
+}
+
+.el-table .el-table-column--selection .el-checkbox {
+  width: 32px;
+  height: 32px;
+  margin: 0;
+  justify-content: center;
+}
+
+.el-table .el-table-column--selection .el-checkbox__inner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #737d75;
+  border-radius: 5px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(48, 56, 51, 0.12);
+}
+
+.el-table .el-table-column--selection .el-checkbox__input:not(.is-disabled):hover .el-checkbox__inner {
+  border-color: #a65100;
+  box-shadow: 0 0 0 3px rgba(255, 132, 0, 0.18);
+}
+
+.el-table .el-table-column--selection .el-checkbox__input.is-checked .el-checkbox__inner,
+.el-table .el-table-column--selection .el-checkbox__input.is-indeterminate .el-checkbox__inner {
+  border-color: #a65100;
+  background: #b85c00;
+}
+
+.el-table .el-table-column--selection .el-checkbox__inner::after {
+  content: '';
+  display: none;
+  position: absolute;
+  left: 1px;
+  top: 1px;
+  width: 16px;
+  height: 16px;
+  border: 0;
+  background: #fff;
+  transform: none;
+  mask: url('/icons/selection-check.svg') center / 16px 16px no-repeat;
+}
+
+.el-table .el-table-column--selection .el-checkbox__input.is-checked .el-checkbox__inner::after,
+.el-table .el-table-column--selection .el-checkbox__input.is-indeterminate .el-checkbox__inner::after {
+  display: block;
+  transform: none;
+}
+
+.el-table .el-table-column--selection .el-checkbox__input.is-indeterminate .el-checkbox__inner::after {
+  mask-image: url('/icons/selection-minus.svg');
+}
+
+.el-table .el-table-column--selection .el-checkbox__input .el-checkbox__inner::before {
+  content: none;
+  display: none;
+}
+
+.el-table .el-table-column--selection .el-checkbox__input:has(input:focus-visible) .el-checkbox__inner {
+  outline: 3px solid #874900;
+  outline-offset: 3px;
+}
+
+.el-table .el-table-column--selection .el-checkbox__input.is-disabled .el-checkbox__inner {
+  border-color: #a6aca7;
+  background: #d8dcd6;
+  box-shadow: none;
+}
+
+.el-table .el-table-column--selection .el-checkbox__input.is-disabled .el-checkbox__inner::after {
+  background: #737d75;
+}
+
 .el-table .el-table__empty-block {
   background: transparent !important;
   color: var(--admin-muted);
@@ -557,6 +642,21 @@ select {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+/* Show the exact selected artwork's wordmark region without retyping its glyphs. */
+.brand-wordmark {
+  display: inline-block !important;
+  width: 120px;
+  height: 28px;
+  flex: 0 0 auto;
+  background: url('/xiangzhi-wordmark-source.png') no-repeat;
+  background-size: 125.4% auto;
+  background-position: 50% 82.85%;
+}
+
+img[src="/xiangzhi-ticket.png"] {
+  transform: scale(1.5);
 }
 
 .brand-logo-image {

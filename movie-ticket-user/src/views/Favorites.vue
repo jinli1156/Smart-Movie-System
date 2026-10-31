@@ -45,7 +45,7 @@
         <div v-if="displayMovies.length" class="favorites-grid">
           <article v-for="movie in displayMovies" :key="movie.id" class="favorite-card" @click="goToMovie(movie.id)">
             <div class="poster">
-              <img v-if="movie.poster" :src="movie.poster" :alt="movie.title" />
+              <img v-if="movie.poster" v-poster :src="movie.poster" :alt="movie.title" />
               <div v-else class="poster-empty">
                 <MaterialIcon class="msr" name="movie" />
                 <span>{{ movie.title }}</span>
@@ -68,7 +68,7 @@
             <div class="card-body">
               <p class="added-time">{{ formatFavoriteTime(movie.favoriteTime) }}</p>
               <h2>{{ movie.title }}</h2>
-              <p class="english-title">{{ movie.englishTitle || movie.director || 'CINEMA+ MOVIE' }}</p>
+              <p class="english-title">{{ movie.englishTitle || movie.director || '响指电影 MOVIE' }}</p>
               <div class="meta">
                 <span>{{ movie.genre || '电影' }}</span>
                 <i></i>
@@ -96,9 +96,12 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 想看列表：展示本人收藏影片，支持筛选、移除及进入详情。
+ */
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import AppSidebar from '@/components/AppSidebar.vue'
 import WatchlistHeartButton from '@/components/WatchlistHeartButton.vue'
 import { recommendApi } from '@/api/recommend'
@@ -135,6 +138,7 @@ const displayMovies = computed(() => {
   })
 })
 
+/** 读取本人想看记录，并同步影片收藏状态。 */
 const loadFavorites = async () => {
   loading.value = true
   try {

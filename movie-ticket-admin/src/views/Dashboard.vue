@@ -46,7 +46,7 @@
         <div class="panel-corner top-left"></div>
         <header class="panel-header">
           <div><span class="panel-kicker">BOX OFFICE TOP</span><h2>实时票房排行</h2></div>
-          <button class="text-button" @click="router.push('/movie')">影片管理 <el-icon><ArrowRight /></el-icon></button>
+          <button v-if="!scoped" class="text-button" @click="router.push('/movie')">影片管理 <el-icon><ArrowRight /></el-icon></button>
         </header>
         <div class="ranking-list">
           <div v-for="(item, index) in boxOfficeData.slice(0, 6)" :key="item.movieId || index" class="ranking-row">
@@ -94,23 +94,29 @@
     </section>
 
     <footer class="screen-footer">
-      <span><i></i>数据中心连接正常</span><span>JINLI CINEMA · DIGITAL OPERATION PLATFORM</span><span>自动刷新周期 60s</span>
+      <span><i></i>数据中心连接正常</span><span>响指电影 · 数字运营平台</span><span>自动刷新周期 60s</span>
     </footer>
   </div>
 </template>
 
 <script setup lang="ts">
+/**
+ * 经营看板：汇总管理范围内的票房、订单、场次和收入趋势，驱动统计图表。
+ */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import * as echarts from 'echarts'
 import { ArrowRight, Calendar, DataAnalysis, Film, Money, OfficeBuilding, Refresh, Tickets, TrendCharts, User } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import { useUserStore } from '@/stores/user'
+
+type EChartsRuntime = typeof import('@/utils/echarts').echarts
 
 interface DashboardStats { movieCount?: number; cinemaCount?: number; todayOrderCount?: number; todayRevenue?: number | string; userCount?: number }
 interface BoxOfficeItem { movieId?: number; movieTitle?: string; boxOffice?: number | string; ticketCount?: number }
 interface RevenueItem { date: string; revenue: number | string; orderCount: number }
 
 const router = useRouter()
+const scoped = computed(() => useUserStore().userInfo?.role === 'CINEMA_ADMIN')
 const loading = ref(false)
 const stats = ref<DashboardStats>({})
 const boxOfficeData = ref<BoxOfficeItem[]>([])
@@ -122,6 +128,12 @@ const now = ref(new Date())
 const lastUpdated = ref('--:--:--')
 let clockTimer: number | undefined
 let refreshTimer: number | undefined
+let echartsRuntime: EChartsRuntime | null = null
+
+const loadECharts = async () => {
+  if (!echartsRuntime) echartsRuntime = (await import('@/utils/echarts')).echarts
+  return echartsRuntime
+}
 
 const pad = (value: number) => String(value).padStart(2, '0')
 const formatDateParam = (date: Date) => `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
@@ -135,9 +147,9 @@ const formatNumber = (value: number | string | undefined) => {
 const metricCards = computed(() => [
   { key: 'revenue', label: '今日营收', value: formatNumber(stats.value.todayRevenue), prefix: '¥', unit: '', description: '已支付订单收入', icon: Money, tone: 'orange' },
   { key: 'orders', label: '今日订单', value: formatNumber(stats.value.todayOrderCount), prefix: '', unit: '笔', description: '当日订单总量', icon: Tickets, tone: 'cyan' },
-  { key: 'movies', label: '在库影片', value: formatNumber(stats.value.movieCount), prefix: '', unit: '部', description: '全量影片资源', icon: Film, tone: 'violet' },
-  { key: 'cinemas', label: '合作影院', value: formatNumber(stats.value.cinemaCount), prefix: '', unit: '家', description: '平台影院数量', icon: OfficeBuilding, tone: 'green' },
-  { key: 'users', label: '平台用户', value: formatNumber(stats.value.userCount), prefix: '', unit: '人', description: '累计注册用户', icon: User, tone: 'pink' }
+  { key: 'movies', label: scoped.value ? '本影院排片影片' : '在库影片', value: formatNumber(stats.value.movieCount), prefix: '', unit: '部', description: scoped.value ? '本影院有排片记录的影片' : '全量影片资源', icon: Film, tone: 'violet' },
+  { key: 'cinemas', label: scoped.value ? '所属影院' : '合作影院', value: formatNumber(stats.value.cinemaCount), prefix: '', unit: '家', description: scoped.value ? '已分配的影院' : '平台影院数量', icon: OfficeBuilding, tone: 'green' },
+  { key: 'users', label: scoped.value ? '购票用户' : '平台用户', value: formatNumber(stats.value.userCount), prefix: '', unit: '人', description: scoped.value ? '在本影院下单的用户' : '累计注册用户', icon: User, tone: 'pink' }
 ])
 const periodRevenue = computed(() => revenueData.value.reduce((total, item) => total + Number(item.revenue || 0), 0))
 const maxBoxOffice = computed(() => Math.max(...boxOfficeData.value.map(item => Number(item.boxOffice || 0)), 1))
@@ -148,17 +160,18 @@ const structureItems = computed(() => [
   { name: '用户规模', value: Number(stats.value.userCount || 0), color: '#8b7cff' },
   { name: '今日订单', value: Number(stats.value.todayOrderCount || 0), color: '#45e0a8' }
 ])
-const quickActions = [
+const quickActions = computed(() => [
   { label: '智能排片', description: '预测上座率与模拟调整', path: '/smart-scheduling', icon: TrendCharts },
   { label: '排片调度', description: '管理电影场次与时间', path: '/showtime', icon: Calendar },
   { label: '订单中心', description: '查看订单及支付状态', path: '/order', icon: Tickets },
   { label: '影片运营', description: '维护上映影片资料', path: '/movie', icon: Film },
   { label: '影院管理', description: '管理影院与影厅资源', path: '/cinema', icon: DataAnalysis }
-]
+].filter(action => !scoped.value || action.path !== '/movie'))
 
 const chartTextColor = '#68716b'
 const chartGridColor = 'rgba(101, 112, 104, 0.15)'
-const initCharts = () => {
+const initCharts = async () => {
+  const echarts = await loadECharts()
   if (revenueChartRef.value) {
     const chart = echarts.getInstanceByDom(revenueChartRef.value) || echarts.init(revenueChartRef.value)
     chart.setOption({ animationDuration: 900, tooltip: { trigger: 'axis', backgroundColor: 'rgba(240,242,237,.98)', borderColor: '#c9cdc7', textStyle: { color: '#333b36' }, extraCssText: 'box-shadow: 4px 4px 10px rgba(172,177,171,.45), -4px -4px 10px rgba(255,255,255,.8); border-radius: 10px;' }, grid: { left: 16, right: 18, top: 36, bottom: 8, containLabel: true }, xAxis: { type: 'category', boundaryGap: false, data: revenueData.value.map(item => item.date.slice(5)), axisLine: { lineStyle: { color: chartGridColor } }, axisLabel: { color: chartTextColor }, axisTick: { show: false } }, yAxis: { type: 'value', splitLine: { lineStyle: { color: chartGridColor, type: 'dashed' } }, axisLabel: { color: chartTextColor, formatter: (value: number) => `¥${value}` } }, series: [{ name: '营收', type: 'line', smooth: true, symbol: 'circle', symbolSize: 8, data: revenueData.value.map(item => Number(item.revenue || 0)), lineStyle: { color: '#ff8400', width: 3 }, itemStyle: { color: '#ff8400', borderColor: '#f3f4f0', borderWidth: 2 }, areaStyle: { color: 'rgba(255,132,0,.12)' } }] }, true)
@@ -174,6 +187,7 @@ const initCharts = () => {
   }
 }
 
+/** 读取经营看板数据并更新统计图表。 */
 const loadAllData = async () => {
   if (loading.value) return
   loading.value = true
@@ -190,9 +204,14 @@ const loadAllData = async () => {
     await nextTick(); initCharts()
   } catch (error) { console.error('加载统计数据失败:', error) } finally { loading.value = false }
 }
-const resizeCharts = () => [revenueChartRef.value, boxOfficeChartRef.value, structureChartRef.value].forEach(element => { if (element) echarts.getInstanceByDom(element)?.resize() })
+const resizeCharts = () => {
+  if (!echartsRuntime) return
+  ;[revenueChartRef.value, boxOfficeChartRef.value, structureChartRef.value].forEach(element => {
+    if (element) echartsRuntime?.getInstanceByDom(element)?.resize()
+  })
+}
 onMounted(() => { loadAllData(); clockTimer = window.setInterval(() => { now.value = new Date() }, 1000); refreshTimer = window.setInterval(loadAllData, 60000); window.addEventListener('resize', resizeCharts) })
-onBeforeUnmount(() => { if (clockTimer) window.clearInterval(clockTimer); if (refreshTimer) window.clearInterval(refreshTimer); window.removeEventListener('resize', resizeCharts); [revenueChartRef.value, boxOfficeChartRef.value, structureChartRef.value].forEach(element => { if (element) echarts.getInstanceByDom(element)?.dispose() }) })
+onBeforeUnmount(() => { if (clockTimer) window.clearInterval(clockTimer); if (refreshTimer) window.clearInterval(refreshTimer); window.removeEventListener('resize', resizeCharts); [revenueChartRef.value, boxOfficeChartRef.value, structureChartRef.value].forEach(element => { if (element) echartsRuntime?.getInstanceByDom(element)?.dispose() }) })
 </script>
 
 <style scoped>

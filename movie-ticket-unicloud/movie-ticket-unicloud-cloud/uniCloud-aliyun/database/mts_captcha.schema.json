@@ -1,0 +1,22 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_captcha",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "digest": {
+      "bsonType": "string"
+    },
+    "used": {
+      "bsonType": "bool"
+    },
+    "expiresAt": {
+      "bsonType": "number"
+    }
+  }
+}

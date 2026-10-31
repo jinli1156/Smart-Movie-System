@@ -1,0 +1,31 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_showtime",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "id": {
+      "bsonType": "number"
+    },
+    "movieId": {
+      "bsonType": "number"
+    },
+    "cinemaId": {
+      "bsonType": "number"
+    },
+    "hallId": {
+      "bsonType": "number"
+    },
+    "startTime": {
+      "bsonType": "string"
+    },
+    "status": {
+      "bsonType": "number"
+    }
+  }
+}

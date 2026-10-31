@@ -6,6 +6,7 @@ import lombok.Data;
 
 import java.util.List;
 
+/** 冷启动偏好输入，记录用户选择的影片与喜爱类型。 */
 @Data
 public class ColdStartRequest {
     @NotEmpty(message = "请选择喜欢的电影")

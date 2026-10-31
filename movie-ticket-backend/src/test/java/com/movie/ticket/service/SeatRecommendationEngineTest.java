@@ -60,6 +60,59 @@ class SeatRecommendationEngineTest {
         assertTrue(refreshed.getFirst().getSeats().stream().noneMatch(nowOccupied::contains));
     }
 
+    @Test
+    void everyPreferenceAndPartyStaysInsideOneAisleSection() {
+        for (SeatPreference preference : SeatPreference.values()) {
+            for (int people = 2; people <= 5; people++) {
+                var result = engine.recommend(3, 12, allEnabled(3, 12), Set.of("2排5座"), people,
+                        preference, 5, BigDecimal.TEN, Set.of(3, 8));
+                assertFalse(result.isEmpty());
+                result.forEach(item -> {
+                    int start = column(item.getSeats().getFirst());
+                    int end = column(item.getSeats().getLast());
+                    assertFalse(start <= 3 && end > 3);
+                    assertFalse(start <= 8 && end > 8);
+                    assertFalse(item.getSeats().contains("2排5座"));
+                });
+            }
+        }
+    }
+
+    @Test
+    void coupleCannotUseTheOnlyTwoSeatsAcrossAnAisle() {
+        assertTrue(engine.recommend(1, 4, allEnabled(1, 4), Set.of("1排1座", "1排4座"), 2,
+                SeatPreference.COUPLE, 3, BigDecimal.TEN, Set.of(2)).isEmpty());
+        assertEquals(List.of("1排2座", "1排3座"), engine.recommend(1, 4, allEnabled(1, 4),
+                Set.of("1排1座", "1排4座"), 2, SeatPreference.COUPLE, 3, BigDecimal.TEN, Set.of())
+                .getFirst().getSeats());
+    }
+
+    @Test
+    void aisleBoundariesAreUsedForOrphansContinuityAndAccess() {
+        var singles = engine.recommend(1, 4, allEnabled(1, 4), Set.of(), 1,
+                SeatPreference.CENTER, 5, BigDecimal.TEN, Set.of(2));
+        assertEquals(18, singles.stream().filter(item -> item.getSeats().equals(List.of("1排1座")))
+                .findFirst().orElseThrow().getSingleSeatPenalty());
+        var pairs = engine.recommend(1, 4, allEnabled(1, 4), Set.of(), 2,
+                SeatPreference.CENTER, 5, BigDecimal.TEN, Set.of(2));
+        pairs.forEach(item -> {
+            assertEquals(100, item.getScores().getContinuity());
+            assertEquals(100, item.getScores().getAccessConvenience());
+        });
+    }
+
+    @Test
+    void outsideAislesDoNotSplitSeatsOrAddOrphanPenalties() {
+        var result = engine.recommend(1, 4, allEnabled(1, 4), Set.of(), 4,
+                SeatPreference.COUPLE, 3, BigDecimal.TEN, Set.of(0, 4));
+        assertEquals(1, result.size());
+        assertEquals(List.of("1排1座", "1排2座", "1排3座", "1排4座"), result.getFirst().getSeats());
+        assertEquals(0, result.getFirst().getSingleSeatPenalty());
+        assertEquals(100, result.getFirst().getScores().getAccessConvenience());
+        assertTrue(engine.recommend(1, 4, allEnabled(1, 4), Set.of("1排1座", "1排4座"), 2,
+                SeatPreference.COUPLE, 3, BigDecimal.TEN, Set.of(0, 2, 4)).isEmpty());
+    }
+
     private boolean[][] allEnabled(int rows, int cols) {
         boolean[][] enabled = new boolean[rows][cols];
         for (int row = 0; row < rows; row++) {

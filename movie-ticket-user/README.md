@@ -70,7 +70,7 @@ npm install
 npm run dev
 ```
 
-访问 `http://localhost:3000`
+访问 `localhost:3000`
 
 ### 3. 构建生产版本
 
@@ -150,13 +150,33 @@ server: {
 
 可以创建 `.env.development` 和 `.env.production` 文件配置不同环境的变量。
 
+### 高德地图与定位
+
+影院页的地图、影院坐标与距离都依赖高德 JS API，需要同时满足：
+
+1. `VITE_AMAP_KEY` 是高德控制台创建的「Web 端（JS API）」类型 Key。
+2. `VITE_AMAP_SECURITY_CODE` 是该 Key 对应的安全密钥。
+3. Key 的**域名白名单**包含当前访问地址：本地开发通常是 `localhost` / `127.0.0.1`，部署后是站点域名。
+
+定位流程为「浏览器坐标 → 逆地理编码补城市 → IP 城市兜底」。城市解析失败时页面显示「当前位置」而不是一直停在「定位中」，点击顶部城市胶囊或地图左上角的位置标签可强制重新定位。
+
+PC 端高德定位默认优先「精确 IP 定位」；开着代理/VPN 时会定位到出口 IP 所在城市（例如日本）。`useLocation` 已改为优先浏览器定位（`GeoLocationFirst` + `enableHighAccuracy`），控制台会输出 `[定位] 来源=html5/ip`：来源为 `ip` 时城市来自出口 IP，关掉代理/VPN 后点击位置标签重试即可。
+
+如果代理/VPN 必须常开，或浏览器拒绝定位，点击顶部城市胶囊打开「选择城市」弹窗：全国地级市通过高德行政区查询动态加载，支持搜索，选择后会以该城市中心点计算距离；未开通影院的城市影院列表会为空。选择结果保存在 `localStorage`，下次打开仍然生效，弹窗里的「重新定位」可恢复自动定位。
+
+如果地图空白、影院没有 marker / 距离，可在浏览器控制台查看 `restapi.amap.com` 请求和高德返回的 `info`：
+
+- `INVALID_USER_DOMAIN`：域名白名单不含当前地址。
+- `INVALID_USER_SCODE`：安全密钥与 Key 不匹配。
+- `USERKEY_PLAT_NOMATCH`：Key 类型不是「Web 端（JS API）」。
+
 ## 相关文档
 
 项目级别的完整文档位于 `docs/` 目录：
 
 | 文档 | 说明 |
 |------|------|
-| [完成度报告](../docs/PROJECT_STATUS.md) | 当前完成度、验证结果与剩余工作 |
+| [自动化测试指南](../docs/TESTING.md) | 测试覆盖范围与执行命令 |
 | [启动指南](../docs/GETTING_STARTED.md) | 前后端完整启动与验收步骤 |
 | [系统架构](../docs/ARCHITECTURE.md) | 模块、数据库与接口说明 |
 | [设计规格](../docs/design/SYSTEM_DESIGN.md) | 系统架构设计与技术选型 |

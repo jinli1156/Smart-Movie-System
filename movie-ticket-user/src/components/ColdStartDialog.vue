@@ -17,7 +17,7 @@
         @click="toggleMovie(movie.id)"
       >
         <span class="cold-poster">
-          <img v-if="movie.poster" :src="movie.poster" :alt="movie.title" />
+          <img v-if="movie.poster" v-poster :src="movie.poster" :alt="movie.title" />
           <MaterialIcon v-else class="msr" name="movie" />
           <MaterialIcon v-if="selectedIds.includes(movie.id)" class="check" name="check_circle" />
         </span>
@@ -45,8 +45,11 @@
 </template>
 
 <script setup lang="ts">
+/**
+ * 冷启动偏好收集：选择喜欢的影片和类型，完成后刷新推荐。
+ */
 import { ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage } from 'element-plus/es/components/message/index'
 import type { Movie } from '@/types'
 import { recommendApi } from '@/api/recommend'
 
@@ -76,6 +79,7 @@ const toggleGenre = (genre: string) => {
   else if (selectedGenres.value.length < 5) selectedGenres.value.push(genre)
 }
 
+/** 提交选中的影片和类型，保存推荐冷启动偏好。 */
 const submit = async () => {
   if (selectedIds.value.length < 3) return
   submitting.value = true

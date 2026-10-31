@@ -1,0 +1,19 @@
+{
+  "name": "movie-api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "index.js",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "busboy": "^1.6.0",
+    "fast-xml-parser": "5.11.2",
+    "fflate": "0.8.3",
+    "pngjs": "^7.0.0"
+  },
+  "cloudfunction-config": {
+    "memorySize": 512,
+    "timeout": 120,
+    "runtime": "Nodejs18",
+    "path": "/api"
+  }
+}

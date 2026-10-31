@@ -1,0 +1,25 @@
+{
+  "bsonType": "object",
+  "description": "Smart Movie System: mts_behavior",
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false,
+    "count": false
+  },
+  "properties": {
+    "id": {
+      "bsonType": "number"
+    },
+    "userId": {
+      "bsonType": "number"
+    },
+    "movieId": {
+      "bsonType": "number"
+    },
+    "behaviorType": {
+      "bsonType": "string"
+    }
+  }
+}
