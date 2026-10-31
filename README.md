@@ -1,5 +1,4 @@
 <div align="center">
-
 <img src="docs/images/social-preview.png" alt="响指电影：智能电影购票系统项目预览" width="100%" />
 
 # 响指电影
@@ -11,7 +10,6 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-2ea44f?style=flat-square)](LICENSE)
 [![Java 21](https://img.shields.io/badge/Java-21-ED8B00?style=flat-square&logo=openjdk)](movie-ticket-backend/pom.xml)
 [![Vue 3](https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square&logo=vuedotjs)](movie-ticket-user/package.json)
-[![GitHub stars](https://img.shields.io/github/stars/jinli1156/Smart-Movie-System?style=flat-square&logo=github)](https://github.com/jinli1156/Smart-Movie-System/stargazers)
 
 [在线体验](https://www.jinli115.cn/?v=demand-home-20261031) · [本地启动](#本地启动) · [功能与技术细节](README.details.md) · [English](README.en.md)
 
